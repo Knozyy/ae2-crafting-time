@@ -28,6 +28,14 @@ tooltip backgrounds. Your badge color and opacity stay saved, so turning it
 back on restores them. You can also set `badgeBackground = false` in the client
 file.
 
+If **Badge background** and **Fast-to-slow colors** are both off, ordinary time
+estimates and compact amounts in Crafting Plan and Crafting Status use the same
+text color as AE2's nearby amounts. This follows the current screen colors, even
+on tinted rows. Collecting, waiting, delayed, and blocked labels keep their
+warning colors, and compact amounts beside them use that warning color too.
+Your chosen colors and badge opacity stay saved when you switch either option
+off. This row behavior also applies to compact amounts when profiling is off.
+
 - `enabled` turns profiling and server-owned stats on or off.
 - `showInTree` controls Crafting Tree badges, tooltips, spacing, and clicks on
   supported pre-26 targets.

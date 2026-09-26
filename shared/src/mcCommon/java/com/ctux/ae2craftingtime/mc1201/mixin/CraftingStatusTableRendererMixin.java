@@ -16,6 +16,7 @@ import com.ctux.ae2craftingtime.core.OptionFeature;
 import com.ctux.ae2craftingtime.core.ClientConfig;
 import com.ctux.ae2craftingtime.mc1201.ProfilerBridge;
 import com.ctux.ae2craftingtime.mc1201.TtcColorContext;
+import com.ctux.ae2craftingtime.mc1201.RowTextColor;
 import com.ctux.ae2craftingtime.mc1201.TtcText;
 import com.ctux.ae2craftingtime.mc1201.IntegrationLog;
 import net.minecraft.ChatFormatting;
@@ -49,7 +50,8 @@ public abstract class CraftingStatusTableRendererMixin {
         var beforeTtc = lines.size();
         ae2craftingtime$appendTtc(entry, lines);
         if (amounts != null) {
-            ae2craftingtime$styleAmounts(amounts, lines.size() > beforeTtc ? lines.get(beforeTtc) : null);
+            RowTextColor.amounts(amounts, lines.size() > beforeTtc ? lines.get(beforeTtc) : null,
+                    ClientOptionsRuntime.current());
         }
         if (amounts != null || lines.size() > beforeTtc) IntegrationLog.observe("ae2craftingtime", "status-row");
     }
@@ -65,12 +67,6 @@ public abstract class CraftingStatusTableRendererMixin {
                 ae2craftingtime$noSpace(entry), ae2craftingtime$blockReason(entry),
                 () -> ClientOptionsRuntime.enabled(OptionFeature.DETAILED_TOOLTIPS)
                         && ae2craftingtime$appendStatsTooltip(entry, cir.getReturnValue()));
-    }
-
-    private static void ae2craftingtime$styleAmounts(MutableComponent amounts, Component status) {
-        var color = status == null ? TextColor.fromRgb(ClientOptionsRuntime.current().color(ClientConfig.Color.TOTAL))
-                : status.getStyle().getColor();
-        if (color != null) amounts.setStyle(amounts.getStyle().withColor(color));
     }
 
     private static MutableComponent ae2craftingtime$compactAmounts(List<Component> lines, long stored, String storedText,
@@ -218,10 +214,6 @@ public abstract class CraftingStatusTableRendererMixin {
     }
 
     private static Component ttcLine(com.ctux.ae2craftingtime.core.ProfileKey key, String eta) {
-        var line = TtcText.ttc(eta);
-        var color = TtcColorContext.get(key);
-        return color.isPresent()
-                ? line.withStyle(style -> style.withColor(TextColor.fromRgb(color.getAsInt())))
-                : line;
+        return RowTextColor.estimate(eta, TtcColorContext.get(key), ClientOptionsRuntime.current());
     }
 }

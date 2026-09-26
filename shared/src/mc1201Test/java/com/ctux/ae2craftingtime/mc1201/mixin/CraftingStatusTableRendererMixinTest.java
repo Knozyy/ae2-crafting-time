@@ -66,21 +66,20 @@ class CraftingStatusTableRendererMixinTest {
     }
 
     @Test
-    void amountBadgeCopiesOnlyStatusColorAndHasNormalFallback() throws ReflectiveOperationException {
-        var method = CraftingStatusTableRendererMixin.class.getDeclaredMethod("ae2craftingtime$styleAmounts",
-                MutableComponent.class, Component.class);
-        method.setAccessible(true);
+    void amountBadgeCopiesOnlyStatusColorAndHasNormalFallback() {
+        var config = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current();
         for (var color : List.of(ChatFormatting.RED, ChatFormatting.YELLOW, ChatFormatting.GREEN)) {
             var badge = TtcText.statusAmounts("A10");
-            method.invoke(null, badge, Component.literal("warning").withStyle(color, ChatFormatting.BOLD));
+            com.ctux.ae2craftingtime.mc1201.RowTextColor.amounts(badge,
+                    Component.literal("warning").withStyle(color, ChatFormatting.BOLD), config);
             assertEquals(TextColor.fromLegacyFormat(color), badge.getStyle().getColor());
             assertEquals(false, badge.getStyle().isBold());
         }
         var inherited = TtcText.statusAmounts("A10");
-        method.invoke(null, inherited, Component.literal("status"));
+        com.ctux.ae2craftingtime.mc1201.RowTextColor.amounts(inherited, Component.literal("status"), config);
         assertNull(inherited.getStyle().getColor());
         var fallback = TtcText.statusAmounts("A10");
-        method.invoke(null, fallback, null);
+        com.ctux.ae2craftingtime.mc1201.RowTextColor.amounts(fallback, null, config);
         assertEquals(TextColor.fromRgb(com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current()
                 .color(com.ctux.ae2craftingtime.core.ClientConfig.Color.TOTAL)), fallback.getStyle().getColor());
     }

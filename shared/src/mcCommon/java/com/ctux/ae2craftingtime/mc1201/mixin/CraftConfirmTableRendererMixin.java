@@ -3,7 +3,6 @@ package com.ctux.ae2craftingtime.mc1201.mixin;
 import appeng.client.gui.me.crafting.CraftConfirmTableRenderer;
 import appeng.api.stacks.AmountFormat;
 import appeng.menu.me.crafting.CraftingPlanSummaryEntry;
-import com.ctux.ae2craftingtime.core.ClientConfig;
 import com.ctux.ae2craftingtime.core.TimeEstimate;
 import com.ctux.ae2craftingtime.mc1201.AeKeyAmounts;
 import com.ctux.ae2craftingtime.mc1201.ClientStats;
@@ -15,10 +14,10 @@ import com.ctux.ae2craftingtime.mc1201.TtcText;
 import com.ctux.ae2craftingtime.mc1201.IntegrationLog;
 import com.ctux.ae2craftingtime.mc1201.PlanAmountLines;
 import com.ctux.ae2craftingtime.mc1201.TtcColorContext;
+import com.ctux.ae2craftingtime.mc1201.RowTextColor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.TextColor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -62,9 +61,7 @@ public abstract class CraftConfirmTableRendererMixin {
         ae2craftingtime$appendTtc(entry, lines);
         if (amounts != null) {
             var status = lines.size() > beforeTtc ? lines.get(beforeTtc) : null;
-            var color = status == null ? TextColor.fromRgb(ClientOptionsRuntime.current().color(ClientConfig.Color.TOTAL))
-                    : status.getStyle().getColor();
-            if (color != null) amounts.setStyle(amounts.getStyle().withColor(color));
+            RowTextColor.amounts(amounts, status, ClientOptionsRuntime.current());
         }
         IntegrationLog.growth("plan-row", before, lines.size());
     }
@@ -133,10 +130,6 @@ public abstract class CraftConfirmTableRendererMixin {
     }
 
     private static Component ttcLine(com.ctux.ae2craftingtime.core.ProfileKey key, String eta) {
-        var line = TtcText.ttc(eta);
-        var color = TtcColorContext.get(key);
-        return color.isPresent()
-                ? line.withStyle(style -> style.withColor(TextColor.fromRgb(color.getAsInt())))
-                : line;
+        return RowTextColor.estimate(eta, TtcColorContext.get(key), ClientOptionsRuntime.current());
     }
 }
