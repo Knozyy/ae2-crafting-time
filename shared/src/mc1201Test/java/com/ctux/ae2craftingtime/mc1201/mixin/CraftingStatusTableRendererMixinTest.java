@@ -9,7 +9,10 @@ import com.ctux.ae2craftingtime.core.CraftingBlockReason;
 import appeng.core.localization.GuiText;
 import com.ctux.ae2craftingtime.core.ProfileStats;
 import com.ctux.ae2craftingtime.core.ProfileUnit;
+import com.ctux.ae2craftingtime.core.OptionFeature;
 import com.ctux.ae2craftingtime.core.StallDiagnostic;
+import com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime;
+import com.ctux.ae2craftingtime.mc1201.TtcComponents;
 import com.ctux.ae2craftingtime.mc1201.TtcText;
 import java.util.ArrayList;
 import java.util.List;
@@ -143,6 +146,25 @@ class CraftingStatusTableRendererMixinTest {
         assertEquals(nativeTooltip(), lines);
     }
 
+    @Test
+    void controlsKeepTheirKeysAndGrayLabelsWithSymbolsOnAndOff() throws ReflectiveOperationException {
+        var options = ClientOptionsRuntime.current().features();
+        var original = options.enabled(OptionFeature.SHOW_EMOJI);
+        try {
+            for (var show : new boolean[] {false, true}) {
+                options.setEnabled(OptionFeature.SHOW_EMOJI, show);
+                var lines = nativeTooltip();
+                appendTooltip(lines, 1, 1, true, null, NO_STATS_LOOKUP);
+                assertTooltip(lines, TtcText.noSpaceTooltip(), CONTROLS);
+                var locate = lines.get(lines.size() - 3);
+                if (show) assertEquals("→ ", locate.getSiblings().get(0).getString());
+                else assertEquals(List.of(), locate.getSiblings());
+            }
+        } finally {
+            options.setEnabled(OptionFeature.SHOW_EMOJI, original);
+        }
+    }
+
     private static ArrayList<Component> nativeTooltip() {
         return new ArrayList<>(List.of(Component.literal("Native item").withStyle(ChatFormatting.AQUA)));
     }
@@ -160,11 +182,12 @@ class CraftingStatusTableRendererMixinTest {
         expectedBody.addAll(body);
         assertEquals(expectedBody, lines.subList(0, expectedBody.size()));
         var suffix = lines.subList(expectedBody.size(), lines.size());
-        assertEquals(controls, suffix.stream().map(line ->
-                ((TranslatableContents) line.getContents()).getKey()).toList());
+        assertEquals(controls, suffix.stream().map(line -> TtcComponents.translation(line).getKey()).toList());
         for (var key : CONTROLS) {
-            assertEquals(controls.contains(key) ? 1 : 0, lines.stream().filter(line ->
-                    line.getContents() instanceof TranslatableContents contents && contents.getKey().equals(key)).count());
+            assertEquals(controls.contains(key) ? 1 : 0, lines.stream().filter(line -> {
+                var contents = TtcComponents.translation(line);
+                return contents != null && contents.getKey().equals(key);
+            }).count());
         }
         for (var line : suffix) {
             assertEquals(TextColor.fromLegacyFormat(ChatFormatting.GRAY), line.getStyle().getColor());

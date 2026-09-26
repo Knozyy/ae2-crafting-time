@@ -31,7 +31,7 @@ public final class TtcText {
     }
 
     public static MutableComponent recurrent(Object... arguments) {
-        return Component.translatable("text.ae2craftingtime.plan.recurrent", arguments)
+        return TtcComponents.text("text.ae2craftingtime.plan.recurrent", arguments)
                 .withStyle(style -> style.withColor(ChatFormatting.RED).withBold(true));
     }
 
@@ -40,7 +40,7 @@ public final class TtcText {
     }
 
     public static MutableComponent storedVariant() {
-        return Component.translatable("text.ae2craftingtime.plan.stored_variant")
+        return TtcComponents.text("text.ae2craftingtime.plan.stored_variant")
                 .withStyle(style -> style.withColor(ChatFormatting.GOLD).withBold(false));
     }
 
@@ -50,24 +50,24 @@ public final class TtcText {
     }
 
     public static MutableComponent ttc(String eta) {
-        return Component.translatable("text.ae2craftingtime.ttc", eta);
+        return TtcComponents.text("text.ae2craftingtime.ttc", eta);
     }
 
     public static MutableComponent tooltipTtc(Component value) {
-        return Component.translatable("text.ae2craftingtime.stats.ttc")
+        return TtcComponents.text("text.ae2craftingtime.stats.ttc")
                 .append(": ").append(value).setStyle(value.getStyle());
     }
 
     public static MutableComponent ttcDelayed() {
-        return Component.translatable("text.ae2craftingtime.ttc_delayed");
+        return TtcComponents.text("text.ae2craftingtime.ttc_delayed");
     }
 
     public static MutableComponent waiting() {
-        return Component.translatable("text.ae2craftingtime.waiting");
+        return TtcComponents.text("text.ae2craftingtime.waiting");
     }
 
     public static MutableComponent noSpace() {
-        return Component.translatable("text.ae2craftingtime.no_space")
+        return TtcComponents.text("text.ae2craftingtime.no_space")
                 .withStyle(style -> style.withColor(TextColor.fromRgb(
                         ClientOptionsRuntime.current().color(ClientConfig.Color.DELAYED))));
     }
@@ -78,7 +78,7 @@ public final class TtcText {
     }
 
     public static MutableComponent blockReason(CraftingBlockReason reason) {
-        return Component.translatable("text.ae2craftingtime." + reason.name().toLowerCase(Locale.ROOT))
+        return TtcComponents.text("text.ae2craftingtime." + reason.name().toLowerCase(Locale.ROOT))
                 .withStyle(style -> style.withColor(TextColor.fromRgb(
                         ClientOptionsRuntime.current().color(ClientConfig.Color.DELAYED))).withBold(true));
     }
@@ -107,32 +107,32 @@ public final class TtcText {
     }
 
     public static MutableComponent ttcCollectingData() {
-        return Component.translatable("text.ae2craftingtime.ttc",
-                Component.translatable("text.ae2craftingtime.collecting_data"))
+        return TtcComponents.text("text.ae2craftingtime.ttc",
+                TtcComponents.text("text.ae2craftingtime.collecting_data"))
                 .withStyle(style -> style.withColor(TextColor.fromRgb(
                         ClientOptionsRuntime.current().color(ClientConfig.Color.COLLECTING))));
     }
 
     public static MutableComponent totalTtc(String eta) {
-        return Component.translatable("text.ae2craftingtime.total_ttc", eta)
+        return TtcComponents.text("text.ae2craftingtime.total_ttc", eta)
                 .withStyle(style -> style.withColor(TextColor.fromRgb(
                         ClientOptionsRuntime.current().color(ClientConfig.Color.TOTAL))));
     }
 
     public static MutableComponent noStats() {
-        return Component.translatable("text.ae2craftingtime.no_stats");
+        return TtcComponents.text("text.ae2craftingtime.no_stats");
     }
 
     public static MutableComponent detailsHint() {
-        return Component.translatable("text.ae2craftingtime.details_hint");
+        return TtcComponents.text("text.ae2craftingtime.details_hint");
     }
 
     public static MutableComponent resetHint() {
-        return Component.translatable("text.ae2craftingtime.reset_hint");
+        return TtcComponents.text("text.ae2craftingtime.reset_hint");
     }
 
     public static MutableComponent locateHint() {
-        return Component.translatable("text.ae2craftingtime.locate_hint");
+        return TtcComponents.text("text.ae2craftingtime.locate_hint");
     }
 
     public static MutableComponent sortTitle() {
@@ -159,32 +159,39 @@ public final class TtcText {
         }
         if (!stats.sampleDurationTicks().isEmpty()) {
             var windows = windows(stats);
-            if (!windows.isEmpty()) {
+            if (!windows.getSiblings().isEmpty()) {
                 lines.add(statsLine("text.ae2craftingtime.stats.samples",
-                        windows + " (" + stats.sampleCount() + ")"));
+                        windows.append(" (" + stats.sampleCount() + ")")));
                 lines.add(Component.translatable("text.ae2craftingtime.stats.samples.explanation")
                         .withStyle(ChatFormatting.GRAY));
             }
         }
         if (!stats.reliableEstimate()) {
-            lines.add(statsLine("text.ae2craftingtime.stats.confidence", confidence(stats)));
+                lines.add(statsLine("text.ae2craftingtime.stats.confidence", confidence(stats)));
         }
         return List.copyOf(lines);
     }
 
     public static List<Component> stallLines(long amount, long scheduledAmount, ProfileStats stats, StallDiagnostic stall) {
         var lines = new ArrayList<Component>();
-        var eta = TimeEstimate.format(amount, stats).orElse(I18n.get("text.ae2craftingtime.unknown"));
-        lines.add(Component.translatable("text.ae2craftingtime.stats.ttc").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(": " + eta + ", ").withStyle(ChatFormatting.AQUA))
-                .append(Component.translatable("text.ae2craftingtime.stall.delayed").withStyle(ChatFormatting.RED))
-                .append(Component.literal(": " + I18n.get("text.ae2craftingtime.value.whole_seconds",
-                        secondsRounded(stall.idleTicks())) + ", ").withStyle(ChatFormatting.AQUA))
+        var eta = TimeEstimate.format(amount, stats);
+        lines.add(TtcComponents.text("text.ae2craftingtime.stats.ttc").withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(": ").withStyle(ChatFormatting.AQUA))
+                .append(eta.<Component>map(value -> TtcComponents.time(value).withStyle(ChatFormatting.AQUA))
+                        .orElseGet(() -> TtcComponents.text("text.ae2craftingtime.unknown")
+                                .withStyle(ChatFormatting.AQUA)))
+                .append(Component.literal(", ").withStyle(ChatFormatting.AQUA))
+                .append(TtcComponents.text("text.ae2craftingtime.stall.delayed").withStyle(ChatFormatting.RED))
+                .append(Component.literal(": ").withStyle(ChatFormatting.AQUA))
+                .append(TtcComponents.text("text.ae2craftingtime.value.whole_seconds",
+                        secondsRounded(stall.idleTicks())).withStyle(ChatFormatting.AQUA))
+                .append(Component.literal(", ").withStyle(ChatFormatting.AQUA))
                 .append(Component.translatable("text.ae2craftingtime.stall.typical").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(": " + TimeEstimate.formatTicks(stall.typicalDurationTicks()))
+                .append(Component.literal(": ").withStyle(ChatFormatting.AQUA))
+                .append(TtcComponents.time(TimeEstimate.formatTicks(stall.typicalDurationTicks()))
                         .withStyle(ChatFormatting.AQUA)));
         lines.add(Component.empty());
-        lines.add(Component.translatable("text.ae2craftingtime.stall.improvements")
+        lines.add(TtcComponents.text("text.ae2craftingtime.stall.improvements")
                 .withStyle(ChatFormatting.GOLD));
         for (var hint : stall.hints(scheduledAmount)) {
             appendHint(lines, hint, stall);
@@ -226,9 +233,13 @@ public final class TtcText {
     }
 
     private static Component statsLine(String labelKey, String value) {
-        return Component.translatable(labelKey).withStyle(ChatFormatting.GRAY)
+        return statsLine(labelKey, Component.literal(value));
+    }
+
+    private static Component statsLine(String labelKey, Component value) {
+        return TtcComponents.text(labelKey).withStyle(ChatFormatting.GRAY)
                 .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(value).withStyle(ChatFormatting.AQUA));
+                .append(value.copy().withStyle(ChatFormatting.AQUA));
     }
 
     private static String unitName(ProfileStats stats) {
@@ -278,16 +289,19 @@ public final class TtcText {
         return String.format(Locale.ROOT, "%.2f", value);
     }
 
-    private static String windows(ProfileStats stats) {
-        var values = new ArrayList<String>();
+    private static MutableComponent windows(ProfileStats stats) {
+        var values = Component.empty();
         for (var i = 0; i < stats.sampleDurationTicks().size(); i++) {
             var ticks = stats.sampleTicksPerUnit(i);
             if (ticks.isPresent()) {
-                TimeEstimate.formatSampleTicks(ticks.getAsDouble()).ifPresent(value -> values.add(
-                        I18n.get("text.ae2craftingtime.value.window", 1, singularUnitName(stats), value)));
+                TimeEstimate.formatSampleTicks(ticks.getAsDouble()).ifPresent(value -> {
+                    if (!values.getSiblings().isEmpty()) values.append(", ");
+                    values.append(TtcComponents.text("text.ae2craftingtime.value.window", 1,
+                            singularUnitName(stats), value));
+                });
             }
         }
-        return String.join(", ", values);
+        return values;
     }
 
     private static String normalizedDetails(ProfileStats stats) {

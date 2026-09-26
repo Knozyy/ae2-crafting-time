@@ -30,6 +30,7 @@
     "CPUSelectionListMixin",
     "AbstractTableRendererMixin",
     "ChatScreenMixin",
+    "ChatTtcSymbolsMixin",
     "CraftingCPUScreenMixin",
     "CraftConfirmScreenMixin",
     "CraftConfirmTableRendererMixin",

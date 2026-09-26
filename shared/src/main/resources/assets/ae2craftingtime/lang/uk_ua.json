@@ -106,6 +106,7 @@
   "config.ae2craftingtime.group.warnings": "Попередження",
   "config.ae2craftingtime.group.appearance": "Вигляд",
   "config.ae2craftingtime.textShadow": "Тінь тексту",
+  "config.ae2craftingtime.showEmoji": "Показувати символи",
   "config.ae2craftingtime.badgeBackground": "Тло позначок",
   "config.ae2craftingtime.group.controls": "Керування",
   "config.ae2craftingtime.group.general": "Загальні",

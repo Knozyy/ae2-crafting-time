@@ -11,6 +11,16 @@ navigation:
 Crafting Status labels explain what the selected CPU is doing or what currently
 blocks it. Start at the top and use the first label you see:
 
+With **Show emoji** on, the full labels keep their usual colors and gain these
+symbols: red ⚠ for NO SPACE, NO PROVIDER, NO CHANNEL, LOCKED, INPUT BLOCKED,
+and NO TARGET; red ⚡ for NO POWER; yellow ⌛ for Waiting; gold ⚠ for DELAYED;
+and aqua ℹ for No data yet. Numeric estimates use aqua ⏱. Crafting Plan uses
+red ↻ for Recurrent and gold ⚠ for Stored variant. Details use ℹ, successful
+stats resets use green ✓, locate hints and throughput use aqua →, and the
+suggestions heading uses gold ⚙. Turn Show emoji off for text-only labels.
+Gold ⚠ also marks low confidence and an expired provider link. The confidence
+wording appears only when the estimate is unreliable.
+
 1. [NO SPACE](no-space.md)
 2. [NO PROVIDER](no-provider.md)
 3. [NO POWER](no-power.md)

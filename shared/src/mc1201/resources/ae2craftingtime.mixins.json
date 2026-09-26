@@ -29,6 +29,7 @@
     "CPUSelectionListMixin",
     "AbstractTableRendererMixin",
     "ChatScreenMixinSrg",
+    "ChatTtcSymbolsMixinSrg",
     "CraftingCPUScreenMixin",
     "CraftConfirmScreenMixin",
     "CraftConfirmTableRendererMixin",

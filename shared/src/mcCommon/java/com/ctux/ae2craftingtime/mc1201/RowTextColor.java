@@ -28,8 +28,14 @@ public final class RowTextColor {
 
     private static boolean ordinary(Component status) {
         if (status == null) return true;
-        if (!(status.getContents() instanceof TranslatableContents text)) return false;
-        return RowColorPolicy.isNumericEstimate(text.getKey(), text.getArgs());
+        var text = TtcComponents.translation(status);
+        if (text == null) return false;
+        var args = text.getArgs();
+        if (args.length == 1 && args[0] instanceof Component value
+                && TtcComponents.translation(value) == null) {
+            return RowColorPolicy.isNumericEstimate(text.getKey(), new Object[] {value.getString()});
+        }
+        return RowColorPolicy.isNumericEstimate(text.getKey(), args);
     }
 
     private static boolean inheritNative(ClientConfig config, boolean ordinary) {

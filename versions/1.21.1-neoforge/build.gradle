@@ -55,6 +55,7 @@ sourceSets.main.java.srcDir '../../shared/src/mc1201/java'
 // toolchain (vanilla targets are official-named here); the 1.21.1 mixin
 // config lists the remap=false ChatScreenMixin instead.
 sourceSets.main.java.exclude '**/mixin/ChatScreenMixinSrg.java'
+sourceSets.main.java.exclude '**/mixin/ChatTtcSymbolsMixinSrg.java'
 sourceSets.main.java.exclude '**/mixin/AbstractContainerScreenCpuTtcMixinSrg.java'
 sourceSets.main.java.exclude '**/mixin/CraftConfirmMenuMixinSrg.java'
 sourceSets.main.resources.srcDir '../../shared/src/main/resources'

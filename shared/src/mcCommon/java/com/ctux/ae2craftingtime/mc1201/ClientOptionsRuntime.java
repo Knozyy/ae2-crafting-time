@@ -68,9 +68,12 @@ public final class ClientOptionsRuntime {
     }
 
     public static void apply(ClientConfig changed) throws IOException {
+        var emojiChanged = current.features().enabled(OptionFeature.SHOW_EMOJI)
+                != changed.features().enabled(OptionFeature.SHOW_EMOJI);
         ClientConfigFile.save(path, changed);
         current = changed.copy();
         TtcBadge.BACKGROUND = badgeBackground();
+        if (emojiChanged) Minecraft.getInstance().gui.getChat().rescaleChat();
         syncWarningPreference();
     }
 

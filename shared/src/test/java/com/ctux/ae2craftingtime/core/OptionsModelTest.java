@@ -19,11 +19,13 @@ class OptionsModelTest {
         assertEquals(2, config.statusSort());
         assertFalse(config.features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS));
         assertTrue(config.features().enabled(OptionFeature.TEXT_SHADOW));
+        assertTrue(config.features().enabled(OptionFeature.SHOW_EMOJI));
         assertTrue(config.badgeBackground());
 
         config.features().setEnabled(OptionFeature.PLAN_ROWS, false);
         config.features().setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, true);
         config.features().setEnabled(OptionFeature.TEXT_SHADOW, false);
+        config.features().setEnabled(OptionFeature.SHOW_EMOJI, false);
         config.features().setEnabled(OptionFeature.BADGE_BACKGROUND, false);
         config.setColor(ClientConfig.Color.FAST, 0);
         config.setBadgeOpacity(255);
@@ -33,6 +35,7 @@ class OptionsModelTest {
         assertFalse(copy.features().enabled(OptionFeature.PLAN_ROWS));
         assertTrue(copy.features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS));
         assertFalse(copy.features().enabled(OptionFeature.TEXT_SHADOW));
+        assertFalse(copy.features().enabled(OptionFeature.SHOW_EMOJI));
         assertFalse(copy.badgeBackground());
         assertEquals(0, copy.color(ClientConfig.Color.FAST));
         assertEquals(255, copy.badgeOpacity());
@@ -43,6 +46,7 @@ class OptionsModelTest {
         assertTrue(copy.features().enabled(OptionFeature.PLAN_ROWS));
         assertFalse(copy.features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS));
         assertTrue(copy.features().enabled(OptionFeature.TEXT_SHADOW));
+        assertTrue(copy.features().enabled(OptionFeature.SHOW_EMOJI));
         assertTrue(copy.badgeBackground());
         assertEquals(ClientConfig.Color.FAST.defaultRgb(), copy.color(ClientConfig.Color.FAST));
         assertEquals(176, copy.badgeOpacity());

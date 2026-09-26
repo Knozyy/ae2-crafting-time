@@ -16,6 +16,12 @@ The old file stays in place. Existing world files aren't rewritten on startup.
 
 Client settings live in `config/ae2craftingtime-client.toml`.
 
+**Show emoji** in Client → Appearance starts on (`showEmoji = true`). It adds
+colored symbols to TTC times, statuses, and local chat. Turn it off for text-only
+labels and times. Saving with Done updates visible chat too; reset restores On.
+Each player controls their own display. Values, colors, badges, and actions stay
+the same.
+
 In Client → Appearance, **Text shadow** controls shadows on text drawn by AE2
 Crafting Time. It's on by default. Turn it off for flatter text; AE2's own text
 keeps its original shadow setting. You can also set `textShadow = false` in the

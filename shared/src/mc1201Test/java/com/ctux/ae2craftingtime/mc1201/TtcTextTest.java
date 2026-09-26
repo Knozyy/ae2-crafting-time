@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ctux.ae2craftingtime.core.ClientConfig;
+import com.ctux.ae2craftingtime.core.OptionFeature;
 import com.ctux.ae2craftingtime.core.ProfileStats;
 import com.ctux.ae2craftingtime.core.ProfileUnit;
 import com.google.gson.JsonParser;
@@ -13,6 +14,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -23,6 +26,15 @@ import java.util.List;
 import java.util.Optional;
 
 class TtcTextTest {
+    @BeforeEach
+    void textOnlyForExistingStructureChecks() {
+        ClientOptionsRuntime.current().features().setEnabled(OptionFeature.SHOW_EMOJI, false);
+    }
+
+    @AfterEach
+    void restoreDefault() {
+        ClientOptionsRuntime.current().features().setEnabled(OptionFeature.SHOW_EMOJI, true);
+    }
     @Test
     void craftingAmountKeysHaveMatchingBilingualSymbolsAndPlaceholders() throws IOException {
         var line = (TranslatableContents) TtcText.statusAmounts("4/10/200").getContents();

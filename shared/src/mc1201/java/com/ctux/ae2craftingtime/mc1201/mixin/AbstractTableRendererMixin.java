@@ -14,6 +14,7 @@ import com.ctux.ae2craftingtime.mc1201.ClientStats;
 import com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime;
 import com.ctux.ae2craftingtime.mc1201.ProfilerBridge;
 import com.ctux.ae2craftingtime.mc1201.TtcBadge;
+import com.ctux.ae2craftingtime.mc1201.TtcComponents;
 import com.ctux.ae2craftingtime.mc1201.TtcColorContext;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -43,8 +44,8 @@ public abstract class AbstractTableRendererMixin {
     @SuppressWarnings("mapping")
     private int ae2craftingtime$drawTextWithShadow(GuiGraphics guiGraphics, Font font, Component text,
             int x, int y, int color, boolean shadow) {
-        var contents = text.getContents();
-        if (contents instanceof TranslatableContents translatable) {
+        var translatable = TtcComponents.translation(text);
+        if (translatable != null) {
             var isAe2CraftingTime = translatable.getKey().startsWith("text.ae2craftingtime.");
             if (isAe2CraftingTime && ae2craftingtime$isTtcLine(translatable)) {
                 var width = font.width(text);

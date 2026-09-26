@@ -31,7 +31,8 @@ public final class CraftingTreeTtc {
         }
 
         var font = Minecraft.getInstance().font;
-        var scaledTextWidth = font.width(text) * TEXT_SCALE;
+        var display = TtcComponents.time(text).withStyle(style -> style.withColor(color));
+        var scaledTextWidth = font.width(display) * TEXT_SCALE;
         var labelWidth = (int) Math.ceil(scaledTextWidth) + LABEL_PADDING * 2;
         var labelHeight = (int) Math.ceil(font.lineHeight * TEXT_SCALE) + LABEL_PADDING * 2;
         var x = point.x * spacingX + outputX;
@@ -48,7 +49,7 @@ public final class CraftingTreeTtc {
         var pose = guiGraphics.pose();
         pose.pushPose();
         pose.scale(TEXT_SCALE, TEXT_SCALE, TEXT_SCALE);
-        guiGraphics.drawString(font, text, textX, textY, color, ClientOptionsRuntime.textShadow());
+        guiGraphics.drawString(font, display, textX, textY, color, ClientOptionsRuntime.textShadow());
         pose.popPose();
     }
 
