@@ -89,6 +89,7 @@ def match_entry(asset_name):
     return None, None, None, None
 
 rows = []
+modrinth_skipped = "## Availability\n\nThis release is available on GitHub and CurseForge. Modrinth was skipped." in (release.get("body") or "")
 for asset in release["assets"]:
     asset_name = asset.get("name", "")
     if not asset_name.endswith(".jar"):
@@ -100,7 +101,7 @@ for asset in release["assets"]:
         print("warning: no release-matrix entry matches JAR " + asset_name + "; posting GitHub link only", file=sys.stderr)
     else:
         mr_id = entry.get("modrinthProjectId")
-        if mr_id and version and loader and mc:
+        if not modrinth_skipped and mr_id and version and loader and mc:
             mr_url = "https://modrinth.com/mod/" + str(mr_id) + "/version/" + version + "-" + loader + "-" + mc
         cf_url = cf_files.get(asset_name)
         if cf_url is None:

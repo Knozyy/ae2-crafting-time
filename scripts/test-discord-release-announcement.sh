@@ -77,7 +77,7 @@ export RELEASE_ID=1
 export REPOSITORY=cTux/ae2-crafting-time
 export MATRIX_PATH="$test_dir/matrix.json"
 
-for case_name in short multiline image empty null exact; do
+for case_name in short multiline image empty null exact skipped; do
   python3 - "$test_dir" "$case_name" <<'PY'
 import json, pathlib, sys
 path, case = pathlib.Path(sys.argv[1]), sys.argv[2]
@@ -93,6 +93,8 @@ prefix = "**AE2 Crafting Time 1.1.1**\nhttps://example/release\n\n"
 forge_row = "[ae2-crafting-time-1.1.1-forge-1.20.1.jar](https://example/forge.jar) ([CF](https://www.curseforge.com/minecraft/mc-mods/ae2-crafting-time/files/111), [MR](https://modrinth.com/mod/MR123/version/1.1.1-forge-1.20.1))"
 fabric_row = "[ae2-crafting-time-1.1.1-fabric-1.20.1.jar](https://example/fabric.jar) ([CF](https://www.curseforge.com/minecraft/mc-mods/ae2-crafting-time/files/222), [MR](https://modrinth.com/mod/MR123/version/1.1.1-fabric-1.20.1))"
 suffix = "**JAR downloads**\n" + forge_row + "\n" + fabric_row
+if case == "skipped":
+    suffix = suffix.replace(", [MR](https://modrinth.com/mod/MR123/version/1.1.1-forge-1.20.1)", "").replace(", [MR](https://modrinth.com/mod/MR123/version/1.1.1-fabric-1.20.1)", "")
 exact = 2000 - len(prefix + "\n\n" + suffix)
 body = {
     "short": "### FIXED\n\n- Clearer status.",
@@ -100,6 +102,7 @@ body = {
     "image": "### FIXED\n\n- Clearer status; controls restored. ([#308](https://github.com/cTux/ae2-crafting-time/issues/308))\n\n![Crafting status showing the LOCKED provider warning](https://github.com/cTux/ae2-crafting-time/releases/download/release-1.2.2/locked-en-us.png)",
     "empty": "", "null": None,
     "exact": "x" * exact,
+    "skipped": "## Availability\n\nThis release is available on GitHub and CurseForge. Modrinth was skipped.",
 }[case]
 release["body"] = body
 (path / "release.json").write_text(json.dumps(release), encoding="utf-8")
@@ -135,10 +138,11 @@ assert joined.count("https://example/forge.jar") == joined.count("https://exampl
 assert "sources.zip" not in joined
 assert joined.count("https://www.curseforge.com/minecraft/mc-mods/ae2-crafting-time/files/111") == 1
 assert joined.count("https://www.curseforge.com/minecraft/mc-mods/ae2-crafting-time/files/222") == 1
-assert joined.count("https://modrinth.com/mod/MR123/version/1.1.1-forge-1.20.1") == 1
-assert joined.count("https://modrinth.com/mod/MR123/version/1.1.1-fabric-1.20.1") == 1
-assert "[ae2-crafting-time-1.1.1-forge-1.20.1.jar](https://example/forge.jar) ([CF](https://www.curseforge.com/minecraft/mc-mods/ae2-crafting-time/files/111), [MR](https://modrinth.com/mod/MR123/version/1.1.1-forge-1.20.1))" in joined
-assert "[ae2-crafting-time-1.1.1-fabric-1.20.1.jar](https://example/fabric.jar) ([CF](https://www.curseforge.com/minecraft/mc-mods/ae2-crafting-time/files/222), [MR](https://modrinth.com/mod/MR123/version/1.1.1-fabric-1.20.1))" in joined
+if case == "skipped":
+    assert "modrinth.com" not in joined
+else:
+    assert joined.count("https://modrinth.com/mod/MR123/version/1.1.1-forge-1.20.1") == 1
+    assert joined.count("https://modrinth.com/mod/MR123/version/1.1.1-fabric-1.20.1") == 1
 output = (path / "output.log").read_text()
 assert output.count("announcement complete: message 1") == 1
 PY

@@ -60,11 +60,13 @@ when preparing artifacts for a client or modpack smoke test.
     tokens, chat, server addresses, coordinates, and unrelated worlds. Include
     the exact image in the release-body approval preview.
     Before approval, budget the complete Discord message with production-length
-    release, JAR, CurseForge, and Modrinth links, not only the release body. Leave
+    release, JAR, and selected platform links, not only the release body. Leave
     enough margin for generated file ids.
-12. After the dry run, get explicit user approval for the exact GitHub Release
-    title and body and for every affected versioned JAR's changelog shown on
-    CurseForge and Modrinth. Do not upload until all text is approved; rerun the
+12. Modrinth upload is optional. When the user excludes it, pass `-SkipModrinth`
+    to both dry run and deploy; require only the CurseForge token and project ids.
+    After the dry run, get explicit user approval for the exact GitHub Release
+    title and body and for every affected versioned JAR's changelog on each
+    selected platform. Do not upload until all text is approved; rerun the
     preview and approval if the text or affected JAR set changes.
 13. In the final report, immediately after the completed-work list, list every
     versioned JAR deployed to CurseForge or Modrinth with its changelog. When
@@ -86,6 +88,6 @@ After changing Gradle release tasks or artifact naming:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-all-versions.ps1
 ```
 
-For upload work, require both platform tokens only for a real `-Deploy`. Follow
+For upload work, require selected platform tokens only for a real `-Deploy`. Follow
 the secure Windows token-loading path in `docs/release.md` without printing
 values.
