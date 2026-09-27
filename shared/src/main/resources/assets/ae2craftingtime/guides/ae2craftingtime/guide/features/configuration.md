@@ -7,14 +7,34 @@ navigation:
 
 # Configuration
 
-Server settings live in `<world>/serverconfig/ae2craftingtime-server.toml`. Starting
-a world creates this file if it's missing. In singleplayer, `<world>` is that
-save under `saves`; on a dedicated server, it's the world selected by
-`level-name`. If `config/ae2craftingtime-common.toml` contains old server
-settings, the new file starts with those valid values and defaults for the rest.
-The old file stays in place. Existing world files aren't rewritten on startup.
+Server settings belong to the world and live in
+`<world>/serverconfig/ae2craftingtime-server.toml`. Starting a world creates this
+file if it's missing. In singleplayer, `<world>` is that save under `saves`; on
+a dedicated server, it's the world selected by `level-name`, so the path is
+`<level-name>/serverconfig/ae2craftingtime-server.toml` under the server
+directory. This is the active server file; the top-level `config` directory is
+not where you edit these settings.
 
-Client settings live in `config/ae2craftingtime-client.toml`.
+Client settings belong to one client and live in
+`config/ae2craftingtime-client.toml` inside that client's game directory. Client
+startup does not create the file; saving Client Options with **Done** does.
+
+Use **Options** to edit settings when possible. Client changes apply and save on
+that client when you press **Done**. Server changes are submitted to the world
+and apply when the server accepts them; you need permission to edit server
+options. Each player has their own client settings, while server settings are
+shared by everyone in that world.
+
+You can also edit the files by hand. Stop the client before editing its client
+file, and stop the world or server before editing its server file. External file
+edits are read when the client or world/server starts again. Existing files are
+not rewritten just to add comments.
+
+`config/ae2craftingtime-common.toml` is a legacy migration source, not the active
+server settings file. If a world's server file does not exist at startup, known
+legacy server values are copied into the new world file and other settings use
+their defaults. The common file stays in place. Once the world file exists, it
+takes precedence; changing the common file does not override it.
 
 **Detect recurrent ingredients** in Server → Diagnostics starts off. Turn it on
 to mark proven recipe loops as Recurrent in Crafting Plan, or set
@@ -60,10 +80,11 @@ off. This row behavior also applies to compact amounts when profiling is off.
   output; the default is 10.
 - `outlierMultiplier` accepts 1.0–1000.0 and defaults to 4.0.
 
-For example, set `maxSamples = 20` to retain a longer recent history. Restart
-the game or server after changing the sample window or outlier boundary because
-they are applied when the profiler is created. Invalid fields keep their defaults;
-values outside the allowed ranges are rejected.
+For example, set `maxSamples = 20` to retain a longer recent history. Accepted
+server changes made with **Done** apply to the running profiler immediately.
+Changes made directly in the file take effect the next time that world/server
+starts. Invalid fields keep their defaults; values outside the allowed ranges
+are rejected.
 
 ![Crafting Tree with TTC display enabled](images/crafting-tree-tooltip.png)
 
