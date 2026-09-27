@@ -21,7 +21,8 @@
     ]
   },
   "mixins": [
-    "ae2craftingtime.mixins.json"
+    "ae2craftingtime.mixins.json",
+    "ae2craftingtime_fabric.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.14.21",

@@ -6,7 +6,7 @@
     { "item": "minecraft:clock" }
   ],
   "result": {
-    "item": "ae2craftingtime:guide",
+    "item": "minecraft:book",
     "count": 1
   }
 }

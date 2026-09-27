@@ -35,7 +35,7 @@ public record ProviderHighlightS2C(String networkId, String dimensionId, List<Bl
 
     public static void handle(ProviderHighlightS2C packet, Supplier<NetworkEvent.Context> contextSupplier) {
         var context = contextSupplier.get();
-        context.enqueueWork(() -> {
+        context.enqueueWork(com.ctux.ae2craftingtime.mc1201.ClientConnectionSession.guard(context.getNetworkManager(), () -> {
             if (packet.durationSeconds <= 0 || packet.positions == null || packet.positions.isEmpty()) {
                 ProviderHighlightClient.clearFor(packet.networkId, packet.outputId);
             } else if (packet.plateOnly) {
@@ -45,7 +45,7 @@ public record ProviderHighlightS2C(String networkId, String dimensionId, List<Bl
                 ProviderHighlightClient.show(packet.networkId, packet.dimensionId, packet.positions,
                         packet.durationSeconds, packet.outputId);
             }
-        });
+        }));
         context.setPacketHandled(true);
     }
 }

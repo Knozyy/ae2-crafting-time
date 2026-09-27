@@ -8,6 +8,19 @@ Implementation: [PR #128](https://github.com/cTux/ae2-crafting-time/pull/128), [
 Verification: [prepared-client results](../automated-ui-testing/prepared-clients-2026-09-08.md).
 Stored-variant and resource-icon sections inherit their linked feature status.
 
+## Optional connection observation extension
+
+Issue [#537](https://github.com/cTux/ae2-crafting-time/issues/537) adds an
+opt-in `ae2craftingtime.test.observeConnection` mode. It records outbound wrapper
+attempts and loader send invocations for six payloads in each direction, per
+connection. Unsupported peers receive bounded probes; the required result is six
+attempts and zero loader sends on the installed side. Both-installed control
+traffic must yield a nonzero loader send. The absent side loads neither the mod
+nor its test driver. Manual plan/status screenshots and a real craft complete the
+native UI evidence. See the [connection plan](../optional-connection/implementation-plan.md)
+for the sixteen-cell acceptance contract. This extension is pending runtime
+qualification and does not alter the shipped scenario result.
+
 The saved Forge fixture starts within reach of its marked terminal and contains
 no retained CPU jobs. Optional scenarios keep its grid, patterns, and samples.
 Native CPU setup waits for the formed cluster to become active before selection.

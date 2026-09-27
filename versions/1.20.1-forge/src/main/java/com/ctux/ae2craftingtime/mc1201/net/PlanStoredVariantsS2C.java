@@ -15,8 +15,8 @@ public record PlanStoredVariantsS2C(long updateRevision, PlanRecurrenceChunk chu
     }
     public static void handle(PlanStoredVariantsS2C packet, Supplier<NetworkEvent.Context> context) {
         var ctx = context.get();
-        ctx.enqueueWork(() -> com.ctux.ae2craftingtime.mc1201.PlanStoredVariantsClient.receive(
-                packet.chunk, packet.updateRevision));
+        ctx.enqueueWork(com.ctux.ae2craftingtime.mc1201.ClientConnectionSession.guard(ctx.getNetworkManager(), () -> com.ctux.ae2craftingtime.mc1201.PlanStoredVariantsClient.receive(
+                packet.chunk, packet.updateRevision)));
         ctx.setPacketHandled(true);
     }
 }

@@ -47,7 +47,7 @@ public abstract class CraftConfirmTableRendererMixin {
         var lines = cir.getReturnValue();
         var before = lines.size();
         MutableComponent amounts = null;
-        if (ClientOptionsRuntime.current().features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS)) {
+        if (ClientOptionsRuntime.enabled(OptionFeature.COMPACT_STATUS_AMOUNTS)) {
             var key = entry.getWhat();
             long stored = entry.getStoredAmount(), craft = entry.getCraftAmount();
             amounts = PlanAmountLines.compact(lines, stored,
@@ -69,7 +69,7 @@ public abstract class CraftConfirmTableRendererMixin {
     @Inject(method = "getEntryTooltip", at = @At("RETURN"), remap = false)
     private void ae2craftingtime$appendTooltipTimeToCraft(CraftingPlanSummaryEntry entry,
             CallbackInfoReturnable<List<Component>> cir) {
-        if (ClientOptionsRuntime.current().features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS)
+        if (ClientOptionsRuntime.enabled(OptionFeature.COMPACT_STATUS_AMOUNTS)
                 && (entry.getStoredAmount() > 0 || entry.getCraftAmount() > 0)) {
             cir.getReturnValue().add(TtcText.planAmountsLegend());
         }

@@ -139,6 +139,17 @@ final class StandardCraftFixture {
                 PartHelper.setPart(level, obstruction, null, player, AEParts.GLASS_CABLE.item(appeng.api.util.AEColor.TRANSPARENT));
                 PartHelper.setPart(level, obstruction, Direction.NORTH, player, AEParts.CRAFTING_TERMINAL.get());
             }
+            if (Boolean.getBoolean("ae2craftingtime.test.persistentFixture")) {
+                var cable = AEParts.COVERED_DENSE_CABLE.item(appeng.api.util.AEColor.TRANSPARENT);
+                for (int offset = 1; offset < (cpuListScenario ? cpuCount * 2 : 2); offset += 2) {
+                    PartHelper.setPart(level, terminal.west(offset), null, player, cable);
+                }
+                for (int offset = 1; offset < (cpuListScenario ? 12 : 8); offset++) {
+                    var position = terminal.east(offset);
+                    if (level.isEmptyBlock(position)) PartHelper.setPart(level, position, null, player, cable);
+                }
+                if (cpuListScenario) PartHelper.setPart(level, terminal.south(), null, player, cable);
+            }
             // Face the provider four blocks east and three south; send absolute rotation to the client.
             player.connection.teleport(terminal.getX() + 0.5, terminal.getY() - 1, terminal.getZ() - 2.5,
                     -53.13f, 2f);

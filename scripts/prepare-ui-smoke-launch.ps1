@@ -25,7 +25,14 @@ param(
     [long]$PrewarmDeadline,
     [string]$PrewarmHead,
     [string]$PrewarmBundle,
-    [switch]$Interactive
+    [switch]$Interactive,
+    [switch]$ObservationMode,
+    [switch]$ClientInstalled,
+    [switch]$ExpectUnsupportedPeer,
+    [string]$ObservationFile,
+    [string]$ProductionSha256,
+    [string]$DriverSha256,
+    [string]$ConnectionEpoch
 )
 $ErrorActionPreference = 'Stop'
 $resourceScenario = $Scenario -in @('delayed-resource-icons','appmek-resource-icons')
@@ -105,8 +112,19 @@ if ($Prewarm) {
     }
 }
 if ('rxYaglEe' -in @($ProjectId)) { $arguments.Insert(0, '-Dae2craftingtime.test.advancedStatus=true') }
-foreach ($property in @("scenario=$Scenario", "profile=$Profile", "world=$World", "output=$Evidence", 'vmTextureProbe=true')) {
+foreach ($property in $(if ($ObservationMode) { @() } else {
+        @("scenario=$Scenario", "profile=$Profile", "world=$World", "output=$Evidence", 'vmTextureProbe=true') })) {
     $arguments.Insert(0, "-Dae2craftingtime.test.$property")
+}
+if ($ObservationMode -and $ClientInstalled) {
+    if (!$ObservationFile -or !$ConnectionEpoch -or $ProductionSha256 -notmatch '^[A-Fa-f0-9]{64}$' -or
+        $DriverSha256 -notmatch '^[A-Fa-f0-9]{64}$') { throw 'Incomplete client observation identity' }
+    foreach ($property in @('observeConnection=true',"target=$Target",'role=client',
+            "observationFile=$ObservationFile","connectionEpoch=$ConnectionEpoch",
+            "productionSha256=$ProductionSha256","driverSha256=$DriverSha256")) {
+        $arguments.Insert(0, "-Dae2craftingtime.test.$property")
+    }
+    if ($ExpectUnsupportedPeer) { $arguments.Insert(0, '-Dae2craftingtime.test.expectUnsupportedPeer=true') }
 }
 if ($CampaignId) {
     if ($CampaignId -cnotmatch '^[A-Za-z0-9._-]{1,128}$') { throw 'Invalid UI-smoke campaign identity' }
@@ -154,14 +172,17 @@ if ($ResumeOnly) {
     if (!$ContinuationPath -or $Scenario -ne 'cpu-list-total-ttc') { throw 'Resume-only launch requires a CPU-list continuation' }
     $arguments.Insert(0, '-Dae2craftingtime.test.resumeOnly=true')
 }
-if ($DedicatedAddress) {
+if ($DedicatedAddress -and !$ObservationMode) {
     if (-not $ControlDirectory) { throw 'Connected dedicated launch requires a control directory' }
     $arguments.Insert(0, '-Dae2craftingtime.test.connectedDedicated=true')
     $arguments.Insert(0, "-Dae2craftingtime.test.dedicatedAddress=$DedicatedAddress")
     $arguments.Insert(0, "-Dae2craftingtime.test.control=$([IO.Path]::GetFullPath($ControlDirectory))")
 }
 $arguments.Add('--gameDir'); $arguments.Add($runtime)
-if (-not $DedicatedAddress) { $arguments.Add('--quickPlaySingleplayer'); $arguments.Add($World) }
+if ($ObservationMode) {
+    if ($DedicatedAddress -notmatch '^(127\.0\.0\.1|localhost):[0-9]{1,5}$') { throw 'Observation requires a loopback dedicated address' }
+    $arguments.Add('--quickPlayMultiplayer'); $arguments.Add($DedicatedAddress)
+} elseif (-not $DedicatedAddress) { $arguments.Add('--quickPlaySingleplayer'); $arguments.Add($World) }
 $argsFile = Join-Path $runtime 'ui-smoke-java.args'
 $quoted = @($arguments | ForEach-Object { '"' + $_.Replace('\', '\\').Replace('"', '\"') + '"' })
 [IO.File]::WriteAllLines($argsFile, $quoted, [Text.UTF8Encoding]::new($false))

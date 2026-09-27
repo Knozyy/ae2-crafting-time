@@ -171,6 +171,15 @@ tasks.register('checkTestDriverArtifacts') {
             if (!parsedMappings[cpuListMixin]?.get(getCpuName)?.endsWith('Lnet/minecraft/class_2561;')) {
                 throw new GradleException("${name} CPU list invocation descriptor is not remapped for Fabric: ${artifact}")
             }
+            if (name == 'driver') {
+                def observer = parsedMappings['com/ctux/ae2craftingtime/testdriver/mixin/StatsNetworkObservationMixin']
+                def serverSend = 'Lnet/fabricmc/fabric/api/networking/v1/ServerPlayNetworking;send(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/network/FriendlyByteBuf;)V'
+                def clientSend = 'Lnet/fabricmc/fabric/api/client/networking/v1/ClientPlayNetworking;send(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/network/FriendlyByteBuf;)V'
+                if (!observer?.get(serverSend)?.contains('Lnet/minecraft/class_3222;')
+                        || !observer?.get(clientSend)?.contains('Lnet/minecraft/class_2540;')) {
+                    throw new GradleException("Connection observer send descriptors are not remapped for Fabric: ${artifact}")
+                }
+            }
         }
         def productionEntries = zipTree(production).files.collect { it.path.replace('\\', '/') }
         def driverEntries = zipTree(driver).files.collect { it.path.replace('\\', '/') }

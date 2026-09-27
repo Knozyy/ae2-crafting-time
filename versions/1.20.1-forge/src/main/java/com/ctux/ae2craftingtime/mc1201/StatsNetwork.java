@@ -24,8 +24,19 @@ public final class StatsNetwork {
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(Ae2CraftingTime.MOD_ID, "main"),
             () -> PROTOCOL,
-            PROTOCOL::equals,
-            PROTOCOL::equals);
+            NetworkRegistry.acceptMissingOr(PROTOCOL::equals),
+            NetworkRegistry.acceptMissingOr(PROTOCOL::equals));
+
+    public static boolean canSend() {
+        var connection = net.minecraft.client.Minecraft.getInstance().getConnection();
+        return connection != null && CHANNEL.isRemotePresent(connection.getConnection());
+    }
+
+    public static boolean canSendCpuTtc() { return canSend(); }
+
+    public static boolean canSend(ServerPlayer player) {
+        return CHANNEL.isRemotePresent(player.connection.connection);
+    }
 
     public static void register() {
         var id = 0;
@@ -63,34 +74,37 @@ public final class StatsNetwork {
     }
 
     public static void sendTo(ServerPlayer player, StatsSnapshotS2C packet) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        if (canSend(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     public static void sendTo(ServerPlayer player, CpuTtcSnapshotS2C packet) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        if (canSend(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
     public static void sendTo(ServerPlayer player, ServerOptionsSnapshotS2C packet) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        if (canSend(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
-    public static void sendTo(ServerPlayer player, PlanRecurrenceS2C packet) { CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet); }
-    public static void sendTo(ServerPlayer player, PlanStoredVariantsS2C packet) { CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet); }
+    public static void sendTo(ServerPlayer player, PlanRecurrenceS2C packet) { if (canSend(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet); }
+    public static void sendTo(ServerPlayer player, PlanStoredVariantsS2C packet) { if (canSend(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet); }
 
     public static void sendTo(ServerPlayer player, ProviderHighlightS2C packet) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        if (canSend(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     public static void sendToServer(StatsChatC2S packet) {
-        CHANNEL.sendToServer(packet);
+        if (canSend()) CHANNEL.sendToServer(packet);
     }
 
     public static void sendToServer(ProviderLocateC2S packet) {
-        CHANNEL.sendToServer(packet);
+        if (canSend()) CHANNEL.sendToServer(packet);
     }
 
     public static void sendToServer(WarningPreferenceC2S packet) {
-        CHANNEL.sendToServer(packet);
+        if (canSend()) CHANNEL.sendToServer(packet);
     }
-    public static void sendToServer(ServerOptionsUpdateC2S packet) { CHANNEL.sendToServer(packet); }
+    public static void sendToServer(ServerOptionsUpdateC2S packet) { if (canSend()) CHANNEL.sendToServer(packet); }
+
+    public static void sendToServer(StatsRequestC2S packet) { if (canSend()) CHANNEL.sendToServer(packet); }
+    public static void sendToServer(CpuTtcRequestC2S packet) { if (canSend()) CHANNEL.sendToServer(packet); }
 
     private StatsNetwork() {
     }

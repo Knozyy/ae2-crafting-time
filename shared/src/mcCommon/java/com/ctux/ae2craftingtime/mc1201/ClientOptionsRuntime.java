@@ -7,6 +7,7 @@ import com.ctux.ae2craftingtime.core.TtcColor;
 import com.ctux.ae2craftingtime.mc1201.net.WarningPreferenceC2S;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.function.BooleanSupplier;
 import net.minecraft.client.Minecraft;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +15,11 @@ import org.slf4j.LoggerFactory;
 public final class ClientOptionsRuntime {
     private static ClientConfig current = new ClientConfig();
     private static Path path;
+    private static BooleanSupplier connectionSupport = () -> StatsNetwork.canSend();
+
+    static void setConnectionSupportForTests(BooleanSupplier support) {
+        connectionSupport = support == null ? () -> StatsNetwork.canSend() : support;
+    }
 
     public static void initialize(Path configDirectory) {
         path = configDirectory.resolve("ae2craftingtime-client.toml");
@@ -31,12 +37,13 @@ public final class ClientOptionsRuntime {
     public static boolean textShadow() { return current.features().enabled(OptionFeature.TEXT_SHADOW); }
 
     public static boolean profilingEnabled() {
+        if (!connectionSupport.getAsBoolean()) return false;
         var snapshot = ClientServerOptions.snapshot();
         return snapshot == null || snapshot.config().features().enabled(OptionFeature.PROFILING);
     }
 
     public static boolean enabled(OptionFeature feature) {
-        if (!current.features().enabled(feature)) return false;
+        if (!connectionSupport.getAsBoolean() || !current.features().enabled(feature)) return false;
         var snapshot = ClientServerOptions.snapshot();
         if (snapshot != null && feature != OptionFeature.RECEIVE_CRAFT_WARNINGS
                 && !profilingEnabled()) return false;

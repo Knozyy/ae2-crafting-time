@@ -13,8 +13,8 @@ public final class WarningPreferences {
         receive.put(Objects.requireNonNull(player), enabled);
     }
 
-    public boolean canSend(UUID player, boolean serverEnabled) {
-        return serverEnabled && receive.getOrDefault(Objects.requireNonNull(player), true);
+    public boolean canSend(UUID player, boolean serverEnabled, boolean peerSupported) {
+        return peerSupported && serverEnabled && receive.getOrDefault(Objects.requireNonNull(player), true);
     }
 
     public void clear(UUID player) {

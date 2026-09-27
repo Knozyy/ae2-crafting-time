@@ -32,9 +32,12 @@ server startup plus recipe lookup stay clean without GuideME.
 
 ## 3. Implement the Fabric 1.20.1 guide
 
-- Register the Fabric-only `ae2craftingtime:guide` item and client-side opener
-  for `ae2craftingtime:index.md` through AE2 15.x.
-- Add its localized name, vanilla book model, and ordinary shapeless recipe.
+- Produce a marked `minecraft:book` from the ordinary shapeless recipe without
+  adding a Fabric-only item registry entry; open only marked books at
+  `ae2craftingtime:index.md` through AE2 15.x.
+- Keep the localized name and vanilla book model. Warn players to back up world
+  and player data before upgrading: old saved `ae2craftingtime:guide` stacks may
+  be lost when inventories load, so they must craft new books afterward.
 - Test main/off-hand use, client/server class isolation, exact recipe inputs,
   invalid substitutes, inventory sync, and world reload.
 

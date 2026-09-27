@@ -12,7 +12,7 @@ public final class WarningPreferenceServer {
     }
 
     public static boolean canSend(ServerPlayer recipient, boolean serverEnabled) {
-        return PREFERENCES.canSend(recipient.getUUID(), serverEnabled);
+        return PREFERENCES.canSend(recipient.getUUID(), serverEnabled, StatsNetwork.canSend(recipient));
     }
 
     public static void clear(ServerPlayer player) {

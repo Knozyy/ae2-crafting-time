@@ -60,6 +60,11 @@ public final class ClientStats {
         CACHE.replaceTotalTtcSeconds(value, cpuContext);
     }
 
+    public static void clear() {
+        CACHE.clear();
+        NETWORK_AMOUNTS.clear();
+    }
+
     private ClientStats() {
     }
 }

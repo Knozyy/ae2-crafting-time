@@ -20,6 +20,6 @@ public record ServerOptionsSnapshotS2C(byte[] bytes) implements CustomPacketPayl
         return new ServerOptionsSnapshotS2C(buffer.readByteArray(64));
     }
     public static void handle(ServerOptionsSnapshotS2C packet, IPayloadContext context) {
-        context.enqueueWork(() -> ClientServerOptions.receive(packet.bytes));
+        context.enqueueWork(com.ctux.ae2craftingtime.mc1201.ClientConnectionSession.guard(context.connection(), () -> ClientServerOptions.receive(packet.bytes)));
     }
 }

@@ -11,12 +11,13 @@ import org.lwjgl.glfw.GLFW;
 public final class Ae2CraftingTimeClientInput {
     @SubscribeEvent
     public static void onLogin(ClientPlayerNetworkEvent.LoggingIn event) {
+        ClientConnectionSession.open();
         ClientOptionsRuntime.syncWarningPreference();
     }
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
-        ClientServerOptions.clear();
+        ClientConnectionSession.reset();
     }
 
     @SubscribeEvent

@@ -49,13 +49,13 @@ public record StatsSnapshotS2C(List<String> requestedKeys, List<StatsEntry> entr
     }
 
     public static void handle(StatsSnapshotS2C packet, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        context.enqueueWork(com.ctux.ae2craftingtime.mc1201.ClientConnectionSession.guard(context.connection(), () -> {
             ClientStats.CACHE.replace(packet.requestedKeys.stream().map(ProfileKey::new).toList(), packet.entries);
             ProviderHighlightClient.prunePlates(packet.requestedKeys);
             ClientStats.replaceNetworkAmounts(packet.requestedKeys, packet.networkAmounts);
             ClientStats.replaceWaitingTicks(packet.requestedKeys, packet.waitingTicks);
             ClientStats.replaceBlockReasons(packet.requestedKeys, packet.blockReasons, packet.cpuContext);
             ClientStats.replaceTotalTtcSeconds(packet.totalTtcSeconds, packet.cpuContext);
-        });
+        }));
     }
 }

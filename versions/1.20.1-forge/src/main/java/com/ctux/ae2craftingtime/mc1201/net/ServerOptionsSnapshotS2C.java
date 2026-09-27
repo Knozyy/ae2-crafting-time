@@ -16,7 +16,7 @@ public record ServerOptionsSnapshotS2C(byte[] bytes) {
 
     public static void handle(ServerOptionsSnapshotS2C packet, Supplier<NetworkEvent.Context> contextSupplier) {
         var context = contextSupplier.get();
-        context.enqueueWork(() -> ClientServerOptions.receive(packet.bytes));
+        context.enqueueWork(com.ctux.ae2craftingtime.mc1201.ClientConnectionSession.guard(context.getNetworkManager(), () -> ClientServerOptions.receive(packet.bytes)));
         context.setPacketHandled(true);
     }
 }

@@ -1,5 +1,13 @@
 # Dependencies
 
+Crafting Time is optional on either side of a compatible AE2 connection. Both
+sides need the mod for client-facing estimates, warnings and controls. A
+server-only install still profiles crafts and keeps its saved history, but
+clients without the mod see native AE2. A client-only install connects without
+sending Crafting Time packets and shows native AE2 until it joins a supported
+server. In singleplayer, the installed client and integrated server provide the
+full feature set. Minecraft, loader, AE2 and other mod requirements still apply.
+
 On Fabric 1.20.1, Mod Menu 7.2.2 or newer can open AE2 Crafting Time's
 options screen from the mod list. Mod Menu is optional: the game and the local
 client options file still load when it is absent. Forge and NeoForge use their

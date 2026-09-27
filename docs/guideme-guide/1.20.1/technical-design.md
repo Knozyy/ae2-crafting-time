@@ -60,31 +60,33 @@ to Fabric.
 
 ## Fabric implementation
 
-Register `ae2craftingtime:guide` as a plain `Item` in the Fabric entrypoint.
-Its small subclass overrides use on the client, calls
-`AppEng.instance().openGuideAtPreviousPage(new ResourceLocation(
-"ae2craftingtime", "index.md"))`, returns success, and never mutates the stack.
-Server use acknowledges the interaction without loading client guide classes;
-place the opener behind the existing Fabric client entrypoint/client-only class
-boundary.
+For optional server installation, do not register a Fabric-only item: Fabric
+registry sync rejects a server item unknown to a native AE2 client. The ordinary
+shapeless recipe produces `minecraft:book`. A Fabric-only mixin marks only the
+`ae2craftingtime:guide_book` recipe's result with persistent guide NBT and the
+localized display name; recipe assembly copies that marked result. A use callback
+opens `ae2craftingtime:index.md` through AE2 only for marked books on the client
+and acknowledges use without consuming the book on the server. Ordinary books
+retain vanilla behavior. AE2 remains the only required guide renderer.
 
-Add the translated item name and `minecraft:item/book` generated model. Add one
-ordinary shapeless recipe with the same three exact items and one registered
-guide result. AE2 is already required, so no recipe condition or new dependency
-is needed.
+The former `ae2craftingtime:guide` item ID cannot remain registered on a
+dedicated server without breaking native-client login. Old saved stacks with
+that ID cannot be migrated after the ID is removed. Back up worlds and player
+data before upgrade because old books may be lost when saved inventories load;
+craft replacement books afterward. The page ID and authored content stay the same.
 
 ## Validation and failure behavior
 
 - Static build checks parse both recipe forms, exact ingredient IDs/counts,
-  Forge NBT, Fabric result ID, model parent/texture, resource-copy hashes,
+  Forge NBT, Fabric vanilla result and guide marker, resource-copy hashes,
   metadata, and release relations.
 - A missing/invalid Forge guide ID must not craft. An invalid Fabric initial page
   may fall back only through AE2's documented previous-page behavior and must log
   the missing page during tests.
 - Dedicated servers may load item/recipe data but never client guide screen
   classes. Optional Forge class resolution is tested with GuideME absent.
-- The test driver identifies the stack by item plus NBT on Forge and by item ID
-  on Fabric, then proves actual screen/page semantics instead of metadata only.
+- The test driver identifies the stack by item plus marker on both loaders,
+  then proves actual screen/page semantics instead of metadata only.
 
 ## Verification map
 

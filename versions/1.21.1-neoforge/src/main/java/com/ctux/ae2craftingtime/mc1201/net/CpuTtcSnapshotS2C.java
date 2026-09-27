@@ -22,6 +22,6 @@ public record CpuTtcSnapshotS2C(CpuTtcPacketCodec.Snapshot snapshot) implements 
         return new CpuTtcSnapshotS2C(CpuTtcPacketCodec.readSnapshot(buffer));
     }
     public static void handle(CpuTtcSnapshotS2C packet, IPayloadContext context) {
-        context.enqueueWork(() -> CpuTtcClient.receive(packet.snapshot));
+        context.enqueueWork(com.ctux.ae2craftingtime.mc1201.ClientConnectionSession.guard(context.connection(), () -> CpuTtcClient.receive(packet.snapshot)));
     }
 }

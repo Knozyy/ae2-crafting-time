@@ -5,15 +5,37 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 
-@Mod(value = TestDriverMod.MOD_ID, dist = Dist.CLIENT)
+@Mod(TestDriverMod.MOD_ID)
 public final class TestDriverMod {
     public static final String MOD_ID = "ae2craftingtime_test_driver";
 
     public TestDriverMod() {
-        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.lifecycle.ClientStartedEvent event) -> startClient());
+        ConnectionObservation.ready();
+        if (Boolean.getBoolean("ae2craftingtime.test.observeConnection")) {
+            NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) -> {
+                if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+                    ConnectionObservation.beginConnection();
+                    ConnectionProbe.server(player);
+                }
+            });
+            NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) -> {
+                if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer)
+                    ConnectionObservation.endConnection();
+            });
+            if (net.neoforged.fml.loading.FMLLoader.getCurrent().getDist().isClient())
+                NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingIn event) -> {
+                    ConnectionObservation.beginConnection();
+                    ConnectionProbe.client();
+                });
+            if (net.neoforged.fml.loading.FMLLoader.getCurrent().getDist().isClient())
+                NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) -> ConnectionObservation.endConnection());
+        }
+        if (net.neoforged.fml.loading.FMLLoader.getCurrent().getDist().isClient())
+            NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.lifecycle.ClientStartedEvent event) -> startClient());
     }
 
     private static void startClient() {
+        if (Boolean.getBoolean("ae2craftingtime.test.observeConnection")) return;
         var options = DriverOptions.load();
         if (options == null) {
             return;

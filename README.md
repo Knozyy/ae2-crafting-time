@@ -64,6 +64,14 @@
 
 Choose your Minecraft version and loader on the download page.
 
+Crafting Time can be installed on the client, server, or both. Install it on both
+sides to see estimates, warnings, and controls while the server records crafts.
+With only the server installed, crafting history is still collected and saved,
+but clients without the mod see native AE2 screens. With only the client
+installed, AE2 screens and crafting work normally; Crafting Time features
+become available when you join a server that also has the mod. Singleplayer
+uses the integrated server and has the full feature set.
+
 [Supported versions, dependencies, and optional integrations](docs/dependencies.md)
 
 ## Documentation

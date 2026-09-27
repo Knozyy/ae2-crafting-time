@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "com.ctux.ae2craftingtime.mc1201.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "ae2craftingtime.refmap.json",
+  "mixins": [
+    "CraftingTimeGuideRecipeMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

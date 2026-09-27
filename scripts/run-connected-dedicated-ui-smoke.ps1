@@ -14,9 +14,32 @@ param(
     [switch]$ResourceFixtureOnly,
     [switch]$Prewarm,
     [switch]$AcceptMinecraftEula,
-    [switch]$PlanOnly
+    [switch]$PlanOnly,
+    [switch]$ObservationMode,
+    [ValidateSet('both','server-only','client-only','neither')][string]$InstallationMode = 'both',
+    [string]$NativeWorldDirectory,
+    [ValidateRange(60,3600)][int]$ManualTimeoutSeconds = 1200,
+    [string]$ClientSessionDirectory,
+    [ValidateRange(1,100)][int]$ConnectionOrdinal = 1,
+    [switch]$KeepClientAlive
 )
 $ErrorActionPreference = 'Stop'
+if ($ObservationMode -and (!$NativeWorldDirectory -or $Prewarm -or $ResourceFixtureOnly)) {
+    throw 'Observation requires a stopped native world and no scenario-specific fixture mode'
+}
+$serverInstalled = $InstallationMode -in @('both','server-only')
+$clientInstalled = $InstallationMode -in @('both','client-only')
+$observationClientRetained = $false
+function Stop-RetainedObservationClient {
+    if (!$observationClientRetained) { return }
+    $sessionRoot = if ($ClientSessionDirectory) { $ClientSessionDirectory } else { Join-Path $report 'client-session' }
+    $session = Get-Content -LiteralPath (Join-Path $sessionRoot 'session.json') -Raw | ConvertFrom-Json
+    $owned = Get-Process -Id $session.processId -ErrorAction SilentlyContinue
+    if ($owned -and $owned.StartTime.ToUniversalTime().Ticks -eq ([datetime]$session.processStartedAt).ToUniversalTime().Ticks -and
+        $owned.Path -ieq $session.executable) {
+        $owned.Kill(); $owned.WaitForExit(); $owned.Dispose()
+    }
+}
 . (Join-Path $PSScriptRoot 'resource-fixture-contract.ps1')
 . (Join-Path $PSScriptRoot 'ui-smoke-dependency-identity.ps1')
 . (Join-Path $PSScriptRoot 'dedicated-source-contract.ps1')
@@ -54,6 +77,7 @@ if ($Address -notmatch '^(?<host>[^:]+):(?<port>\d+)$' -or [int]$Matches.port -l
     throw 'Dedicated address must be host:port with a valid TCP port'
 }
 $serverHost = $Matches.host; $serverPort = [int]$Matches.port
+if ($ObservationMode -and $serverPort -ge 65535) { throw 'Observation requires a free adjacent RCON port' }
 if ($serverHost -notin @('127.0.0.1', 'localhost')) { throw 'Disposable dedicated smoke requires a loopback address' }
 if (Test-Path -LiteralPath $report) { throw 'Connected smoke requires a new report directory to preserve prior evidence' }
 if ($report.StartsWith($sourceServer.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
@@ -185,6 +209,23 @@ if (!$copiedWorld.StartsWith($resolvedServer.TrimEnd('\') + '\', [StringComparis
     throw 'Disposable world path escapes its server directory'
 }
 if (Test-Path -LiteralPath $copiedWorld) { Remove-Item -LiteralPath $copiedWorld -Recurse -Force }
+if ($ObservationMode) {
+    $nativeWorld = [IO.Path]::GetFullPath($NativeWorldDirectory)
+    $nativeMarkerPath = Join-Path $nativeWorld '.ae2-crafting-time-native-world.json'
+    if (!(Test-Path -LiteralPath $nativeWorld -PathType Container) -or
+        !(Test-Path -LiteralPath (Join-Path $nativeWorld 'level.dat') -PathType Leaf) -or
+        !(Test-Path -LiteralPath $nativeMarkerPath -PathType Leaf) -or
+        $nativeWorld.StartsWith($resolvedServer.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Observation requires a marked stopped native world outside the disposable server'
+    }
+    $nativeMarker = Get-Content -LiteralPath $nativeMarkerPath -Raw | ConvertFrom-Json
+    if ($nativeMarker.target -cne $Target -or $nativeMarker.stopped -ne $true -or
+        $nativeMarker.driverRegistryClean -ne $true -or
+        $nativeMarker.levelDatSha256 -ine (Get-FileHash -LiteralPath (Join-Path $nativeWorld 'level.dat') -Algorithm SHA256).Hash) {
+        throw 'Native world identity or reviewed registry-clean attestation failed'
+    }
+    Copy-Item -LiteralPath $nativeWorld -Destination $copiedWorld -Recurse
+}
 
 $control = Join-Path $report 'control'
 $serverResult = Join-Path $report 'server-result.json'
@@ -194,7 +235,9 @@ New-Item -ItemType Directory -Path $control -Force | Out-Null
 $mods = Join-Path $resolvedServer 'mods'
 New-Item -ItemType Directory -Path $mods -Force | Out-Null
 Get-ChildItem -LiteralPath $mods -File -Filter 'ae2-crafting-time-*.jar' | Remove-Item -Force
-foreach ($artifact in $artifacts) { Copy-Item -LiteralPath $artifact.path -Destination (Join-Path $mods $artifact.name) }
+if (!$ObservationMode -or $serverInstalled) {
+    foreach ($artifact in $artifacts) { Copy-Item -LiteralPath $artifact.path -Destination (Join-Path $mods $artifact.name) }
+}
 [ordered]@{ target=$Target; sourceServer=$sourceServer; disposableServer=$resolvedServer
     artifacts=@($artifacts | ForEach-Object { [ordered]@{name=$_.name;sha256=$_.sha256} })
     dependencies=@(Get-ChildItem -LiteralPath $mods -File -Filter '*.jar' | Sort-Object Name | ForEach-Object {
@@ -204,13 +247,29 @@ if ($AcceptMinecraftEula) {
     Set-Content -LiteralPath (Join-Path $resolvedServer 'eula.txt') -Value 'eula=true' -Encoding Ascii
 }
 @('level-name=ae2ct-cpu-list-connected','online-mode=false','enforce-secure-profile=false', 'server-ip=127.0.0.1', "server-port=$serverPort",
-    'pause-when-empty-seconds=-1','view-distance=6','simulation-distance=6') |
+    'pause-when-empty-seconds=-1','view-distance=6','simulation-distance=6') +
+    $(if ($ObservationMode) {
+        $rconPassword = [guid]::NewGuid().ToString('N')
+        @('enable-rcon=true',"rcon.port=$($serverPort + 1)","rcon.password=$rconPassword")
+    } else { @() }) |
     Set-Content -LiteralPath (Join-Path $resolvedServer 'server.properties') -Encoding Ascii
 
 $serverArgs = @("-Dae2ct.testDriver.serverScenario=$Scenario-connected",
     "-Dae2ct.testDriver.serverTarget=$Target", "-Dae2ct.testDriver.serverResult=$serverResult",
     "-Dae2ct.testDriver.serverControl=$control", "-Dae2ct.testDriver.serverCampaign=$connectionEpoch",
     "-Dae2craftingtime.test.resourceFixture=$connectionFixture", '-Xmx4G')
+if ($ObservationMode) {
+    $serverArgs = @('-Xmx4G')
+    if ($serverInstalled) {
+        $serverArgs = @('-Dae2craftingtime.test.observeConnection=true',
+            "-Dae2craftingtime.test.expectUnsupportedPeer=$($InstallationMode -eq 'server-only')",
+            "-Dae2craftingtime.test.target=$Target",'-Dae2craftingtime.test.role=server',
+            "-Dae2craftingtime.test.connectionEpoch=$connectionEpoch",
+            "-Dae2craftingtime.test.observationFile=$(Join-Path $report 'server-observation-{epoch}.json')",
+            "-Dae2craftingtime.test.productionSha256=$($artifacts[0].sha256)",
+            "-Dae2craftingtime.test.driverSha256=$($artifacts[1].sha256)",'-Xmx4G')
+    }
+}
 if ($ResourceFixtureOnly) { $serverArgs = @('-Dae2craftingtime.test.resourceFixtureOnly=true') + $serverArgs }
 if ($Prewarm) {
     $prewarmDeadline = [DateTimeOffset]::UtcNow.AddSeconds(600).ToUnixTimeMilliseconds()
@@ -261,6 +320,11 @@ $runnerPlan | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $planPath -Enco
 $portReservation = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $serverPort)
 try { $portReservation.Start() } catch { throw "Dedicated smoke port $serverPort is already in use" }
 finally { $portReservation.Stop() }
+if ($ObservationMode) {
+    $rconReservation = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $serverPort + 1)
+    try { $rconReservation.Start() } catch { throw "Observation RCON port $($serverPort + 1) is already in use" }
+    finally { $rconReservation.Stop() }
+}
 
 $serverProcess = Start-Process -FilePath $java -ArgumentList $launchCommandLine -WorkingDirectory $resolvedServer `
     -PassThru -WindowStyle Hidden -RedirectStandardOutput $serverOut -RedirectStandardError $serverErr
@@ -288,6 +352,17 @@ try {
         if (!$ready) { Start-Sleep -Milliseconds 250 }
     }
     if (!$ready) { throw 'Dedicated server did not finish startup' }
+    if ($ObservationMode) {
+        & (Join-Path $PSScriptRoot 'run-connection-observation-cell.ps1') -Target $Target `
+            -InstallationMode $InstallationMode -ReportDirectory $report -BundleDirectory $bundle `
+            -PreparedLaunch $prepared -Address $Address -ConnectionEpoch $connectionEpoch `
+            -ProductionSha256 $artifacts[0].sha256 -DriverSha256 $artifacts[1].sha256 `
+            -ServerStartedAtUtc $serverStartedAt -ManualTimeoutSeconds $ManualTimeoutSeconds `
+            -ClientSessionDirectory $ClientSessionDirectory -ConnectionOrdinal $ConnectionOrdinal -KeepClientAlive:$KeepClientAlive
+        $observationClientRetained = [bool]$KeepClientAlive
+        if ($serverProcess.HasExited) { throw "Dedicated server exited $($serverProcess.ExitCode) during observation" }
+        return
+    }
     $clientParameters = @{ Target=$Target; Scenario=$Scenario; ReportDirectory=(Join-Path $report 'client')
         BundleDirectory=$bundle; PreparedLaunch=$prepared; DedicatedAddress=$Address
         ControlDirectory=$control; CampaignId=$connectionEpoch; ResourceFixtureId=$connectionFixture; FailOnInitialDisconnect=$true
@@ -517,8 +592,22 @@ try {
     if ($Scenario -eq 'cpu-list-total-ttc') {
         Copy-Item -LiteralPath (Join-Path $control 'state.properties') -Destination (Join-Path $report 'server-estimates.properties')
     }
+} catch {
+    Stop-RetainedObservationClient
+    throw
 } finally {
-    if (!$serverProcess.HasExited) { $serverProcess.Kill(); $serverProcess.WaitForExit() }
+    if ($ObservationMode -and !$serverProcess.HasExited) {
+        try {
+            & (Join-Path $PSScriptRoot 'stop-observation-server.ps1') -Port ($serverPort + 1) -Password $rconPassword
+            if (!$serverProcess.WaitForExit(60000)) { throw 'Dedicated server did not stop within 60 seconds' }
+            Set-Content -LiteralPath (Join-Path $report 'server-stop.txt') -Value 'clean' -Encoding Ascii
+        } catch {
+            Stop-RetainedObservationClient
+            Set-Content -LiteralPath (Join-Path $report 'server-stop.txt') -Value "failed: $_" -Encoding UTF8
+            if (!$serverProcess.HasExited) { $serverProcess.Kill(); $serverProcess.WaitForExit() }
+            throw
+        }
+    } elseif (!$serverProcess.HasExited) { $serverProcess.Kill(); $serverProcess.WaitForExit() }
     $serverProcess.Dispose()
     if ($Prewarm) {
         $prewarmDirectory = Join-Path $control 'prewarm'

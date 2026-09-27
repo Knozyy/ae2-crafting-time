@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "priority": 1100,
   "mixins": [
+    "StatsNetworkObservationMixin",
     "StoredVariantServerObservationMixin",
     "ProfilerBridgeObservationMixin",
     "DedicatedScenarioMixin",

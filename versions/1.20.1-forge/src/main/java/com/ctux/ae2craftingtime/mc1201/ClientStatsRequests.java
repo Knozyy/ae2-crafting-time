@@ -15,7 +15,7 @@ public final class ClientStatsRequests {
         }
 
         // ponytail: one-key requests are simple; batch visible nodes if packet spam shows up.
-        StatsNetwork.CHANNEL.sendToServer(new StatsRequestC2S(List.of(key.outputId())));
+        StatsNetwork.sendToServer(new StatsRequestC2S(List.of(key.outputId())));
     }
 
     public static void clear() {

@@ -17,7 +17,7 @@ public record CpuTtcSnapshotS2C(CpuTtcPacketCodec.Snapshot snapshot) {
 
     public static void handle(CpuTtcSnapshotS2C packet, Supplier<NetworkEvent.Context> contextSupplier) {
         var context = contextSupplier.get();
-        context.enqueueWork(() -> CpuTtcClient.receive(packet.snapshot));
+        context.enqueueWork(com.ctux.ae2craftingtime.mc1201.ClientConnectionSession.guard(context.getNetworkManager(), () -> CpuTtcClient.receive(packet.snapshot)));
         context.setPacketHandled(true);
     }
 }

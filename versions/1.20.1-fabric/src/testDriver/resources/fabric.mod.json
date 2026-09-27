@@ -5,6 +5,7 @@
   "name": "AE2 Crafting Time Test Driver",
   "environment": "*",
   "entrypoints": {
+    "main": ["com.ctux.ae2craftingtime.testdriver.TestDriverConnectionServer"],
     "client": [
       "com.ctux.ae2craftingtime.testdriver.TestDriverMod"
     ]

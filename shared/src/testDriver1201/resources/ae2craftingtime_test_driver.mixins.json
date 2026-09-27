@@ -6,6 +6,7 @@
   "priority": 1100,
   "refmap": "ae2craftingtime_test_driver.refmap.json",
   "mixins": [
+    "StatsNetworkObservationMixin",
     "StoredVariantServerObservationMixin",
     "ProfilerBridgeObservationMixin",
     "DedicatedScenarioMixin",

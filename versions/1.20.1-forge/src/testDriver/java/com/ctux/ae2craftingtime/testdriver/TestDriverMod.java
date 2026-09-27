@@ -11,11 +11,33 @@ public final class TestDriverMod {
     public static final String MOD_ID = "ae2craftingtime_test_driver";
 
     public TestDriverMod() {
-        ResourceFixtureFluid.register(net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get().getModEventBus());
+        ConnectionObservation.ready();
+        if (Boolean.getBoolean("ae2craftingtime.test.observeConnection")) {
+            MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) -> {
+                if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+                    ConnectionObservation.beginConnection();
+                    ConnectionProbe.server(player);
+                }
+            });
+            MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) -> {
+                if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer)
+                    ConnectionObservation.endConnection();
+            });
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> MinecraftForge.EVENT_BUS.addListener(
+                    (net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingIn event) -> {
+                        ConnectionObservation.beginConnection();
+                        ConnectionProbe.client();
+                    }));
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> MinecraftForge.EVENT_BUS.addListener(
+                    (net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) -> ConnectionObservation.endConnection()));
+        }
+        if (!Boolean.getBoolean("ae2craftingtime.test.observeConnection"))
+            ResourceFixtureFluid.register(net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get().getModEventBus());
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> TestDriverMod::startClient);
     }
 
     private static void startClient() {
+        if (Boolean.getBoolean("ae2craftingtime.test.observeConnection")) return;
         var options = DriverOptions.load();
         if (options == null) {
             return;

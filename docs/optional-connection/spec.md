@@ -1,6 +1,10 @@
 # Optional client and server installation
 
-Status: ready-to-implement
+Status: in-progress
+
+Implementation: [PR #545](https://github.com/cTux/ae2-crafting-time/pull/545).
+Verification remains open until current-head CI and the connected runtime matrix
+meet the acceptance criteria below.
 
 Scope: Optional Crafting Time installation on either side of a connection.
 
@@ -59,7 +63,11 @@ without restarting the client or rewriting its preferences.
 
 ## Boundaries
 
-No new gameplay feature, packet format, saved-data migration or dependency is
-required. Capability is a connection fact, not a user preference: users cannot
+No new gameplay feature, packet format or dependency is required. Fabric 1.20.1
+must replace its custom guide item with a marked vanilla book to avoid a registry
+sync disconnect for native clients; saved stacks using the old custom item ID
+cannot be migrated after that ID is removed. Back up worlds and player data
+before upgrading because those books may be lost when inventories load.
+Capability is a connection fact, not a user preference: users cannot
 override an absent peer into accepting packets. Existing feature switches remain.
 Do not weaken tests, coverage or handshake protection to make absence work.

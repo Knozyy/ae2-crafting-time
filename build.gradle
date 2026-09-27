@@ -276,8 +276,11 @@ tasks.register('checkGuideResources') {
         def fabricRecipe = parse("$fabricTarget/src/main/resources/data/ae2craftingtime/recipes/guide_book.json")
         require(fabricRecipe.type == 'minecraft:crafting_shapeless'
                 && fabricRecipe.ingredients*.item == ['minecraft:book', 'ae2:certus_quartz_crystal', 'minecraft:clock'], 'Wrong Fabric guide ingredients')
-        require(fabricRecipe.result == [item: 'ae2craftingtime:guide', count: 1], 'Wrong Fabric guide result')
-        require(parse("$fabricTarget/src/main/resources/assets/ae2craftingtime/models/item/guide.json").parent == 'minecraft:item/book', 'Fabric guide must use the vanilla book model')
+        require(fabricRecipe.result == [item: 'minecraft:book', count: 1], 'Wrong Fabric guide result')
+        require(parse("$fabricTarget/src/main/resources/ae2craftingtime_fabric.mixins.json").mixins == ['CraftingTimeGuideRecipeMixin'],
+                'Fabric guide recipe marker mixin is missing')
+        require(parse("$fabricTarget/src/main/resources/fabric.mod.json").mixins.contains('ae2craftingtime_fabric.mixins.json'),
+                'Fabric guide recipe marker mixin is not registered')
         require(!file("$fabricTarget/src/main/resources/fabric.mod.json").getText('UTF-8').contains('guideme'), 'Fabric must not declare GuideME')
 
         fileTree(guideDirectory).files.each { source ->

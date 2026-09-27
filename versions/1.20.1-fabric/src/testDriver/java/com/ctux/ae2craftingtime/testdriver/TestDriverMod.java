@@ -11,6 +11,18 @@ public final class TestDriverMod implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        ConnectionObservation.ready();
+        if (Boolean.getBoolean("ae2craftingtime.test.observeConnection"))
+            net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register(
+                    (handler, sender, client) -> {
+                        ConnectionObservation.beginConnection();
+                        ConnectionProbe.client();
+                    });
+        if (Boolean.getBoolean("ae2craftingtime.test.observeConnection")) {
+            net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register(
+                    (handler, client) -> ConnectionObservation.endConnection());
+            return;
+        }
         var options = DriverOptions.load();
         if (options == null) return;
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> {

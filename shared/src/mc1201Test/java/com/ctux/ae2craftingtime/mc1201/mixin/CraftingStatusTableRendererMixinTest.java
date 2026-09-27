@@ -23,8 +23,23 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 
 class CraftingStatusTableRendererMixinTest {
+    @BeforeEach
+    void supportingConnection() throws ReflectiveOperationException { setConnectionSupport(() -> true); }
+
+    @AfterEach
+    void restoreConnectionSupport() throws ReflectiveOperationException { setConnectionSupport(null); }
+
+    private static void setConnectionSupport(BooleanSupplier support) throws ReflectiveOperationException {
+        var method = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.class
+                .getDeclaredMethod("setConnectionSupportForTests", BooleanSupplier.class);
+        method.setAccessible(true);
+        method.invoke(null, support);
+    }
+
     @Test
     void nativeAmountsCompactWithoutMovingForeignDescriptionLines() throws ReflectiveOperationException {
         var before = Component.literal("before");
@@ -101,6 +116,14 @@ class CraftingStatusTableRendererMixinTest {
             "text.ae2craftingtime.reset_hint");
     private static final BooleanSupplier NO_STATS_LOOKUP = () -> fail("Warning or empty row requested stats");
     private static final ProfileStats STATS = new ProfileStats(4, 100, 0.2, 4, 100, ProfileUnit.ITEM);
+
+    @Test
+    void unsupportedConnectionLeavesNativeTooltip() throws ReflectiveOperationException {
+        setConnectionSupport(() -> false);
+        var lines = nativeTooltip();
+        appendTooltip(lines, 1, 1, true, null, NO_STATS_LOOKUP);
+        assertEquals(nativeTooltip(), lines);
+    }
 
     @Test
     void noSampleWarningsComposeTheirEntireBodyAndOrderedGrayControls() throws ReflectiveOperationException {

@@ -5,7 +5,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -68,18 +67,6 @@ public final class ProviderHighlightRender {
         consumers.endBatch(RenderType.solid());
         consumers.endBatch(RenderType.debugFilledBox());
         poseStack.popPose();
-    }
-
-    /**
-     * Clears all client highlight state when leaving a world or server so a
-     * rainbow cannot survive reconnect and plates never leak into another
-     * world with matching coordinates. Red plates return only via
-     * server-approved resync.
-     */
-    @SubscribeEvent
-    public static void onClientDisconnect(ClientPlayerNetworkEvent.LoggingOut event) {
-        ProviderHighlightClient.onSessionEnd();
-        CpuTtcClient.clear();
     }
 
     private ProviderHighlightRender() {

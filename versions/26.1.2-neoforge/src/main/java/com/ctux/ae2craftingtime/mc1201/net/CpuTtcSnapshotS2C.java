@@ -16,5 +16,5 @@ public record CpuTtcSnapshotS2C(CpuTtcPacketCodec.Snapshot snapshot) implements 
     @Override public Type<CpuTtcSnapshotS2C> type() { return TYPE; }
     public static void encode(CpuTtcSnapshotS2C packet, FriendlyByteBuf buffer) { CpuTtcPacketCodec.writeSnapshot(buffer, packet.snapshot); }
     public static CpuTtcSnapshotS2C decode(FriendlyByteBuf buffer) { return new CpuTtcSnapshotS2C(CpuTtcPacketCodec.readSnapshot(buffer)); }
-    public static void handle(CpuTtcSnapshotS2C packet, IPayloadContext context) { context.enqueueWork(() -> CpuTtcClient.receive(packet.snapshot)); }
+    public static void handle(CpuTtcSnapshotS2C packet, IPayloadContext context) { context.enqueueWork(com.ctux.ae2craftingtime.mc1201.ClientConnectionSession.guard(context.connection(), () -> CpuTtcClient.receive(packet.snapshot))); }
 }

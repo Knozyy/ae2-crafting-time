@@ -22,7 +22,7 @@ public record PlanStoredVariantsS2C(long updateRevision, PlanRecurrenceChunk chu
         return new PlanStoredVariantsS2C(decoded.updateRevision(), decoded.chunk());
     }
     public static void handle(PlanStoredVariantsS2C packet, IPayloadContext context) {
-        context.enqueueWork(() -> com.ctux.ae2craftingtime.mc1201.PlanStoredVariantsClient.receive(
-                packet.chunk, packet.updateRevision));
+        context.enqueueWork(com.ctux.ae2craftingtime.mc1201.ClientConnectionSession.guard(context.connection(), () -> com.ctux.ae2craftingtime.mc1201.PlanStoredVariantsClient.receive(
+                packet.chunk, packet.updateRevision)));
     }
 }

@@ -2,6 +2,19 @@
 
 Lifecycle: see the [scope status and evidence](spec.md).
 
+## Optional connection observation
+
+The observation mode uses test-driver mixins on all twelve `StatsNetwork` send
+overloads. Each records entry and the exact loader send invocation after the
+production guard. The required injection count fails loading when an invocation
+changes. `ConnectionObservation` writes target, artifact hashes, connection
+ordinal, timestamps, and per-packet counts; the host verifier rejects stale or
+missing receipts. The connected runner stages production and driver together
+only where installed, checks artifact inventories, and uses a reviewed native
+world marker plus manual UI checkpoints. Forge suppresses its driver-only fluid
+registration in this mode. See the [feature design](../optional-connection/technical-design.md)
+for the qualification sequence and limits.
+
 ## Compact status amounts extension
 
 Extend the existing shared `StandardAe2Scenario` and `StandardCraftFixture`,

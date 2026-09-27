@@ -39,7 +39,7 @@ public abstract class CraftingStatusTableRendererMixin {
             CallbackInfoReturnable<List<Component>> cir) {
         var lines = cir.getReturnValue();
         MutableComponent amounts = null;
-        if (ClientOptionsRuntime.current().features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS)) {
+        if (ClientOptionsRuntime.enabled(OptionFeature.COMPACT_STATUS_AMOUNTS)) {
             var key = entry.getWhat();
             long stored = entry.getStoredAmount(), active = entry.getActiveAmount(), pending = entry.getPendingAmount();
             amounts = ae2craftingtime$compactAmounts(lines, stored,
@@ -59,7 +59,7 @@ public abstract class CraftingStatusTableRendererMixin {
     @Inject(method = "getEntryTooltip", at = @At("RETURN"), remap = false)
     private void ae2craftingtime$appendTooltipTimeToCraft(CraftingStatusEntry entry,
             CallbackInfoReturnable<List<Component>> cir) {
-        if (ClientOptionsRuntime.current().features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS)
+        if (ClientOptionsRuntime.enabled(OptionFeature.COMPACT_STATUS_AMOUNTS)
                 && (entry.getStoredAmount() > 0 || entry.getActiveAmount() > 0 || entry.getPendingAmount() > 0)) {
             cir.getReturnValue().add(TtcText.statusAmountsLegend());
         }
@@ -104,6 +104,7 @@ public abstract class CraftingStatusTableRendererMixin {
 
     private static void ae2craftingtime$appendTooltip(List<Component> lines, long active, long pending, boolean noSpace,
             CraftingBlockReason reason, java.util.function.BooleanSupplier appendStats) {
+        if (!ClientOptionsRuntime.enabled(OptionFeature.STATUS_ROWS)) return;
         var showLocateHint = false;
         if (noSpace && ClientOptionsRuntime.enabled(OptionFeature.NO_SPACE_STATUS)) {
             lines.addAll(TtcText.noSpaceTooltip());
