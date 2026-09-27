@@ -16,6 +16,11 @@ The old file stays in place. Existing world files aren't rewritten on startup.
 
 Client settings live in `config/ae2craftingtime-client.toml`.
 
+**Detect recurrent ingredients** in Server → Diagnostics starts off. Turn it on
+to mark proven recipe loops as Recurrent in Crafting Plan, or set
+`recurrentDetection = true` in the server file. Existing files that explicitly
+enable it keep that choice; Reset returns it to off.
+
 **Show emoji** in Client → Appearance starts on (`showEmoji = true`). It adds
 colored symbols to TTC times, statuses, and local chat. Turn it off for text-only
 labels and times. Saving with Done updates visible chat too; reset restores On.

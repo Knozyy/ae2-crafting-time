@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 class FeatureOptionsTest {
     private static final Set<OptionFeature> DEFAULT_OFF = Set.of(OptionFeature.COMPACT_STATUS_AMOUNTS,
             OptionFeature.TTC_COLORS, OptionFeature.TEXT_SHADOW, OptionFeature.BADGE_BACKGROUND);
+    private static final Set<OptionFeature> SERVER_DEFAULT_OFF = Set.of(OptionFeature.RECURRENT_DETECTION);
 
     @Test
     void blockedReasonSwitchesAreIndependent() {
@@ -30,11 +31,12 @@ class FeatureOptionsTest {
         for (var feature : OptionFeature.values()) {
             assertTrue(keys.add(feature.key()));
             assertTrue(feature.group() != null);
-            assertEquals(feature.owner() == OptionFeature.Owner.SERVER || !DEFAULT_OFF.contains(feature),
+            assertEquals(feature.owner() == OptionFeature.Owner.SERVER
+                            ? !SERVER_DEFAULT_OFF.contains(feature) : !DEFAULT_OFF.contains(feature),
                     (feature.owner() == OptionFeature.Owner.CLIENT ? client : server).enabled(feature));
         }
         assertEquals(DEFAULT_OFF, client.disabled());
-        assertTrue(server.disabled().isEmpty());
+        assertEquals(SERVER_DEFAULT_OFF, server.disabled());
     }
 
     @Test

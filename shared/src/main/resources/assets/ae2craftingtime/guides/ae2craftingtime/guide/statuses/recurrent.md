@@ -9,6 +9,9 @@ navigation:
 
 **Label:** `Recurrent: 1`
 
+This diagnosis is off by default. Enable **Detect recurrent ingredients** in
+Server → Diagnostics or set `recurrentDetection = true` in the server file.
+
 Recurrent appears in Crafting Plan before you submit a job. Bold red text on a
 rounded dark badge means AE2 proved that a missing ingredient could not use a
 recipe because that recipe eventually needs the same ingredient again. For

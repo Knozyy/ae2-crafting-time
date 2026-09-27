@@ -26,7 +26,8 @@ class ServerConfigFileTest {
                 .filter(feature -> feature.owner() == OptionFeature.Owner.SERVER).count(), lines.size());
         for (var feature : OptionFeature.values()) {
             if (feature.owner() == OptionFeature.Owner.SERVER) {
-                assertTrue(lines.contains(feature.key() + " = true"), feature.key());
+                assertTrue(lines.contains(feature.key() + " = "
+                        + (feature != OptionFeature.RECURRENT_DETECTION)), feature.key());
             }
         }
         assertTrue(lines.contains("maxSamples = 10"));
@@ -58,6 +59,7 @@ class ServerConfigFileTest {
         assertTrue(lines.contains("maxSamples = 20"));
         assertTrue(lines.contains("outlierMultiplier = 5.0"));
         assertTrue(lines.contains("saveHistory = true"));
+        assertTrue(lines.contains("recurrentDetection = false"));
         assertFalse(lines.contains("showInTree = false"));
     }
 
@@ -88,6 +90,16 @@ class ServerConfigFileTest {
         assertArrayEquals(customBytes, Files.readAllBytes(path));
         assertFalse(ServerConfigFile.load(path, legacy).features().enabled(OptionFeature.PROFILING));
         assertArrayEquals(customBytes, Files.readAllBytes(path));
+    }
+
+    @Test
+    void existingWorldCanExplicitlyEnableRecurrentDetection() throws IOException {
+        var path = directory.resolve("server.toml");
+        Files.write(path, List.of("recurrentDetection = true"));
+        var loaded = ServerConfigFile.load(path, directory.resolve("missing.toml"));
+        assertTrue(loaded.features().enabled(OptionFeature.RECURRENT_DETECTION));
+        loaded.reset();
+        assertFalse(loaded.features().enabled(OptionFeature.RECURRENT_DETECTION));
     }
 
     @Test
