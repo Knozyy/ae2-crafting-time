@@ -156,8 +156,8 @@ public final class OptionsScreen extends OptionsBaseScreen {
     }
 
     private void addAppearanceRow(int index, int x, int y, int width) {
-        if (index < ClientConfig.Color.values().length) {
-            var color = ClientConfig.Color.values()[index];
+        if (index < ClientConfig.appearanceColors().size()) {
+            var color = ClientConfig.appearanceColors().get(index);
             var label = Component.translatable("config.ae2craftingtime.color." + color.name().toLowerCase(Locale.ROOT));
             addRenderableWidget(Button.builder(label, button -> {})
                     .bounds(x, y, width - 84, 23).build()).active = false;
@@ -238,9 +238,9 @@ public final class OptionsScreen extends OptionsBaseScreen {
             for (int i = 0; i < inputs.size(); i++) {
                 int index = ClientConfig.appearanceInputIndex(firstVisibleRow, featureRows, i);
                 var value = inputs.get(i).getValue();
-                if (index < ClientConfig.Color.values().length) {
+                if (index < ClientConfig.appearanceColors().size()) {
                     if (!value.matches("#[0-9a-fA-F]{6}")) throw new IllegalArgumentException("Invalid RGB");
-                    draft.setColor(ClientConfig.Color.values()[index], Integer.parseInt(value.substring(1), 16));
+                    draft.setColor(ClientConfig.appearanceColors().get(index), Integer.parseInt(value.substring(1), 16));
                 } else draft.setBadgeOpacity(Integer.parseInt(value));
             }
             return true;

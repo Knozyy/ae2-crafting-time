@@ -166,7 +166,7 @@ Its recurrence packet layout and additive recurrence behavior stay unchanged.
 ## Client rendering
 
 Add a transient stored-variant flag carrier to `CraftingPlanSummaryEntry`. In
-the shared `CraftConfirmTableRendererMixin`, append the gold normal-weight
+the shared `CraftConfirmTableRendererMixin`, append the neutral normal-weight
 `Stored variant` component only when the flag is set, `missingAmount > 0`, the
 key is an item, and the mod is enabled. Append both explanation lines to the
 tooltip before the current `craftAmount <= 0` TTC guard so missing-only rows

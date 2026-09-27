@@ -39,7 +39,7 @@ final class StandardAe2Scenario {
             Map.entry("recurrent-plan", List.of("recurrent-row", "red-warning-style", "recurrent-tooltip", "unchanged-quantity",
                     "layout", "variant-clear")),
             Map.entry("stored-variant-plan", List.of("initial-clear", "live-near", "removed-clear",
-                    "exact-clear", "restored-near", "gold-normal", "variant-tooltip", "unchanged-plan",
+                    "exact-clear", "restored-near", "neutral-normal", "variant-tooltip", "unchanged-plan",
                     "variant-sorts", "variant-layout", "exact-only", "other-item", "ordinary-clear",
                     "fluid-clear", "coexistence", "notification-lifecycle", "watcher-cleanup")),
             Map.entry("standard-status-controls", List.of("submitted", "status", "quantity-cases", "addon-key-status", "amount-scales", "amount-options", "server-profiling-off", "status-sort", "status-tooltip", "status-details", "status-reset", "header", "layout")),
@@ -703,8 +703,11 @@ final class StandardAe2Scenario {
             var expected = variantStep == 1 || variantStep == 4 || variantStep == 7;
             if (((com.ctux.ae2craftingtime.mc1201.RecurrentPlanEntry) entry).ae2craftingtime$storedVariant()
                     != expected || (label != null) != expected) return false;
-            if (expected && (label.bold() || !java.util.Objects.equals(label.color(), 0xFFAA00)))
-                throw new IllegalStateException("Stored-variant label is not normal gold text");
+            Integer neutralColor = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground()
+                    ? com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current()
+                            .color(com.ctux.ae2craftingtime.core.ClientConfig.Color.TOTAL) : null;
+            if (expected && (label.bold() || !java.util.Objects.equals(label.color(), neutralColor)))
+                throw new IllegalStateException("Stored-variant label is not normal neutral text");
             if (!variantHover) {
                 moveMouse.accept(row.cell().x() + row.cell().width() / 2,
                         row.cell().y() + row.cell().height() / 2);
@@ -746,7 +749,8 @@ final class StandardAe2Scenario {
             var checksByStep = new String[] {"initial-clear", "live-near", "removed-clear", "exact-clear",
                     "restored-near", "exact-only", "other-item", "restored-near"};
             mark(checks, checksByStep[variantStep], true);
-            mark(checks, "gold-normal", label == null || !label.bold() && java.util.Objects.equals(label.color(), 0xFFAA00));
+            mark(checks, "neutral-normal", label == null || !label.bold()
+                    && java.util.Objects.equals(label.color(), neutralColor));
             if (expected) mark(checks, "variant-tooltip", true);
             mark(checks, "unchanged-plan", true);
             if (variantCapturedStep != variantStep) {

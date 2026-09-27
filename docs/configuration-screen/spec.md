@@ -88,7 +88,7 @@ authoritative.
 | Displays | The independent on/off values in the feature-switch table. All default on where supported. |
 | Sorting | Separate Crafting Plan and Crafting Status defaults. Both start at longest first, matching the current `2` mode. Choices are AE2 order, shortest first, and longest first. |
 | TTC scale | Fast `#55FF55`, middle `#FFFF55`, slow `#FF5555`. |
-| Status text | Waiting `#E0E0E0`, delayed/blocked `#FF5555`, collecting-data `#E0E0E0`, and total TTC `#E0E0E0`. |
+| Status text | Neutral Plan/Status rows use AE2's text color without a badge and Total `#E0E0E0` with a badge. Delayed/blocked warnings stay red; fast-to-slow TTC colors and tooltip colors stay as configured. |
 | Badges | Background `#000000` with `176/255` opacity, matching `0xB0000000`. |
 | Appearance | [Text shadow](text-shadow/spec.md) (`textShadow`, #531), default on; controls mod-drawn text independently of badge backgrounds and TTC colors. |
 | Appearance | [Badge background](badge-background/spec.md) (`badgeBackground`, #532), default on; hides only mod-owned badge backgrounds while preserving saved color and opacity. |

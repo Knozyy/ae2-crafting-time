@@ -46,9 +46,10 @@ amounts. Zero categories remain omitted there, as in AE2 today.
 
 - Use the same rounded background, configured color and opacity, padding, and
   shadow as TTC. Keep the quantity line separate from TTC/status.
-- Copy the displayed TTC/status line's text color, including fast/slow colors,
-  collecting, waiting, delayed, and blocking warnings. When no TTC/status line is
-  present, use the configured normal TTC color (`TOTAL`, initially `#E0E0E0`).
+- Copy the displayed TTC/status line's text color, including fast/slow colors
+  and red warnings. Waiting and collecting use AE2's row color without a badge,
+  or `TOTAL` (initially `#E0E0E0`) with a badge. When no TTC/status line is
+  present, compact amounts follow that same neutral rule.
   Keep quantity text regular weight, even beside a bold warning.
 - Fit the complete quantity line into the existing text area without wrapping,
   dropping a category, or overlapping the icon or adjacent cell. Retain AE2's

@@ -6,7 +6,8 @@ Lifecycle and requirements: [specification](spec.md).
 
 `CraftConfirmTableRendererMixin` in `shared/src/mcCommon` appends
 `TtcText.storedVariant()` when the live diagnosis applies. That component uses
-`text.ae2craftingtime.plan.stored_variant` and the existing gold style.
+`text.ae2craftingtime.plan.stored_variant`. The row copy now takes the neutral
+foreground; the factory's original style stays available outside the row.
 
 The `AbstractTableRendererMixin` counterparts in `shared/src/mc1201` and
 `shared/src/mc2612` both call `CraftingRowState.isBadge`. Its shared `BADGE_KEYS`
@@ -37,7 +38,8 @@ already removes the component; there is no separate badge state to clear.
 Extend `CraftingRowStateTest` for membership and width limiting, retaining its
 negative tooltip/non-status cases and width boundary checks. Extend the existing
 `TtcTextTest` component checks where needed to connect both localized strings
-to the recognized key and preserve gold, normal-weight styling.
+to the recognized key and preserve normal-weight styling. The row foreground
+follows the neutral badge/native rule; tooltip colors remain unchanged.
 
 Use the existing `stored-variant-plan` scenario for live label creation/removal
 and row placement. Reuse the appearance controls and evidence patterns from

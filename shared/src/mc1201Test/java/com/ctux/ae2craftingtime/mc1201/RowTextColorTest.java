@@ -30,10 +30,34 @@ class RowTextColorTest {
                 for (var status : new Component[] {estimate, null}) {
                     var amounts = TtcText.statusAmounts("4/10").withStyle(ChatFormatting.ITALIC);
                     RowTextColor.amounts(amounts, status, config);
-                    assertEquals(nativeForeground ? null : status == null
-                            ? TextColor.fromRgb(0x123456) : tint, amounts.getStyle().getColor());
+                    assertEquals(status == null ? badge ? TextColor.fromRgb(0x123456) : null
+                            : nativeForeground ? null : tint, amounts.getStyle().getColor());
                     assertEquals(true, amounts.getStyle().isItalic());
                     assertEquals(List.of("4/10"), List.of(((TranslatableContents) amounts.getContents()).getArgs()));
+                }
+            }
+        }
+    }
+
+    @Test
+    void neutralRowLabelsAndAmountsUseOneForegroundWithoutChangingTooltipColors() {
+        var config = new ClientConfig();
+        config.setColor(ClientConfig.Color.TOTAL, 0xE0E0E0);
+        for (boolean badge : new boolean[] {false, true}) {
+            config.features().setEnabled(OptionFeature.BADGE_BACKGROUND, badge);
+            assertEquals(badge ? 0xE0E0E0 : 0x404040, RowTextColor.planTotalColor(config));
+            for (boolean colors : new boolean[] {false, true}) {
+                config.features().setEnabled(OptionFeature.TTC_COLORS, colors);
+                for (var original : List.of(TtcText.waiting(), TtcText.ttcCollectingData(),
+                        TtcText.storedVariant())) {
+                    var originalColor = original.getStyle().getColor();
+                    var row = RowTextColor.neutral(original, config);
+                    var expected = badge ? TextColor.fromRgb(0xE0E0E0) : null;
+                    assertEquals(expected, row.getStyle().getColor());
+                    var amounts = TtcText.statusAmounts("A10");
+                    RowTextColor.amounts(amounts, row, config);
+                    assertEquals(expected, amounts.getStyle().getColor());
+                    assertEquals(originalColor, original.getStyle().getColor());
                 }
             }
         }

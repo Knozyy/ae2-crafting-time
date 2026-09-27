@@ -128,7 +128,7 @@ near-match again. Require automatic warning appearance, clearing and recovery
 at the next ordinary synchronization after AE2's notification, with unchanged
 native quantities, summary revision and Start behavior. Never seed diagnostics.
 
-Capture each transition and the gold normal-weight row/tooltip in English.
+Capture each transition and the neutral normal-weight row and unchanged tooltip in English.
 Cover ordinary, exact-only, different-item, fluid and successful controls,
 multiple variants, unrelated rows, all TTC sorts without samples, narrow layout
 and coexistence with recurrence. Record server storage facts and notification,

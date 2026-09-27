@@ -93,7 +93,9 @@ class OptionsModelTest {
     void appearanceRowsMapFeaturesColorsAndOpacityAcrossPages() {
         int featureRows = 2;
         int totalRows = ClientConfig.appearanceRowCount(featureRows);
-        assertEquals(featureRows + ClientConfig.Color.values().length + 1, totalRows);
+        assertEquals(featureRows + ClientConfig.appearanceColors().size() + 1, totalRows);
+        assertFalse(ClientConfig.appearanceColors().contains(ClientConfig.Color.WAITING));
+        assertEquals(ClientConfig.Color.values().length - 1, ClientConfig.appearanceColors().size());
         assertEquals(2, ClientConfig.appearanceRowsPerPage(145));
         assertEquals(3, ClientConfig.appearanceRowsPerPage(229));
 
@@ -103,7 +105,7 @@ class OptionsModelTest {
         int secondPage = ClientConfig.appearanceRowsPerPage(145);
         assertEquals(0, ClientConfig.appearanceInputIndex(secondPage, featureRows, 0));
         assertEquals(1, ClientConfig.appearanceInputIndex(secondPage, featureRows, 1));
-        assertEquals(ClientConfig.Color.values().length,
+        assertEquals(ClientConfig.appearanceColors().size(),
                 ClientConfig.appearanceInputIndex(totalRows - 1, featureRows, 0));
     }
 

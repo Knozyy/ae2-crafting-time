@@ -24,7 +24,7 @@ with a different NBT tag or data-component patch without changing AE2's plan.
 
 ## Player behavior
 
-- Keep AE2's existing `Missing` amount and add a gold `Stored variant` line to
+- Keep AE2's existing `Missing` amount and add a neutral `Stored variant` line to
   that row when the current ME network contains a positive amount of the same
   item under a different exact AE2 item key, with no positive stored exact key.
 - Add these tooltip lines:

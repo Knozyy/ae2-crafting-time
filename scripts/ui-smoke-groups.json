@@ -43,7 +43,7 @@
       "screenshots": ["recurrent-plan-tooltip.png"]
     },
     "stored-variant-plan": {
-      "checks": ["initial-clear", "live-near", "removed-clear", "exact-clear", "restored-near", "gold-normal", "variant-tooltip", "unchanged-plan", "variant-sorts", "variant-layout", "exact-only", "other-item", "ordinary-clear", "fluid-clear", "coexistence", "notification-lifecycle", "watcher-cleanup"],
+      "checks": ["initial-clear", "live-near", "removed-clear", "exact-clear", "restored-near", "neutral-normal", "variant-tooltip", "unchanged-plan", "variant-sorts", "variant-layout", "exact-only", "other-item", "ordinary-clear", "fluid-clear", "coexistence", "notification-lifecycle", "watcher-cleanup"],
       "connectedChecks": ["menu-cancel", "network-switch", "native-replan", "reconnected-fresh"],
       "connectedScreenshots": ["stored-variant-network-switch.png", "stored-variant-replanned.png", "stored-variant-cancelled.png", "stored-variant-reconnected.png"],
       "screenshots": ["stored-variant-0.png", "stored-variant-1.png", "stored-variant-2.png", "stored-variant-3.png", "stored-variant-4.png", "stored-variant-5.png", "stored-variant-6.png", "stored-variant-7.png", "stored-variant-sort-0.png", "stored-variant-sort-1.png", "stored-variant-sort-2.png"]

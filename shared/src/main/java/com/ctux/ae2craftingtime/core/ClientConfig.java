@@ -1,6 +1,7 @@
 package com.ctux.ae2craftingtime.core;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Objects;
 
 /** Client-owned values for the in-game options screen and local config file. */
@@ -15,6 +16,11 @@ public final class ClientConfig {
         Color(int defaultRgb) { this.defaultRgb = defaultRgb; }
         public int defaultRgb() { return defaultRgb; }
     }
+
+    private static final List<Color> APPEARANCE_COLORS = List.of(Color.FAST, Color.MIDDLE, Color.SLOW,
+            Color.DELAYED, Color.COLLECTING, Color.TOTAL, Color.BADGE);
+
+    public static List<Color> appearanceColors() { return APPEARANCE_COLORS; }
 
     private final FeatureOptions features = new FeatureOptions(OptionFeature.Owner.CLIENT);
     private final EnumMap<Color, Integer> colors = new EnumMap<>(Color.class);
@@ -33,7 +39,7 @@ public final class ClientConfig {
     public boolean badgeBackground() { return features.enabled(OptionFeature.BADGE_BACKGROUND); }
 
     public static int appearanceRowCount(int featureRows) {
-        return featureRows + Color.values().length + 1;
+        return featureRows + APPEARANCE_COLORS.size() + 1;
     }
 
     public static int appearanceRowsPerPage(int screenHeight) {

@@ -158,9 +158,7 @@ public abstract class CraftingStatusTableRendererMixin {
         if (entry.getActiveAmount() == 0 && entry.getPendingAmount() > 0) {
             var waiting = ClientStats.CACHE.waitingTicks(key);
             if (waiting.isPresent() && ClientOptionsRuntime.enabled(OptionFeature.WAITING_STATUS)) {
-                lines.add(TtcText.waiting()
-                        .withStyle(style -> style.withColor(TextColor.fromRgb(
-                                ClientOptionsRuntime.current().color(ClientConfig.Color.WAITING)))));
+                lines.add(RowTextColor.neutral(TtcText.waiting(), ClientOptionsRuntime.current()));
                 return;
             }
         }
@@ -173,9 +171,10 @@ public abstract class CraftingStatusTableRendererMixin {
             TimeEstimate.format(AeKeyAmounts.normalize(entry.getWhat(), amount), stats)
                     .ifPresentOrElse(eta -> lines.add(ttcLine(key, eta)),
                             () -> { if (ClientOptionsRuntime.enabled(OptionFeature.COLLECTING_STATUS))
-                                lines.add(TtcText.ttcCollectingData()); });
+                                lines.add(RowTextColor.neutral(TtcText.ttcCollectingData(),
+                                        ClientOptionsRuntime.current())); });
         }, () -> { if (ClientOptionsRuntime.enabled(OptionFeature.COLLECTING_STATUS))
-            lines.add(TtcText.ttcCollectingData()); });
+            lines.add(RowTextColor.neutral(TtcText.ttcCollectingData(), ClientOptionsRuntime.current())); });
     }
 
     private static boolean ae2craftingtime$appendStatsTooltip(CraftingStatusEntry entry, List<Component> lines) {

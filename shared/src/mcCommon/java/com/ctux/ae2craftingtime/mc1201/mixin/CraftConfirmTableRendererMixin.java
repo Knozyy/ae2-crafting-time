@@ -55,7 +55,7 @@ public abstract class CraftConfirmTableRendererMixin {
                     craft, craft > 0 ? key.formatAmount(craft, AmountFormat.SLOT) : null);
         }
         if (ae2craftingtime$showStoredVariant(entry)) {
-            lines.add(TtcText.storedVariant());
+            lines.add(RowTextColor.neutral(TtcText.storedVariant(), ClientOptionsRuntime.current()));
         }
         var beforeTtc = lines.size();
         ae2craftingtime$appendTtc(entry, lines);
@@ -119,7 +119,8 @@ public abstract class CraftConfirmTableRendererMixin {
     }
 
     private static void ae2craftingtime$addCollecting(List<Component> lines) {
-        if (ClientOptionsRuntime.enabled(OptionFeature.COLLECTING_STATUS)) lines.add(TtcText.ttcCollectingData());
+        if (ClientOptionsRuntime.enabled(OptionFeature.COLLECTING_STATUS))
+            lines.add(RowTextColor.neutral(TtcText.ttcCollectingData(), ClientOptionsRuntime.current()));
     }
 
     private static void ae2craftingtime$appendStatsTooltip(CraftingPlanSummaryEntry entry, List<Component> lines) {

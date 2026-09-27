@@ -95,11 +95,12 @@ class CraftingStatusTableRendererMixinTest {
         }
         var inherited = TtcText.statusAmounts("A10");
         com.ctux.ae2craftingtime.mc1201.RowTextColor.amounts(inherited, Component.literal("status"), config);
-        assertNull(inherited.getStyle().getColor());
+        var neutralColor = config.badgeBackground()
+                ? TextColor.fromRgb(config.color(com.ctux.ae2craftingtime.core.ClientConfig.Color.TOTAL)) : null;
+        assertEquals(neutralColor, inherited.getStyle().getColor());
         var fallback = TtcText.statusAmounts("A10");
         com.ctux.ae2craftingtime.mc1201.RowTextColor.amounts(fallback, null, config);
-        assertEquals(TextColor.fromRgb(com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current()
-                .color(com.ctux.ae2craftingtime.core.ClientConfig.Color.TOTAL)), fallback.getStyle().getColor());
+        assertEquals(neutralColor, fallback.getStyle().getColor());
     }
 
     private static Component compact(List<Component> lines, long stored, String storedText, long active,

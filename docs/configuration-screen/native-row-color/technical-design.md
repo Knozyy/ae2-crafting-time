@@ -34,8 +34,8 @@ compact amounts intentionally remain available without profiling.
 At the Plan/Status component boundary, leave ordinary numeric TTC and ordinary
 or status-free compact amounts without an explicit foreground in off/off.
 That lets the existing native draw argument supply the actual screen palette.
-Apply this before copying a status color to compact amounts. Keep special
-foregrounds and all non-color styles. Do not mutate a component shared with
+Apply this before copying a status color to compact amounts. Keep red warning
+and fast-to-slow foregrounds, plus all non-color styles. Do not mutate a component shared with
 another surface. Reuse one row-specific component adapter for the two callers
 if needed; keep Minecraft API conversion thin.
 
@@ -49,16 +49,22 @@ scope. The two row mixins are the only consumers of `TtcColorContext.get`.
 Status rows currently choose no-space first, then require a remaining amount,
 then choose block reason, waiting, delayed, and finally estimate/collecting.
 Keep that ordering and each feature gate. No-space and block reasons use
-Delayed color; block reasons and delayed TTC are bold. Waiting uses Waiting
-color. Collecting uses Collecting color, although its outer translation key is
-the same `text.ae2craftingtime.ttc` as a numeric estimate: inspect its semantic
-content, not only that outer key. Plan recurrent remains red/bold and stored
-variant remains gold. Compact amounts copy special foreground, not boldness.
+Delayed color; block reasons and delayed TTC are bold. Plan recurrent remains
+red/bold. Only row copies of Waiting, collecting, and Stored variant lose their
+explicit colors when the badge is off, or take Total when it is on. The general
+text factories and tooltip components keep their original colors. TTC estimates
+retain the fast-to-slow foreground when enabled. Compact amounts copy an
+explicit warning or estimate foreground without copying boldness; otherwise
+they use the same neutral foreground as the associated row.
 
 Removing every `status.amounts` color at draw time would hide warning colors.
-Comparing RGB with Total is also wrong when custom colors coincide. Preserve
-special meaning during component creation, before a compact line loses the
-identity of the status it copied.
+Comparing RGB with Total is also wrong when custom colors coincide. Choose the
+neutral row copy at the Plan/Status component boundary, before compact amounts
+copy its foreground. The legacy Waiting config key is retained for old files,
+but hidden from Appearance because no row uses it.
+Both Plan screen mixins choose the native dark total foreground without a badge
+and the configured Total foreground with a badge; the same choice colors the
+clock symbol and the draw call.
 
 ## Compatibility and failure boundaries
 

@@ -25,6 +25,7 @@ import com.ctux.ae2craftingtime.mc1201.TtcDetailsKeyMapping;
 import com.ctux.ae2craftingtime.mc1201.TtcSortButton;
 import com.ctux.ae2craftingtime.mc1201.TtcText;
 import com.ctux.ae2craftingtime.mc1201.TtcComponents;
+import com.ctux.ae2craftingtime.mc1201.RowTextColor;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -122,15 +123,17 @@ public abstract class CraftConfirmScreenMixin extends AEBaseScreen<CraftConfirmM
         }
 
         TimeEstimate.formatTotal(estimates).ifPresent(eta -> {
+            var config = ClientOptionsRuntime.current();
+            int color = RowTextColor.planTotalColor(config);
             var text = TtcComponents.rowSymbolsInTextColor(
-                    TtcText.totalTtc(eta).withStyle(style -> style.withColor(0x404040)), 0x404040);
+                    TtcText.totalTtc(eta).withStyle(style -> style.withColor(color)), color);
             var font = getMinecraft().font;
             var textX = 109 - font.width(text) / 2;
             var totalWidth = font.width(text);
             TtcBadge.fillRoundedRect(guiGraphics, textX - 2, 176, textX + totalWidth + 2,
                     178 + font.lineHeight + 2, TtcBadge.BACKGROUND);
             guiGraphics.text(font, text, textX, 178,
-                    0xFF404040,
+                    0xFF000000 | color,
                     ClientOptionsRuntime.textShadow());
             IntegrationLog.observe("ae2craftingtime", "plan-total");
         });

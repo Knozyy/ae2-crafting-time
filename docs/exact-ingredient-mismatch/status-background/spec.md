@@ -13,13 +13,13 @@ Verification: Documentation review only. The fix and its runtime checks remain p
 ## Behavior
 
 Give `Stored variant` the same rounded background as other AE2 Crafting Time
-status labels in Crafting Plan rows. The reported screenshot shows bare gold
-text on a tinted missing-item row while neighboring status labels have badges.
+status labels in Crafting Plan rows. Its foreground follows the neutral row
+color rule, including on tinted missing-item rows.
 
 Use the existing client Badge background setting, color, and opacity. On draws
 the configured badge, including intentionally transparent opacity zero. Off
 hides the background while keeping the label visible. Preserve normal-weight
-gold text and the existing Text shadow option.
+text and the existing Text shadow option.
 
 Fit both `Stored variant` and `Інший варіант у сховищі` within the row using the
 existing width-limited badge layout. The label and background must not overlap
