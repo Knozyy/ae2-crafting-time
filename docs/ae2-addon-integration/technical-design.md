@@ -392,6 +392,50 @@ must be checked:
 | 1.21.1 NeoForge | `mcCommon` + `mc1201` + `neoforge` | AE2 19 signatures |
 | 26.1.2 NeoForge | `mcCommon` + `mc2612` + `neoforge` | AE2 26/Minecraft identifier changes and fewer optional UI integrations |
 
+## Applied Journey investigation
+
+See the [scope and acceptance](spec.md#applied-journey-investigation) and
+[archive boundary](applied-journey.md). The current report has no runtime
+evidence, so the cause and correction remain open.
+
+Ordinary `CraftingCpuLogicMixin` observes dispatch, accepted output, job finish
+and capacity. `ProfilerBridge` scopes and normalizes these events for
+`CraftProfiler` and saved history. `StatsRequestHandler` uses
+`StatsRequestContext` to resolve the authoritative grid/CPU; snapshots populate
+`ClientStats`. Shared `CraftConfirmTableRendererMixin` and
+`CraftingStatusTableRendererMixin` append text through `TtcText`, using craft
+amount and active-plus-pending amount respectively. Missing samples can show
+Collecting Data; they do not by themselves explain every control disappearing.
+
+`ClientOptionsRuntime.enabled` checks the negotiated stats channel, local
+options and server profiling state. NeoForge `StatsNetwork.canSend` checks
+`NetworkRegistry.hasChannel`. Inspect those gates before changing rendering.
+`IntegrationSelection.shouldApply` keeps required AE2 hooks outside optional
+adapter selection. Data Energistics and OmniSequence have no dedicated entry
+in that selector at this investigation baseline.
+
+Trace a confirmed defect through every sibling caller before fixing it:
+NeoEco, Lightning Tech and AdvancedAE use `ProfilerBridge`; plan/status,
+wireless, Crafting Tree and ME Requester use shared requests/cache/text.
+Prefer the confirmed shared seam. Preserve network-plus-output identity,
+normalized units, bounded packets and saved history. An addon adapter requires
+evidence of a distinct execution or UI path.
+
+The export's bundled AE2 Extended CPU/storage mixins and other installed UI
+addons are candidates for isolation, not diagnosed causes. Compare observed
+hook execution, actual screen class, channel availability, options, request
+responses and completion samples at the first differing graph. Retain the
+historical artifact baseline separately from the current-source replacement.
+If current source already fixes the report, identify the existing correction
+through before/after evidence rather than introducing speculative code.
+
+Existing Prism staging, the tracked NeoForge source fixture and schema-2
+`prepare-ui-smoke-suite.ps1` cover provisioning and suite isolation. This scope
+does not authorize building a replacement runner. Before execution, verify the
+exact Codex instance, Java 21, guest-local runtime, fixture marker and matching
+production/driver hashes. Missing downloads or guest prerequisites are explicit
+preflight gates. Install the supplied export when no matching instance exists.
+
 ## Development-client profiles
 
 `scripts/run-client-versions.json` is the source of truth for development

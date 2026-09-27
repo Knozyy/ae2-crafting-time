@@ -104,8 +104,9 @@ runtime separate from total task time. Mark an unavailable duration as
   completion, record the install as blocked and continue the batch.
 
 For a standard group in an explicitly requested pack, pass `standard-ae2`
-through `prepare-ui-smoke-suite.ps1` so it expands into six leaves sharing one
-loaded disposable world before the one Prism launch. Use schema-1 world reloads
+through `prepare-ui-smoke-suite.ps1` so it expands into the leaves listed in
+`scripts/ui-smoke-groups.json`, sharing one loaded disposable world before the
+one Prism launch. Use schema-1 world reloads
 only for explicit isolation diagnostics. Do not pass that alias to the raw JVM
 scenario property. This does not change the inspected pack graph or authorize
 automatic pack selection from a source diff.

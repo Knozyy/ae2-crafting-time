@@ -242,6 +242,51 @@ specific, reproduced contract gap.
 5. Close candidates such as range boosters or visual tools when they have no TTC
    surface.
 
+## Applied Journey investigation
+
+Use the [scoped criteria](spec.md#applied-journey-investigation) and
+[design](technical-design.md#applied-journey-investigation). The primary target
+is `1.21.1-neoforge`, Applied Journey 0.0.1, NeoForge 21.1.249, in Prism's Codex
+group. Required verification of other rows follows the eventual changed code;
+this investigation does not require an unrelated four-target full smoke.
+
+1. **AJ-01, preflight:** verify the supplied archive hash, install the exact
+   export through Prism if absent, and inventory enabled/nested JAR metadata
+   and overrides. Verify Java 21, guest-local staging, source fixture marker,
+   and session worktree share. Build on the host after the PR exists, following
+   repository ordering. Preserve the original Crafting Time artifact for its
+   historical baseline and hash the replacement production/driver pair.
+2. **AJ-01/02, reproduce:** capture ordinary Plan and Status behavior in the
+   exact pack, including options, channel support, selected/observed hooks,
+   logs and screenshots. Compare the same craft and settings in the five
+   graphs defined in the investigation guide. Include each addon's required
+   dependencies and record graph differences. Keep hypotheses separate from
+   findings; report a blocked graph without substituting another version.
+3. **AJ-03/05, correct:** update this design with the confirmed cause and exact
+   affected code before editing behavior. Fix the smallest shared seam and
+   cover changed decisions through existing tests. If the historical artifact
+   fails but current source passes, record the existing correction and its
+   evidence. For an external defect, retain a minimal reproducer and follow-up.
+4. **AJ-03/04, full smoke:** expand `standard-ae2` from
+   `scripts/ui-smoke-groups.json`; select applicable installed integrations and
+   general status cases from `scripts/ui-smoke-neoforge-suite.json`. Retain the
+   case list and absent/unsupported reasons. Use one schema-2 suite per graph
+   with pristine state between cases. Restore the exact full graph for a clean
+   final run on the reviewed source; verify real crafts and review screenshots.
+5. **AJ-05, close evidence:** run checks required by the actual correction,
+   separately report current-head GitHub CI, and record artifact/revision and
+   graph identities. Any changed optional presentation mixin needs `require = 0`,
+   remapped-target verification and client startup. Update dependency claims
+   only where demonstrated. Do not mark the scope finished while required
+   graphs, full-pack cases or visual evidence are missing.
+
+Before runtime work, record planned launches, known cold-start cost and a
+wall-time budget. Use bounded lack-of-progress detection. Diagnostic resumes
+remain diagnostic; final acceptance requires a clean run on the final graph
+and source. Collect timings and failures per actual run, close only the tested
+client, and cleanly shut down CodexVM after immediate visual follow-up. Verify
+its VMX is absent from `vmrun -T ws list`, including after a failed campaign.
+
 ## Final compatibility sweep
 
 - Run required CI for every changed supported row.

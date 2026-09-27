@@ -161,6 +161,38 @@ not add new AE2 majors or combine different Minecraft builds into one JAR.
 - A candidate installed for compatibility testing is not automatically a
   supported integration.
 
+## Applied Journey investigation
+
+Status: in-progress
+
+Scope: Diagnose the reported missing native AE2 UI and complete a full smoke
+against the supplied Applied Journey 0.0.1 export on Minecraft 1.21.1,
+NeoForge 21.1.249.
+
+Issue: [#534](https://github.com/cTux/ae2-crafting-time/issues/534).
+
+Planning: [Investigation guide](applied-journey.md),
+[design](technical-design.md#applied-journey-investigation),
+[plan](implementation-plan.md#applied-journey-investigation).
+
+Remaining gate: reproduce or explain the historical report, verify any
+correction, and retain reviewed full-pack runtime evidence. No culprit or
+source correction has been established.
+
+This restores existing behavior without changing profiling, wire formats,
+saved data or optional dependency requirements. With the matching mod on both
+sides and profiling/UI options enabled, ordinary AE2 crafting must retain its
+Plan/Status text, controls, estimates and completion samples. Missing history
+shows Collecting Data when enabled. Intentionally disabled features remain off.
+
+| Criterion | Required evidence |
+| --- | --- |
+| AJ-01 | Bind the historical and current-source runs to the archive, loaded JAR graph including bundled/nested mods, configuration and artifact hashes; record exact missing UI or a non-reproduction. |
+| AJ-02 | Compare a consistent ordinary CPU craft in core-only, Data Energistics, OmniSequence plus required dependencies, both addons, and full-pack graphs. Distinguish channel/options, renderer and profiling causes; record blocked graphs explicitly. |
+| AJ-03 | On the corrected or already-correct source, ordinary Plan/Status rows, tooltips, sort/details/reset controls, totals, real output and completion profiling pass the standard cases; no-history and disabled-profiling behavior remain correct. |
+| AJ-04 | The exact full pack passes all applicable standard, installed integration and general status cases, with reviewed screenshots and assertions. List absent/unsupported cases; a reduced graph or startup-only result cannot pass. |
+| AJ-05 | Any source change has required coverage and checks on affected targets; optional presentation mixin changes also verify the remapped production target and client startup. Evidence identifies the tested revision, final graph and cleanup. |
+
 ## Not included
 
 - Guessing addon crafting methods from discovered `ICraftingCPU` classes.

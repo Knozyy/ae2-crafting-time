@@ -275,8 +275,9 @@ cover active and scheduled exclusions; the fixture does not simulate a craft.
 
 ## Standard AE2 acceptance scenario
 
-`standard-ae2` is a host-expanded group of seven independently runnable leaves:
-`standard-plan-controls`, `standard-status-controls`, `waiting-status`,
+`standard-ae2` is a host-expanded group of ten independently runnable leaves:
+`standard-plan-controls`, `badge-background`, `recurrent-plan`,
+`stored-variant-plan`, `standard-status-controls`, `waiting-status`,
 `running-status`, `delayed-status`, `craft-lifecycle`, and `cpu-list-total-ttc`. Each has a fresh
 native grid and its own seeded estimates; no case depends on an earlier reset,
 world, job, or cached observation. Standalone standard leaves copy only world metadata and
