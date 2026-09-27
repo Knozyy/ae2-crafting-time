@@ -44,24 +44,24 @@ running Codex process. Load the existing user-scoped secrets into the current
 PowerShell process without printing them, run the cheap dry run, then deploy:
 
 ```powershell
-$env:MODRINTH_TOKEN = [Environment]::GetEnvironmentVariable("MODRINTH_TOKEN", "User")
 $env:CURSEFORGE_TOKEN = [Environment]::GetEnvironmentVariable("CURSEFORGE_TOKEN", "User")
-if ([string]::IsNullOrWhiteSpace($env:MODRINTH_TOKEN)) { throw "MODRINTH_TOKEN is missing at user scope" }
 if ([string]::IsNullOrWhiteSpace($env:CURSEFORGE_TOKEN)) { throw "CURSEFORGE_TOKEN is missing at user scope" }
 $env:RELEASE_TYPE = "release"
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\deploy-changed.ps1 -Deploy -DryRun
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\deploy-changed.ps1 -Deploy -DryRun -SkipModrinth
 ```
 
-The dry run checks the plan without building or uploading anything. Before the
+To include Modrinth, load and check `MODRINTH_TOKEN` at user scope and omit
+`-SkipModrinth` from both commands. The dry run checks the plan without building
+or uploading anything. Before the
 real deploy, show the user its exact GitHub Release title and body and each
-affected versioned JAR's exact changelog for CurseForge and Modrinth. Get
+affected versioned JAR's exact changelog for each selected platform. Get
 explicit approval for both groups of text. Do not upload before approval. If
 the text or affected JAR set changes, rerun the dry run and get approval again.
 
 After approval, run the real deploy without changing the release inputs:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\deploy-changed.ps1 -Deploy
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\deploy-changed.ps1 -Deploy -SkipModrinth
 ```
 
 The real deploy builds changed rows at `modVersion`, rebuilds unchanged rows at
@@ -109,7 +109,7 @@ release state, and pushes the branch.
 After it succeeds:
 
 1. Verify the GitHub Release contains one loader-explicit JAR for every matrix row.
-2. Verify each new Modrinth version is listed with the expected loader and game version.
+2. If uploading to Modrinth, verify each new version is listed with the expected loader and game version.
 3. Confirm CurseForge accepted every upload. Public visibility can lag, and the author upload token may not be authorized for the public files read endpoint.
 4. Merge the hook-created release PR and verify `origin/master` contains the next patch `modVersion`.
 
@@ -128,18 +128,18 @@ not created.
 
 `deploy-changed.ps1` fingerprints only jar inputs: root build files, shared main code, and the matrix row's version main code. Test-only edits do not build or deploy.
 
-For every affected row, `-Deploy` publishes the current `modVersion`, builds the loader-explicit jar, generates that jar's changelog from commits since its previous release, and uploads the jar plus changelog to both Modrinth and CurseForge. A scoped manual changelog adds `all` notes to every affected row and adds each matrix-row entry only to that row; the GitHub body prints the common block once and each row-specific block under its loader and Minecraft version. Modrinth version numbers use `<mod-version>-<loader>-<minecraft-version>`, for example `1.1.0-forge-1.20.1`, so they stay unique across the project while putting the mod version first. CurseForge uploads include the project's Client and Server environment versions. It also rebuilds the unchanged rows at their current released versions so the GitHub Release always attaches the complete latest supported JAR set. The release title and body list only affected versions and their per-jar changelogs. After every successful deploy, it bumps `modVersion` to the next patch and commits `gradle.properties` together with `.release-state.json`; every later commit and normal build then belongs to that new version. The repository's post-commit hook pushes that commit and creates the branch PR when needed.
+For every affected row, `-Deploy` publishes the current `modVersion`, builds the loader-explicit jar, generates that jar's changelog from commits since its previous release, and uploads the jar plus changelog to CurseForge and, unless `-SkipModrinth` is set, Modrinth. A scoped manual changelog adds `all` notes to every affected row and adds each matrix-row entry only to that row; the GitHub body prints the common block once and each row-specific block under its loader and Minecraft version. Modrinth version numbers use `<mod-version>-<loader>-<minecraft-version>`, for example `1.1.0-forge-1.20.1`, so they stay unique across the project while putting the mod version first. CurseForge uploads include the project's Client and Server environment versions. It also rebuilds the unchanged rows at their current released versions so the GitHub Release always attaches the complete latest supported JAR set. The release title and body list only affected versions and their per-jar changelogs. After every successful deploy, it bumps `modVersion` to the next patch and commits `gradle.properties` together with `.release-state.json`; every later commit and normal build then belongs to that new version. The repository's post-commit hook pushes that commit and creates the branch PR when needed.
 
 Run `scripts/setup-git.ps1` once after cloning. It installs the tracked post-commit hook, which automatically pushes every fix, feature, and release commit and creates one PR per branch. Existing PRs are reused, so later commits update them without duplicates. Work on a branch: the hook intentionally refuses to push a detached HEAD. GitHub CLI must be installed and authenticated for PR creation.
 
-Release metadata can come from the matrix row or from environment overrides. `RELEASE_TYPE`, `MODRINTH_PROJECT_ID`, and `CURSEFORGE_PROJECT_ID` override the row values for all entries in the current run. `MODRINTH_TOKEN` and `CURSEFORGE_TOKEN` are required only for a real `-Deploy`; GitHub CLI must also be authenticated.
+Release metadata can come from the matrix row or from environment overrides. `RELEASE_TYPE`, `MODRINTH_PROJECT_ID`, and `CURSEFORGE_PROJECT_ID` override the row values for all entries in the current run. `CURSEFORGE_TOKEN` and, unless `-SkipModrinth` is set, `MODRINTH_TOKEN` are required only for a real `-Deploy`; GitHub CLI must also be authenticated.
 
 Each matrix row also declares its required and optional Modrinth projects in
 `modrinthDependencies`. The deploy script validates and uploads that list with
 every new version; keep it consistent with `docs/dependencies.md` and the loader's
 mod metadata.
 
-`-Deploy` fails fast unless both platform project ids resolve for every affected row. The current Modrinth and CurseForge project ids are stored per row in the release matrix.
+`-Deploy` fails fast unless project ids for selected platforms resolve for every affected row. The current Modrinth and CurseForge project ids are stored per row in the release matrix.
 
 Check the release script after changing `deploy-changed.ps1` or the release matrix:
 

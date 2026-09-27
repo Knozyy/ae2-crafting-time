@@ -1,6 +1,7 @@
 param(
     [switch]$Deploy,
     [switch]$DryRun,
+    [switch]$SkipModrinth,
     [string]$ReleaseType,
     [string]$ModrinthProjectId,
     [string]$CurseProjectId,
@@ -383,6 +384,9 @@ function Publish-GitHubRelease($releases, $jars, [string]$sourceCommit) {
             "## $heading`n`n$($_.Name)"
         }) -join "`n`n"
     }
+    if ($SkipModrinth) {
+        $notes += "`n`n## Availability`n`nThis release is available on GitHub and CurseForge. Modrinth was skipped."
+    }
 
     if ($DryRun) {
         Write-Host "dry-run GitHub Release: $title"
@@ -448,7 +452,7 @@ try {
         if (-not $changed) {
             Write-Host "skip $($entry.id): unchanged at $currentVersion"
         }
-        if ($changed -and $Deploy -and -not $entry.modrinthProjectId) {
+        if ($changed -and $Deploy -and -not $SkipModrinth -and -not $entry.modrinthProjectId) {
             throw "$($entry.id) has no Modrinth project id. Set it in the matrix or MODRINTH_PROJECT_ID."
         }
         if ($changed -and $Deploy -and -not $entry.curseProjectId) {
@@ -492,8 +496,13 @@ try {
         foreach ($release in $releases) {
             if ($DryRun) {
                 Write-Host "dry-run deploy $($release.entry.id): $($release.jarPath)"
-                Write-Host "dry-run Modrinth version: $($release.version)-$($release.entry.loader)-$($release.entry.minecraftVersion)"
-                Write-Host "dry-run Modrinth dependencies: $((@($release.entry.modrinthDependencies) | ForEach-Object { "$($_.project_id):$($_.dependency_type)" }) -join ', ')"
+                if ($SkipModrinth) {
+                    Write-Host "dry-run Modrinth: skipped"
+                }
+                else {
+                    Write-Host "dry-run Modrinth version: $($release.version)-$($release.entry.loader)-$($release.entry.minecraftVersion)"
+                    Write-Host "dry-run Modrinth dependencies: $((@($release.entry.modrinthDependencies) | ForEach-Object { "$($_.project_id):$($_.dependency_type)" }) -join ', ')"
+                }
                 Write-Host "dry-run CurseForge versions: $($release.entry.minecraftVersion), $($release.entry.loaderName), Client, Server"
                 $relations = @(Get-CurseForgeRelations $release.entry)
                 if ($relations.Count) {
@@ -503,7 +512,9 @@ try {
                 Write-Host $release.changelog
             }
             else {
-                Publish-Modrinth $release.entry $release.version $release.jarPath $release.changelog
+                if (-not $SkipModrinth) {
+                    Publish-Modrinth $release.entry $release.version $release.jarPath $release.changelog
+                }
                 Publish-CurseForge $release.entry $release.version $release.jarPath $release.changelog
             }
         }

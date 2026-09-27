@@ -8,6 +8,7 @@ release assets appear in the message.
 The workflow runs when a GitHub Release is published. In exactly one message, it
 posts the release page, the complete release-body prose, and one row per JAR in the form
 `[filename.jar](GitHub URL) ([CF](CurseForge file URL), [MR](Modrinth version URL))`.
+When the release says Modrinth was skipped, omit its `MR` links.
 It uploads the approved release image in that same webhook request so Discord
 shows the file inline instead of relying on its remote Markdown URL. An
 over-limit announcement fails before posting anything.

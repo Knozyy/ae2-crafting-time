@@ -68,6 +68,15 @@ if (($releaseDryRun -join "`n") -notmatch 'dry-run next development version: 1\.
 if (($releaseDryRun -join "`n") -notmatch 'dry-run GitHub tag: release-1\.0\.4') {
     throw "Release dry run did not use a deterministic version tag"
 }
+$skipModrinthDryRun = & powershell -NoProfile -ExecutionPolicy Bypass -File "$PSScriptRoot\deploy-changed.ps1" `
+    -StatePath $StatePath -VersionPath $versionPath -Deploy -DryRun -SkipModrinth `
+    -CurseProjectId 1591476
+if ($LASTEXITCODE -ne 0 -or ($skipModrinthDryRun -join "`n") -notmatch 'dry-run Modrinth: skipped' -or
+    ($skipModrinthDryRun -join "`n") -match 'dry-run Modrinth version:' -or
+    ($skipModrinthDryRun -join "`n") -notmatch 'dry-run CurseForge versions:' -or
+    ($skipModrinthDryRun -join "`n") -notmatch 'Modrinth was skipped\.') {
+    throw "CurseForge-only dry run did not skip Modrinth"
+}
 $releaseOutput = $releaseDryRun -join "`n"
 $releaseMatrix = Get-Content -LiteralPath (Join-Path $PSScriptRoot "release-matrix.json") -Raw | ConvertFrom-Json
 foreach ($entry in $releaseMatrix) {
