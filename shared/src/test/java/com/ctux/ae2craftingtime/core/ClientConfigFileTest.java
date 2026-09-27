@@ -20,15 +20,16 @@ class ClientConfigFileTest {
         var legacy = directory.resolve("common.toml");
         assertTrue(ClientConfigFile.load(path, legacy).features().enabled(OptionFeature.CRAFTING_TREE));
         assertFalse(ClientConfigFile.load(path, legacy).features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS));
-        assertTrue(ClientConfigFile.load(path, legacy).features().enabled(OptionFeature.TEXT_SHADOW));
+        assertFalse(ClientConfigFile.load(path, legacy).features().enabled(OptionFeature.TEXT_SHADOW));
+        assertFalse(ClientConfigFile.load(path, legacy).features().enabled(OptionFeature.TTC_COLORS));
         assertTrue(ClientConfigFile.load(path, legacy).features().enabled(OptionFeature.SHOW_EMOJI));
-        assertTrue(ClientConfigFile.load(path, legacy).badgeBackground());
+        assertFalse(ClientConfigFile.load(path, legacy).badgeBackground());
         Files.write(legacy, List.of("enabled = false", "showInTree = false"));
         var migrated = ClientConfigFile.load(path, legacy);
         assertFalse(migrated.features().enabled(OptionFeature.CRAFTING_TREE));
         assertTrue(migrated.features().enabled(OptionFeature.PLAN_ROWS));
         assertFalse(migrated.features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS));
-        assertTrue(migrated.badgeBackground());
+        assertFalse(migrated.badgeBackground());
     }
 
     @Test
@@ -39,9 +40,10 @@ class ClientConfigFileTest {
         var config = new ClientConfig();
         config.features().setEnabled(OptionFeature.RECEIVE_CRAFT_WARNINGS, false);
         config.features().setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, true);
-        config.features().setEnabled(OptionFeature.TEXT_SHADOW, false);
+        config.features().setEnabled(OptionFeature.TEXT_SHADOW, true);
+        config.features().setEnabled(OptionFeature.TTC_COLORS, true);
         config.features().setEnabled(OptionFeature.SHOW_EMOJI, false);
-        config.features().setEnabled(OptionFeature.BADGE_BACKGROUND, false);
+        config.features().setEnabled(OptionFeature.BADGE_BACKGROUND, true);
         config.setPlanSort(0);
         config.setStatusSort(1);
         config.setBadgeOpacity(0);
@@ -51,9 +53,10 @@ class ClientConfigFileTest {
         var loaded = ClientConfigFile.load(path, legacy);
         assertFalse(loaded.features().enabled(OptionFeature.RECEIVE_CRAFT_WARNINGS));
         assertTrue(loaded.features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS));
-        assertFalse(loaded.features().enabled(OptionFeature.TEXT_SHADOW));
+        assertTrue(loaded.features().enabled(OptionFeature.TEXT_SHADOW));
+        assertTrue(loaded.features().enabled(OptionFeature.TTC_COLORS));
         assertFalse(loaded.features().enabled(OptionFeature.SHOW_EMOJI));
-        assertFalse(loaded.badgeBackground());
+        assertTrue(loaded.badgeBackground());
         assertTrue(loaded.features().enabled(OptionFeature.CRAFTING_TREE));
         assertEquals(0, loaded.planSort());
         assertEquals(1, loaded.statusSort());
@@ -75,9 +78,9 @@ class ClientConfigFileTest {
         assertFalse(config.features().enabled(OptionFeature.PLAN_ROWS));
         assertTrue(config.features().enabled(OptionFeature.RECEIVE_CRAFT_WARNINGS));
         assertTrue(config.features().enabled(OptionFeature.CRAFTING_TREE));
-        assertTrue(config.features().enabled(OptionFeature.TEXT_SHADOW));
+        assertFalse(config.features().enabled(OptionFeature.TEXT_SHADOW));
         assertTrue(config.features().enabled(OptionFeature.SHOW_EMOJI));
-        assertTrue(config.badgeBackground());
+        assertFalse(config.badgeBackground());
         assertEquals(2, config.planSort());
         assertEquals(2, config.statusSort());
         assertEquals(176, config.badgeOpacity());

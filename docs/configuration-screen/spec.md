@@ -51,7 +51,8 @@ belong to the client; profiling and shared behavior remain server-authoritative.
 
 ### Feature switches
 
-Every switch defaults **on** to preserve existing behavior. Turning one off
+Switches default **on** except fast-to-slow TTC colors, compact crafting amounts,
+text shadow, and badge background, which default **off**. Turning one off
 removes only the named feature; it does not erase learned samples, change active
 crafts, or silently turn off sibling features. The server profiling master
 (`enabled`) is the exception: turning it off suspends all server-derived TTC and
@@ -60,7 +61,7 @@ diagnostics. It is clearly labelled as the master switch.
 | Owner and group | Independent switches | Off behavior |
 | --- | --- | --- |
 | Client / Displays | Crafting Plan row TTC, Crafting Plan total, Crafting Status row TTC, Crafting Status total, CPU-card total, Crafting Tree TTC, ME Requester TTC | Hide the named surface only; unsupported integrations are shown disabled with a reason. |
-| Client / Displays | Fast-to-slow TTC coloring, prediction accuracy, detailed tooltips, control hints | Hide the named detail or use neutral text color; estimates stay available. |
+| Client / Displays | Fast-to-slow TTC coloring, prediction accuracy, detailed tooltips, control hints | Hide the named detail or use neutral text color; estimates stay available. Fast-to-slow colors default off. |
 | Client / Displays | [Compact crafting amounts](../crafting-plan-amounts/spec.md) (`compactStatusAmounts`, #438, #525, and #529) | Show compact amounts in Crafting Plan and Crafting Status when on; keep row TTC independent. Defaults off and remains effective with server profiling off. |
 | Client / Warnings | Waiting-to-start, collecting-data, delayed, recurrent ingredient, and each blocked reason (`NO PROVIDER`, `NO POWER`, `NO SPACE`, `NO CHANNEL`, `NO TARGET`, `INPUT BLOCKED`) | Hide that status and its badge/tooltip on this client; other statuses and calculations remain. |
 | Client / Warnings | Private craft warning chat | Mute delayed and blocked warning messages for this player, including the screenshot's repeated `is delayed` lines. Other players keep their own choice. |
@@ -85,13 +86,13 @@ authoritative.
 
 | Group | Settings and defaults |
 | --- | --- |
-| Displays | The independent on/off values in the feature-switch table. All default on where supported. |
+| Displays | The independent on/off values in the feature-switch table. Fast-to-slow colors and compact crafting amounts default off; the other supported switches default on. |
 | Sorting | Separate Crafting Plan and Crafting Status defaults. Both start at longest first, matching the current `2` mode. Choices are AE2 order, shortest first, and longest first. |
 | TTC scale | Fast `#55FF55`, middle `#FFFF55`, slow `#FF5555`. |
 | Status text | Neutral Plan/Status rows use AE2's text color without a badge and Total `#E0E0E0` with a badge. Delayed/blocked warnings stay red; fast-to-slow TTC colors and tooltip colors stay as configured. |
 | Badges | Background `#000000` with `176/255` opacity, matching `0xB0000000`. |
-| Appearance | [Text shadow](text-shadow/spec.md) (`textShadow`, #531), default on; controls mod-drawn text independently of badge backgrounds and TTC colors. |
-| Appearance | [Badge background](badge-background/spec.md) (`badgeBackground`, #532), default on; hides only mod-owned badge backgrounds while preserving saved color and opacity. |
+| Appearance | [Text shadow](text-shadow/spec.md) (`textShadow`, #531), default off; controls mod-drawn text independently of badge backgrounds and TTC colors. |
+| Appearance | [Badge background](badge-background/spec.md) (`badgeBackground`, #532), default off; hides only mod-owned badge backgrounds while preserving saved color and opacity. |
 
 Options for a feature unavailable on the current target stay visible but disabled
 and explain the missing mod or unsupported target. Guide book content,

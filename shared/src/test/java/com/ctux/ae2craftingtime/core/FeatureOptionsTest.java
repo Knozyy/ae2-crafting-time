@@ -10,6 +10,9 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class FeatureOptionsTest {
+    private static final Set<OptionFeature> DEFAULT_OFF = Set.of(OptionFeature.COMPACT_STATUS_AMOUNTS,
+            OptionFeature.TTC_COLORS, OptionFeature.TEXT_SHADOW, OptionFeature.BADGE_BACKGROUND);
+
     @Test
     void blockedReasonSwitchesAreIndependent() {
         assertEquals(OptionFeature.NO_PROVIDER_STATUS, OptionFeature.statusFor(CraftingBlockReason.NO_PROVIDER));
@@ -27,10 +30,10 @@ class FeatureOptionsTest {
         for (var feature : OptionFeature.values()) {
             assertTrue(keys.add(feature.key()));
             assertTrue(feature.group() != null);
-            assertEquals(feature != OptionFeature.COMPACT_STATUS_AMOUNTS,
+            assertEquals(feature.owner() == OptionFeature.Owner.SERVER || !DEFAULT_OFF.contains(feature),
                     (feature.owner() == OptionFeature.Owner.CLIENT ? client : server).enabled(feature));
         }
-        assertEquals(Set.of(OptionFeature.COMPACT_STATUS_AMOUNTS), client.disabled());
+        assertEquals(DEFAULT_OFF, client.disabled());
         assertTrue(server.disabled().isEmpty());
     }
 
@@ -40,14 +43,14 @@ class FeatureOptionsTest {
         client.setEnabled(OptionFeature.RECEIVE_CRAFT_WARNINGS, false);
         assertFalse(client.enabled(OptionFeature.RECEIVE_CRAFT_WARNINGS));
         assertTrue(client.enabled(OptionFeature.DELAYED_STATUS));
-        assertEquals(2, client.disabled().size());
+        assertEquals(DEFAULT_OFF.size() + 1, client.disabled().size());
 
         var copy = client.copy();
         copy.setEnabled(OptionFeature.RECEIVE_CRAFT_WARNINGS, true);
         assertTrue(copy.enabled(OptionFeature.RECEIVE_CRAFT_WARNINGS));
         assertFalse(client.enabled(OptionFeature.RECEIVE_CRAFT_WARNINGS));
         client.reset();
-        assertEquals(Set.of(OptionFeature.COMPACT_STATUS_AMOUNTS), client.disabled());
+        assertEquals(DEFAULT_OFF, client.disabled());
     }
 
     @Test

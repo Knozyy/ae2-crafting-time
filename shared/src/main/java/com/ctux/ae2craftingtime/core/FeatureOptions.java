@@ -27,7 +27,9 @@ public final class FeatureOptions {
 
     public void reset() {
         disabled.clear();
-        if (owner == OptionFeature.Owner.CLIENT) disabled.add(OptionFeature.COMPACT_STATUS_AMOUNTS);
+        if (owner == OptionFeature.Owner.CLIENT) disabled.addAll(Set.of(
+                OptionFeature.COMPACT_STATUS_AMOUNTS, OptionFeature.TTC_COLORS,
+                OptionFeature.TEXT_SHADOW, OptionFeature.BADGE_BACKGROUND));
     }
 
     public Set<OptionFeature> disabled() {

@@ -23,16 +23,20 @@ Each player controls their own display. Values, colors, badges, and actions stay
 the same.
 
 In Client → Appearance, **Text shadow** controls shadows on text drawn by AE2
-Crafting Time. It's on by default. Turn it off for flatter text; AE2's own text
-keeps its original shadow setting. You can also set `textShadow = false` in the
+Crafting Time. It's off by default. Turn it on for shadowed text; AE2's own text
+keeps its original shadow setting. You can also set `textShadow = true` in the
 client file.
 
-**Badge background** in the same Client → Appearance section is on by default.
-Turn it off to hide the rounded backgrounds behind AE2 Crafting Time's badges
+**Badge background** in the same Client → Appearance section is off by default.
+Turn it on to show rounded backgrounds behind AE2 Crafting Time's badges
 while keeping their text visible. It doesn't hide AE2's own window, row, or
 tooltip backgrounds. Your badge color and opacity stay saved, so turning it
-back on restores them. You can also set `badgeBackground = false` in the client
+on restores them. You can also set `badgeBackground = true` in the client
 file.
+
+**Fast-to-slow colors** and **Compact crafting amounts** in Client → Displays
+also start off. Turn them on for the TTC color scale or shortened row amounts.
+Saved choices stay as you set them.
 
 If **Badge background** and **Fast-to-slow colors** are both off, ordinary time
 estimates and compact amounts in Crafting Plan and Crafting Status use the same

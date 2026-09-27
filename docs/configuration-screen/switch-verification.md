@@ -16,8 +16,9 @@ Cover Forge 1.20.1, Fabric 1.20.1, NeoForge 1.21.1, and NeoForge 26.1.2.
 For unavailable addon cases, record not-applicable with the missing contract or
 unsupported target. An available but unrun case is unverified.
 
-Most switches default on. Verify current documented exceptions explicitly:
-compact amounts defaults off. Test defaults from a clean client/world as well
+Most switches default on. Verify the four default-off exceptions explicitly:
+fast-to-slow TTC colors, compact crafting amounts, text shadow, and badge
+background. Test defaults from a clean client/world as well
 as migrated configuration; do not reset a user's real files.
 
 ## Per-switch sequence

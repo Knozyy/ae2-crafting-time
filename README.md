@@ -18,7 +18,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/crafting-status-overview.png" alt="AE2 crafting status showing remaining-time estimates and blocked inputs" width="705">
+  <img src="docs/images/readme-crafting-plan.png" alt="Crafting Plan showing recipe and total TTC estimates" width="705">
+</p>
+
+<p align="center">
+  <img src="docs/images/readme-crafting-status.png" alt="Crafting Status showing running, waiting, and blocked recipes" width="705">
 </p>
 
 <p align="center">
