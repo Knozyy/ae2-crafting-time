@@ -1,10 +1,17 @@
 # Optional client and server installation
 
-Status: in-progress
+Status: finished
 
-Implementation: [PR #545](https://github.com/cTux/ae2-crafting-time/pull/545).
-Verification remains open until current-head CI and the connected runtime matrix
-meet the acceptance criteria below.
+Implementation: [PR #545](https://github.com/cTux/ae2-crafting-time/pull/545),
+merged as `018b996ffe95ab4e02f79f331fbe986fe9f0777c`.
+Verification: source head `7760daf9d5a4050ba08dc4bb19e963c1fdae3260`
+has 16 passing installation cells, with earlier cells matched to unchanged
+production artifacts by SHA-256. Same-process switching, integrated singleplayer,
+and server-only history readback after a clean restart passed. The readback used
+a completed Stone output sample after the formal runner timed out its manual
+checkpoint. [Gradle tests](https://github.com/cTux/ae2-crafting-time/actions/runs/36278948149)
+and [all mod JAR builds](https://github.com/cTux/ae2-crafting-time/actions/runs/36278948138)
+passed on that head.
 
 Scope: Optional Crafting Time installation on either side of a connection.
 
