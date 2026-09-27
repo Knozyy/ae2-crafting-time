@@ -10,9 +10,9 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Mixin(ChatComponent.class)
 public abstract class ChatTtcSymbolsMixinSrg {
-    @ModifyArg(method = "addMessage", at = @At(value = "INVOKE",
+    @ModifyArg(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;ILnet/minecraft/client/GuiMessageTag;Z)V", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/components/ComponentRenderUtils;wrapComponents(Lnet/minecraft/network/chat/FormattedText;ILnet/minecraft/client/gui/Font;)Ljava/util/List;"),
-            index = 0)
+            index = 0, require = 0)
     private FormattedText ae2craftingtime$decorateChat(FormattedText original) {
         return original instanceof Component component ? TtcComponents.decorate(component) : original;
     }

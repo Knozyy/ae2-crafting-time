@@ -7,6 +7,10 @@
   commit and creates or updates the branch PR.
 - Do not run local tests before the hook creates the PR. Afterward, run only the
   checks required by the applicable skill and report GitHub CI separately.
+- Optional client presentation mixins must preserve vanilla behavior if their
+  injection point changes: use `require = 0`, and verify both the remapped
+  production target and a client startup when adding or changing one. Do not
+  use this fallback for required gameplay or data hooks.
 - When work reveals another issue, handle it based on its impact:
   - Fix it as part of the current task when it is related.
   - Fix it when it is unrelated but blocks the current task.

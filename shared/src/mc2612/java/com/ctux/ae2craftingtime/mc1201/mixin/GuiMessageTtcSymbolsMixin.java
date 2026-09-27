@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 public abstract class GuiMessageTtcSymbolsMixin {
     @ModifyArg(method = "splitLines", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/components/ComponentRenderUtils;wrapComponents(Lnet/minecraft/network/chat/FormattedText;ILnet/minecraft/client/gui/Font;)Ljava/util/List;",
-            remap = false), index = 0, remap = false)
+            remap = false), index = 0, remap = false, require = 0)
     private FormattedText ae2craftingtime$decorateChat(FormattedText original) {
         return original instanceof Component component ? TtcComponents.decorate(component) : original;
     }
