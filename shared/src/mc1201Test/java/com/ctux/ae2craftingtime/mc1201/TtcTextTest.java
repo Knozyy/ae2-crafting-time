@@ -148,7 +148,7 @@ class TtcTextTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"en_us, NO SPACE", "uk_ua, Немає місця"})
+    @CsvSource({"en_us, No space", "uk_ua, Немає місця"})
     void noSpaceHasNormalWarningStyleAndTranslatedAdvice(String locale, String expected) throws IOException {
         var lines = TtcText.noSpaceTooltip();
         assertEquals(3, lines.size());
@@ -167,12 +167,12 @@ class TtcTextTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"en_us, NO_PROVIDER, NO PROVIDER", "uk_ua, NO_PROVIDER, Без провайдера",
-            "en_us, NO_POWER, NO POWER", "uk_ua, NO_POWER, Немає енергії",
-            "en_us, NO_CHANNEL, NO CHANNEL", "uk_ua, NO_CHANNEL, Немає каналу",
-            "en_us, NO_TARGET, NO TARGET", "uk_ua, NO_TARGET, Немає приймача",
-            "en_us, INPUT_BLOCKED, INPUT BLOCKED", "uk_ua, INPUT_BLOCKED, Вхід заблоковано",
-            "en_us, LOCKED, LOCKED", "uk_ua, LOCKED, Заблоковано"})
+    @CsvSource({"en_us, NO_PROVIDER, No provider", "uk_ua, NO_PROVIDER, Без провайдера",
+            "en_us, NO_POWER, No power", "uk_ua, NO_POWER, Немає енергії",
+            "en_us, NO_CHANNEL, No channel", "uk_ua, NO_CHANNEL, Немає каналу",
+            "en_us, NO_TARGET, No target", "uk_ua, NO_TARGET, Немає приймача",
+            "en_us, INPUT_BLOCKED, Input blocked", "uk_ua, INPUT_BLOCKED, Вхід заблоковано",
+            "en_us, LOCKED, Locked", "uk_ua, LOCKED, Заблоковано"})
     void blockerHasBoldWarningStyleAndTranslatedAdvice(String locale,
             com.ctux.ae2craftingtime.core.CraftingBlockReason reason, String expected) throws IOException {
         var lines = TtcText.blockReasonTooltip(reason);

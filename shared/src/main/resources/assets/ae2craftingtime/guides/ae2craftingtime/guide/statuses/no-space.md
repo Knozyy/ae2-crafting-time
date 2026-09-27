@@ -1,13 +1,13 @@
 ---
 navigation:
-  title: NO SPACE
+  title: No space
   parent: statuses/index.md
   position: 0
 ---
 
-# NO SPACE
+# No space
 
-**Label:** `NO SPACE`
+**Label:** `No space`
 
 This appears in Crafting Status when a CPU holds finished output that it cannot
 return to writable ME storage. It has the highest status priority because the
@@ -23,9 +23,9 @@ The label clears when the stored output enters the ME network. Adding space can
 clear it while the screen remains open. It does not identify which cell is full,
 and it does not mean a processing machine lacks output space.
 
-![NO SPACE row and storage advice](images/crafting-status-no-space.png)
+![No space row and storage advice](images/crafting-status-no-space.png)
 
 *A retained CPU output cannot return to the full ME storage network.*
 
-[Statuses](index.md) | [Next: NO PROVIDER](no-provider.md) |
+[Statuses](index.md) | [Next: No provider](no-provider.md) |
 [Delay diagnostics](../features/delay-diagnostics.md)

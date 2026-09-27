@@ -27,5 +27,5 @@ and it has no learned timing threshold.
 
 *The output is scheduled behind work that has not produced its required input yet.*
 
-[Previous: NO TARGET](no-target.md) | [Statuses](index.md) |
-[Next: DELAYED](delayed.md) | [Delay diagnostics](../features/delay-diagnostics.md)
+[Previous: No target](no-target.md) | [Statuses](index.md) |
+[Next: Delayed](delayed.md) | [Delay diagnostics](../features/delay-diagnostics.md)

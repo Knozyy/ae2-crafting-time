@@ -1,16 +1,16 @@
 ---
 navigation:
-  title: NO POWER
+  title: No power
   parent: statuses/index.md
   position: 2
 ---
 
-# NO POWER
+# No power
 
-**Label:** `NO POWER`
+**Label:** `No power`
 
 This appears on scheduled Crafting Status rows when the ME network cannot
-extract enough energy for the next real pattern dispatch. `NO PROVIDER` wins if
+extract enough energy for the next real pattern dispatch. `No provider` wins if
 both apply. Active batches may continue outside the network.
 
 ## What to check
@@ -24,9 +24,9 @@ out after 20 server ticks and the next refresh. Server lag can make that longer
 than one wall-clock second. An idle or unpowered external machine alone is not
 proof of this status.
 
-![NO POWER row and energy advice](images/crafting-status-no-power.png)
+![No power row and energy advice](images/crafting-status-no-power.png)
 
 *The network has scheduled work but cannot pay the energy cost of its next dispatch.*
 
-[Previous: NO PROVIDER](no-provider.md) | [Statuses](index.md) |
-[Next: NO CHANNEL](no-channel.md) | [Delay diagnostics](../features/delay-diagnostics.md)
+[Previous: No provider](no-provider.md) | [Statuses](index.md) |
+[Next: No channel](no-channel.md) | [Delay diagnostics](../features/delay-diagnostics.md)

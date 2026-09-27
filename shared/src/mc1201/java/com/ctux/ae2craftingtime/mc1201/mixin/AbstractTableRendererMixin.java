@@ -47,6 +47,8 @@ public abstract class AbstractTableRendererMixin {
         var translatable = TtcComponents.translation(text);
         if (translatable != null) {
             var isAe2CraftingTime = translatable.getKey().startsWith("text.ae2craftingtime.");
+            if (isAe2CraftingTime && ae2craftingtime$isTtcLine(translatable))
+                text = TtcComponents.rowSymbolsInTextColor(text, color);
             if (isAe2CraftingTime && ae2craftingtime$isTtcLine(translatable)) {
                 var width = font.width(text);
                 var scale = CraftingRowState.isWidthLimited(translatable.getKey())

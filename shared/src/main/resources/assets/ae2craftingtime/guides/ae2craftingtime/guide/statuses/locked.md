@@ -1,13 +1,13 @@
 ---
 navigation:
-  title: LOCKED
+  title: Locked
   parent: statuses/index.md
   position: 4
 ---
 
-# LOCKED
+# Locked
 
-**Label:** `LOCKED`
+**Label:** `Locked`
 
 This appears on scheduled Crafting Status rows after an attempted dispatch finds
 an active Pattern Provider crafting lock. Provider and power failures have
@@ -24,9 +24,9 @@ otherwise it expires after 20 server ticks and a refresh. Configuring a lock is
 not enough: the mod must observe it actively preventing a dispatch. The state is
 runtime-only and is not restored after reopening the world.
 
-![LOCKED row and crafting-lock advice](images/crafting-status-locked.png)
+![Locked row and crafting-lock advice](images/crafting-status-locked.png)
 
 *An active Pattern Provider lock prevents the next scheduled batch.*
 
-[Previous: NO CHANNEL](no-channel.md) | [Statuses](index.md) |
-[Next: INPUT BLOCKED](input-blocked.md) | [Delay diagnostics](../features/delay-diagnostics.md)
+[Previous: No channel](no-channel.md) | [Statuses](index.md) |
+[Next: Input blocked](input-blocked.md) | [Delay diagnostics](../features/delay-diagnostics.md)

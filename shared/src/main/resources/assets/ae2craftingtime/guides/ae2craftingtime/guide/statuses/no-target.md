@@ -1,13 +1,13 @@
 ---
 navigation:
-  title: NO TARGET
+  title: No target
   parent: statuses/index.md
   position: 6
 ---
 
-# NO TARGET
+# No target
 
-**Label:** `NO TARGET`
+**Label:** `No target`
 
 This appears on scheduled Crafting Status rows after an attempted processing
 dispatch finds no usable destination on any eligible provider side. All higher
@@ -21,12 +21,12 @@ priority blocking reasons win first. Active batches may still finish.
 
 The next successful, unknown, or changed evaluation clears the observation;
 otherwise it expires after 20 server ticks and a refresh. A destination that is
-present but rejects inputs is not `NO TARGET`, and busy or unvisited alternatives
+present but rejects inputs is not `No target`, and busy or unvisited alternatives
 do not prove this status. The state is not saved with the world.
 
-![NO TARGET row and destination advice](images/crafting-status-no-target.png)
+![No target row and destination advice](images/crafting-status-no-target.png)
 
 *No compatible destination was found for the next scheduled batch.*
 
-[Previous: INPUT BLOCKED](input-blocked.md) | [Statuses](index.md) |
+[Previous: Input blocked](input-blocked.md) | [Statuses](index.md) |
 [Next: Waiting](waiting.md) | [Delay diagnostics](../features/delay-diagnostics.md)

@@ -12,24 +12,25 @@ Crafting Status labels explain what the selected CPU is doing or what currently
 blocks it. Start at the top and use the first label you see:
 
 With **Show emoji** on, the full labels keep their usual colors and gain these
-symbols: red ⚠ for NO SPACE, NO PROVIDER, NO CHANNEL, LOCKED, INPUT BLOCKED,
-and NO TARGET; red ⚡ for NO POWER; yellow ⌛ for Waiting; gold ⚠ for DELAYED;
-and aqua ℹ for No data yet. Numeric estimates use aqua ⏱. Crafting Plan uses
+symbols: red ⚠ for No space, No provider, No channel, Locked, Input blocked,
+and No target; red ⚡ for No power; yellow ⌛ for Waiting; gold ⚠ for Delayed;
+and aqua ℹ for No data yet. Numeric estimates use ⏱. In Crafting Plan and
+Crafting Status rows, symbols match the text color. Crafting Plan uses
 red ↻ for Recurrent and gold ⚠ for Stored variant. Details use ℹ, successful
 stats resets use green ✓, locate hints and throughput use aqua →, and the
 suggestions heading uses gold ⚙. Turn Show emoji off for text-only labels.
 Gold ⚠ also marks low confidence and an expired provider link. The confidence
 wording appears only when the estimate is unreliable.
 
-1. [NO SPACE](no-space.md)
-2. [NO PROVIDER](no-provider.md)
-3. [NO POWER](no-power.md)
-4. [NO CHANNEL](no-channel.md)
-5. [LOCKED](locked.md)
-6. [INPUT BLOCKED](input-blocked.md)
-7. [NO TARGET](no-target.md)
+1. [No space](no-space.md)
+2. [No provider](no-provider.md)
+3. [No power](no-power.md)
+4. [No channel](no-channel.md)
+5. [Locked](locked.md)
+6. [Input blocked](input-blocked.md)
+7. [No target](no-target.md)
 8. [Waiting](waiting.md)
-9. [DELAYED](delayed.md)
+9. [Delayed](delayed.md)
 10. [No data yet](no-data-yet.md)
 11. [A TTC estimate such as ~12s](estimated.md)
 
@@ -43,7 +44,7 @@ doesn't change whether you can start the job. Like the other mod status labels,
 it uses your Badge background color and opacity. Turning Badge background off
 hides the rounded fill while keeping the text visible.
 
-The order matters. `NO SPACE` applies to stored output. The other blocking
+The order matters. `No space` applies to stored output. The other blocking
 labels apply to scheduled batches; a row can still have an active batch that
 finishes while its next batch is blocked. The mod reports observed conditions,
 not a diagnosis of a particular machine.

@@ -234,7 +234,7 @@ tasks.register('checkGuideResources') {
             texts['statuses/locked.md'] = texts['statuses/locked.md'].replace('(index.md)', '(missing.md)')
         }
         expectRejected('a stale status label') { texts, ignored ->
-            texts['statuses/locked.md'] = texts['statuses/locked.md'].replace('**Label:** `LOCKED`', '**Label:** `STALE`')
+            texts['statuses/locked.md'] = texts['statuses/locked.md'].replace('**Label:** `Locked`', '**Label:** `STALE`')
         }
         expectRejected('a stale formatted status label') { texts, ignored ->
             texts['statuses/recurrent.md'] = texts['statuses/recurrent.md']

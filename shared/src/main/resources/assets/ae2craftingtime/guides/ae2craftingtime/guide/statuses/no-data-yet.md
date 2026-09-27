@@ -27,5 +27,5 @@ keyed to the ME network and output. The first sample can still be low confidence
 
 *These plan rows have no retained timing sample yet.*
 
-[Previous: DELAYED](delayed.md) | [Statuses](index.md) |
+[Previous: Delayed](delayed.md) | [Statuses](index.md) |
 [Next: TTC estimate](estimated.md) | [Learning throughput](../features/learning-throughput.md)

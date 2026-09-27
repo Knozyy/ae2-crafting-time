@@ -1,13 +1,13 @@
 ---
 navigation:
-  title: DELAYED
+  title: Delayed
   parent: statuses/index.md
   position: 8
 ---
 
-# DELAYED
+# Delayed
 
-**Label:** `DELAYED`
+**Label:** `Delayed`
 
 This appears on active Crafting Status rows when production stops for both 30
 seconds and more than twice the learned average production interval. Scheduled
@@ -24,7 +24,7 @@ cancelling, resetting that output, or reloading also clears runtime delay state.
 The threshold needs learned history, and a delay points to the recipe flow rather
 than proving which machine caused it.
 
-![DELAYED row after output stops](images/crafting-status-delayed.png)
+![Delayed row after output stops](images/crafting-status-delayed.png)
 
 *A processing recipe has exceeded both parts of its learned delay threshold.*
 

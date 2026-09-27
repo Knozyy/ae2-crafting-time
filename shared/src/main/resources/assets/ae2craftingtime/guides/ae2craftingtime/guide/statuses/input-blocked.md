@@ -1,13 +1,13 @@
 ---
 navigation:
-  title: INPUT BLOCKED
+  title: Input blocked
   parent: statuses/index.md
   position: 5
 ---
 
-# INPUT BLOCKED
+# Input blocked
 
-**Label:** `INPUT BLOCKED`
+**Label:** `Input blocked`
 
 This appears on scheduled Crafting Status rows when a usable destination exists
 but blocking mode or an observed insertion rejection prevents dispatch. Higher
@@ -24,9 +24,9 @@ it expires after 20 server ticks and a refresh. Partial acceptance followed by a
 successful dispatch is not blocked input. The label does not identify which
 slot, side, or filter rejected the ingredients.
 
-![INPUT BLOCKED row and destination advice](images/crafting-status-input-blocked.png)
+![Input blocked row and destination advice](images/crafting-status-input-blocked.png)
 
 *The destination exists, but it is not accepting this pattern's inputs.*
 
-[Previous: LOCKED](locked.md) | [Statuses](index.md) |
-[Next: NO TARGET](no-target.md) | [Delay diagnostics](../features/delay-diagnostics.md)
+[Previous: Locked](locked.md) | [Statuses](index.md) |
+[Next: No target](no-target.md) | [Delay diagnostics](../features/delay-diagnostics.md)
