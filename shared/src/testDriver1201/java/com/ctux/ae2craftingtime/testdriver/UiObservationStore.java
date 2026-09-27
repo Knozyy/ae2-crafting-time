@@ -104,6 +104,13 @@ public final class UiObservationStore {
         }
     }
 
+    public static void nativeTitle(GuiGraphics graphics, String text, int x, int y, int width, int height) {
+        if (active != null && active.screen.contains("CraftingStatusScreen") && text.startsWith("TTC:")) {
+            active.text.add(new UiSnapshot.ObservedText("native-title", text, List.of(),
+                    transformed(graphics, x, y, x + width, y + height)));
+        }
+    }
+
     public static void fill(GuiGraphics graphics, int x1, int y1, int x2, int y2, int color) {
         if (active != null && color == com.ctux.ae2craftingtime.mc1201.TtcBadge.BACKGROUND) {
             active.badges.add(transformed(graphics, x1, y1, x2, y2));

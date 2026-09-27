@@ -45,7 +45,7 @@ five busy jobs include distinct totals, an equal-total tie, one unknown total,
 and an off-screen shortest job; three CPUs are idle. Actual rendered-card
 observations retain raw AE2 serial order separately. The driver captures the
 initial mode and full button cycle, verifies stable CPU groups and item sorting,
-then compares selection, title, tooltip, cancellation, and badges by serial.
+then compares selection, the native TTC title, tooltip, cancellation, and badges by serial.
 
 A focused second fixture creates 33 server-known busy CPUs. Without selecting
 or scrolling first, captured outgoing request batches must cover every raw

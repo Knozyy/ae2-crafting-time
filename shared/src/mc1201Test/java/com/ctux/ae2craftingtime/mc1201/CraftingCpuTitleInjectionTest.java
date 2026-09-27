@@ -16,12 +16,13 @@ import org.objectweb.asm.tree.TypeInsnNode;
 
 class CraftingCpuTitleInjectionTest {
     @Test
-    void titleHookCoversEveryCpuScreenAndPreservesNamesAndWarnings() throws IOException {
+    void titleHookReplacesActiveTitleAndPreservesFallbackNamesAndWarnings() throws IOException {
         var mixin = readClass("com/ctux/ae2craftingtime/mc1201/mixin/CraftingCPUScreenMixin");
         var handler = mixin.methods.stream()
                 .filter(method -> method.name.equals("ae2craftingtime$appendStatusTotalTtc"))
                 .findFirst().orElseThrow();
         var instructions = Arrays.asList(handler.instructions.toArray());
+        assertFalse(mixin.methods.stream().anyMatch(method -> method.name.equals("ae2craftingtime$drawTitleTtcBadge")));
         var calls = instructions.stream().filter(MethodInsnNode.class::isInstance)
                 .map(MethodInsnNode.class::cast).toList();
 
@@ -29,8 +30,10 @@ class CraftingCpuTitleInjectionTest {
                 .map(TypeInsnNode.class::cast)
                 .anyMatch(instruction -> instruction.getOpcode() == Opcodes.INSTANCEOF
                         && instruction.desc.endsWith("/CraftingStatusScreen")));
-        assertEquals(1, calls.stream().filter(call -> call.name.equals("hasMeasuredProgress")).count());
+        assertEquals(0, calls.stream().filter(call -> call.name.equals("hasMeasuredProgress")).count());
         assertEquals(1, calls.stream().filter(call -> call.name.equals("getGuiDisplayName")).count());
+        assertEquals(1, calls.stream().filter(call -> call.name.equals("totalTtc")).count());
+        assertEquals(1, calls.stream().filter(call -> call.name.equals("rowSymbolsInTextColor")).count());
         assertEquals(1, calls.stream().filter(call -> call.name.equals("isCantStoreItems")).count());
         assertEquals(1, calls.stream().filter(call -> call.name.equals("copy")).count());
         assertEquals(2, calls.stream().filter(call -> call.name.equals("append")).count());

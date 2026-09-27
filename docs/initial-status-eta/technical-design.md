@@ -2,6 +2,15 @@
 
 Lifecycle: see the [scope status and evidence](spec.md).
 
+Follow-up [#581](https://github.com/cTux/ae2-crafting-time/issues/581)
+supersedes the title composition below for active jobs while Status total is
+on. The same `setTextContent` hooks now replace AE2's elapsed title with a
+single `TTC: ⏱ <estimate>` component when a total exists. They use the native
+dark foreground for text and symbol and no longer draw a separate title badge.
+Without a total, they return `getGuiDisplayName` without AE2's elapsed suffix.
+Both paths append the red can't-store warning when present. Null or completed
+status and a disabled Status total option retain AE2's supplied title.
+
 Tracks [issue #425](https://github.com/cTux/ae2-crafting-time/issues/425), following
 the initial correction in [issue #350](https://github.com/cTux/ae2-crafting-time/issues/350).
 

@@ -1586,7 +1586,7 @@ final class StandardAe2Scenario {
             }
             if (leaf.equals("running-status") && progressed && dispatched
                     && rowText(snapshot, "minecraft:smooth_stone", "text.ae2craftingtime.ttc") != null
-                    && snapshot.text().stream().anyMatch(t -> t.key().equals("text.ae2craftingtime.ttc")
+                    && snapshot.text().stream().anyMatch(t -> t.key().equals("native-title")
                             && t.bounds() != null && t.bounds().y() < snapshot.gui().y() + 19 && t.bounds().inside(snapshot.gui()))) {
                 validateLayout(snapshot);
                 mark(checks, "progress", true);
@@ -1595,7 +1595,7 @@ final class StandardAe2Scenario {
                 return true;
             }
             var header = snapshot.text().stream().filter(t -> t.bounds() != null && t.bounds().y() < snapshot.gui().y() + 19
-                    && t.key().equals("text.ae2craftingtime.ttc")).findFirst();
+                    && t.key().equals("native-title")).findFirst();
             if (leaf.equals("standard-status-controls") && header.isPresent() && !Boolean.TRUE.equals(checks.get("header"))) {
                 if (!header.get().bounds().inside(snapshot.gui()) || !LayoutValidator.validateBadges(snapshot).isEmpty()) {
                     throw new IllegalStateException("status header " + header.get().bounds() + " GUI " + snapshot.gui()
@@ -2162,7 +2162,7 @@ final class StandardAe2Scenario {
         if (!LayoutValidator.validateBadges(snapshot).isEmpty() || snapshot.badges().isEmpty()) {
             throw new IllegalStateException("Invalid standard status badge layout");
         }
-        var header = snapshot.text().stream().filter(t -> t.key().equals("text.ae2craftingtime.ttc")
+        var header = snapshot.text().stream().filter(t -> t.key().equals("native-title")
                 && t.bounds() != null && t.bounds().y() < snapshot.gui().y() + 19).findFirst();
         if (header.isPresent() && !header.get().bounds().inside(snapshot.gui())) {
             throw new IllegalStateException("Standard status header escapes GUI");

@@ -73,7 +73,8 @@ CPU's slot in `StatsSnapshotS2C`. Keep existing output-stat packets unchanged.
    frozen display snapshot for title, badge, draw, tooltip, and hit-test use.
 6. In a `CraftingStatusMenu` screen, route `ClientStats.totalTtcSeconds()` to the
    selected serial in this same cache. Other CPU screens retain their existing
-   single-total path. Both title mixins keep their placement and rendering;
+   single-total path. The title mixins now render the selected total as the
+   title text rather than a separate badge; the CPU card badge remains;
    list and title format the exact same snapshot value.
 
 ## Bounds and lifecycle

@@ -67,6 +67,8 @@ the production mixin runs. Assertions bind by serial plus current job, not row
 index or name. Request delay/drop is driver transport control around the real
 packet boundary; the production cache still owns sequence, session, replacement,
 and expiry decisions.
+The GuiGraphics observer also captures the native Crafting Status title's final
+formatted text, so title checks do not depend on the removed TTC badge.
 
 Integrated and connected dedicated modes share fixture transitions and client
 assertions. Dedicated setup runs on the disposable server, then the matching

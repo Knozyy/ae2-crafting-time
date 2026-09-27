@@ -177,7 +177,7 @@ final class CpuListTtcScenario {
                 var selected = card(snapshot, selectedSerial);
                 if (!selected.selected() || selected.ttc() == null || serverState().selectedSerial() != selectedSerial) return false;
                 var title = title(snapshot);
-                if (title == null || !title.rendered().equals(selected.ttc().rendered())) return false;
+                if (title == null || !title.rendered().equals("TTC: " + selected.ttc().rendered())) return false;
                 if (snapshot.text().stream().noneMatch(text -> text.bounds() != null
                         && text.bounds().inside(selected.nameArea()) && text.rendered().endsWith("...")
                         && selected.name().startsWith(text.rendered().substring(0, text.rendered().length() - 3)))) return false;
@@ -858,7 +858,7 @@ final class CpuListTtcScenario {
                 .findFirst().orElseThrow(() -> new IllegalStateException("third fixture CPU is not visible"));
     }
     private static UiSnapshot.ObservedText title(UiSnapshot snapshot) {
-        return snapshot.text().stream().filter(text -> text.key().equals("text.ae2craftingtime.ttc")
+        return snapshot.text().stream().filter(text -> text.key().equals("native-title")
                 && text.bounds() != null && text.bounds().y() < snapshot.gui().y() + 19).findFirst().orElse(null);
     }
     private static void validateLayout(UiSnapshot snapshot) {

@@ -33,6 +33,10 @@ they ran one after another. For example, two independent ten-second branches
 can still finish in about ten seconds, while two dependent steps take about
 twenty. Estimates are not deadlines: machine speed, other work, and server load
 can change the result.
+When a total is known, the title shows `TTC: ⏱ ...` in the normal title color
+instead of AE2's elapsed estimate. Without a known total, it shows the normal
+CPU name. The red storage warning still appears when needed. Turn off
+**Crafting Status total** to use AE2's original title.
 
 With the same option on, Crafting Status puts available, crafting, and scheduled
 amounts on one line, in that order: `4/10/200`. A missing amount is `-`; when only one amount is

@@ -25,13 +25,14 @@ card in the left Crafting CPUs list, as requested in the reference screenshot.
 
 - Show the CPU's own remaining-job total, including for unselected CPUs. Use
   the same estimate and formatting as the Crafting Status title: `~39s`,
-  `~1:01`, or `~1:02:15`. Keep the title badge.
+  `~1:01`, or `~1:02:15`. The Status title now shows that TTC as its title text;
+  CPU cards keep their badges.
 - Preserve the current critical-path estimate and its partial-data behavior.
   This is neither elapsed time nor the final output's individual row estimate.
 - Idle CPUs, unknown estimates, and zero totals have no badge, matching the
   title's existing omission rules. A stalled job keeps whatever estimate the
   title would show; do not introduce warning labels in CPU cards.
-- Use the title's text color, shadow, and dark badge background. Align the badge
+- Use the title's text color, shadow, and dark badge background for CPU cards. Align the badge
   to the card's top-right interior. Keep the card size, order, selection tint,
   click area, job icon, amount, bottom progress bar, and scrollbar behavior.
 - Reserve space for TTC on the name line. Shorten an overlapping name with an
@@ -90,7 +91,7 @@ absolute startup deadline covers loader, world, and fixture preparation; the
 | ID | Observable result |
 | --- | --- |
 | A1 | Three busy CPUs with different totals show their own badges without being selected first. |
-| A2 | Selected card and title show identical formatted totals from the same snapshot; title placement remains unchanged. |
+| A2 | Selected card and title show identical formatted totals from the same snapshot; the title uses the total as its text. |
 | A3 | Idle, unknown, zero, and expired values produce no badge; partial/stalled estimates retain title semantics. |
 | A4 | Badges fit at the top right on selected and unselected cards; long names/times, English/Ukrainian text, and GUI scales do not overlap other content. Static resource/layout checks preserve both languages; runtime UI evidence uses `en_us` only. |
 | A5 | Scrolling, list reordering/removal, same-output job replacement, completion/cancellation, menu reopen, network changes, and reconnects never reuse another context's total. |

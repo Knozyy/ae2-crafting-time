@@ -13,7 +13,6 @@ import appeng.menu.me.crafting.CraftingStatusMenu;
 import com.ctux.ae2craftingtime.core.CraftingRowState;
 import com.ctux.ae2craftingtime.core.TimeEstimate;
 import com.ctux.ae2craftingtime.core.OptionFeature;
-import com.ctux.ae2craftingtime.core.ClientConfig;
 import com.ctux.ae2craftingtime.core.TtcSort;
 import com.ctux.ae2craftingtime.mc1201.AeKeyAmounts;
 import com.ctux.ae2craftingtime.mc1201.ClientStats;
@@ -25,15 +24,13 @@ import com.ctux.ae2craftingtime.mc1201.ProviderLocateClick;
 import com.ctux.ae2craftingtime.mc1201.StatsChatMessages;
 import com.ctux.ae2craftingtime.mc1201.IntegrationLog;
 import com.ctux.ae2craftingtime.mc1201.StatsClickHandler;
-import com.ctux.ae2craftingtime.mc1201.TtcBadge;
+import com.ctux.ae2craftingtime.mc1201.TtcComponents;
 import com.ctux.ae2craftingtime.mc1201.TtcDetailsClick;
 import com.ctux.ae2craftingtime.mc1201.TtcDetailsKeyMapping;
 import com.ctux.ae2craftingtime.mc1201.TtcSortButton;
 import com.ctux.ae2craftingtime.mc1201.TtcText;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.entity.player.Inventory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -66,21 +63,11 @@ public abstract class CraftingCPUScreenMixin<T extends CraftingCPUMenu> extends 
     @Unique
     private static final int AE2CRAFTINGTIME_ROWS = 6;
     @Unique
-    private static final int AE2CRAFTINGTIME_SCREEN_WIDTH = 238;
-    @Unique
-    private static final int AE2CRAFTINGTIME_TITLE_PADDING = 8;
-    @Unique
-    private static final int AE2CRAFTINGTIME_TITLE_TOP = 7;
-    @Unique
     private int ae2craftingtime$ttcSortMode = 2;
     @Unique
     private long ae2craftingtime$lastLocateClickMs;
     @Unique
     private String ae2craftingtime$lastLocateOutputId;
-    @Unique
-    private Component ae2craftingtime$titleTtc;
-    @Unique
-    private int ae2craftingtime$titleTtcX;
 
     @Shadow(remap = false)
     private CraftingStatus status;
@@ -166,61 +153,25 @@ public abstract class CraftingCPUScreenMixin<T extends CraftingCPUMenu> extends 
             index = 1,
             remap = false)
     private Component ae2craftingtime$appendStatusTotalTtc(Component title) {
-        ae2craftingtime$titleTtc = null;
         if (!ClientOptionsRuntime.enabled(OptionFeature.STATUS_TOTAL)) return title;
-        if (status == null) {
-            return title;
-        }
-        if (!TimeEstimate.hasMeasuredProgress(
-                status.getStartItemCount(), status.getRemainingItemCount())) {
-            title = getGuiDisplayName(GuiText.CraftingStatus.text());
-            if (menu.isCantStoreItems()) {
-                title = title.copy().append(" - ")
-                        .append(GuiText.CantStoreItems.text().withStyle(ChatFormatting.RED));
-            }
-        }
-        if (status.getRemainingItemCount() <= 0
+        if (status == null || status.getRemainingItemCount() <= 0
                 || status.getEntries().stream().noneMatch(entry -> entry.getActiveAmount() > 0
                         || entry.getPendingAmount() > 0)) {
             return title;
         }
 
+        Component display = getGuiDisplayName(GuiText.CraftingStatus.text());
         var eta = TimeEstimate.formatTotal(List.of(ClientStats.totalTtcSeconds()));
-        if (eta.isEmpty()) {
-            return title;
+        if (eta.isPresent()) {
+            display = TtcComponents.rowSymbolsInTextColor(TtcText.totalTtc(eta.get())
+                    .withStyle(style -> style.withColor(0x404040)), 0x404040);
+            IntegrationLog.observe("ae2craftingtime", "status-total");
         }
-
-        var separator = Component.literal("  ");
-        var total = TtcText.ttc(eta.get())
-                .withStyle(style -> style.withColor(TextColor.fromRgb(
-                        ClientOptionsRuntime.current().color(ClientConfig.Color.TOTAL))));
-        var font = getMinecraft().font;
-        var availableWidth = AE2CRAFTINGTIME_SCREEN_WIDTH - AE2CRAFTINGTIME_TITLE_PADDING * 2;
-        if (font.width(title) + font.width(separator) + font.width(total) > availableWidth) {
-            return title;
+        if (menu.isCantStoreItems()) {
+            display = display.copy().append(" - ")
+                    .append(GuiText.CantStoreItems.text().withStyle(ChatFormatting.RED));
         }
-
-        ae2craftingtime$titleTtc = total;
-        ae2craftingtime$titleTtcX = AE2CRAFTINGTIME_TITLE_PADDING + font.width(title) + font.width(separator);
-        return title;
-    }
-
-    @Inject(method = "drawFG", at = @At("RETURN"), remap = false)
-    private void ae2craftingtime$drawTitleTtcBadge(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX,
-            int mouseY, CallbackInfo ci) {
-        if (ae2craftingtime$titleTtc == null) {
-            return;
-        }
-
-        var font = getMinecraft().font;
-        var textWidth = font.width(ae2craftingtime$titleTtc);
-        TtcBadge.fillRoundedRect(guiGraphics, ae2craftingtime$titleTtcX - 2, AE2CRAFTINGTIME_TITLE_TOP - 2,
-                ae2craftingtime$titleTtcX + textWidth + 2, AE2CRAFTINGTIME_TITLE_TOP + font.lineHeight + 2,
-                TtcBadge.BACKGROUND);
-        guiGraphics.drawString(font, ae2craftingtime$titleTtc, ae2craftingtime$titleTtcX,
-                AE2CRAFTINGTIME_TITLE_TOP, ClientOptionsRuntime.current().color(ClientConfig.Color.TOTAL),
-                ClientOptionsRuntime.textShadow());
-        IntegrationLog.observe("ae2craftingtime", "status-total");
+        return display;
     }
 
     @Unique

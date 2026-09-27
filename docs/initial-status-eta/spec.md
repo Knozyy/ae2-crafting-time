@@ -8,35 +8,36 @@ Implementation: [PR #373](https://github.com/cTux/ae2-crafting-time/pull/373), [
 Verification: [direct-screen implementation and passing CI](https://github.com/cTux/ae2-crafting-time/issues/425#issuecomment-5693073870).
 The plan's full runtime acceptance is not established by that CI record.
 
-Tracking: [#350](https://github.com/cTux/ae2-crafting-time/issues/350) and
-[#425](https://github.com/cTux/ae2-crafting-time/issues/425).
+Tracking: [#350](https://github.com/cTux/ae2-crafting-time/issues/350),
+[#425](https://github.com/cTux/ae2-crafting-time/issues/425), and
+[#581](https://github.com/cTux/ae2-crafting-time/issues/581).
 
 ## Expected behavior
 
-Both the directly opened `CraftingCPUScreen` and the terminal's
-`CraftingStatusScreen` must hide AE2's native ETA until the selected job has
-completed measurable work. Keep AE2's normal title, including a custom CPU name
-resolved by `getGuiDisplayName`. AE2 Crafting Time's separate learned total TTC
-badge can still appear under its existing data and width rules.
-
-After the first item completes, AE2's native ETA, the red can't-store warning,
-sorting, tooltips, and status controls keep their existing behavior.
+On both the directly opened `CraftingCPUScreen` and the terminal's
+`CraftingStatusScreen`, an active job with a learned total shows only
+`TTC: ⏱ <estimate>` as its title. The TTC text and symbol use the native dark
+title color. Do not show AE2's elapsed estimate or a separate TTC badge.
+When a total is unavailable, show the normal display name, including a custom
+CPU name, without an elapsed estimate. Preserve the red can't-store warning.
+When Status total is off, or the job is complete, keep AE2's title behavior.
 
 ## Acceptance
 
 - A newly submitted job with equal start and remaining counts has no native ETA
   suffix on either screen. Defensive reversed counters also hide that suffix.
-- A job with a smaller remaining count keeps AE2's native ETA suffix.
+- A running job with a learned total replaces the native title and elapsed
+  suffix with the TTC title, including after measurable progress.
+- A running job without a learned total keeps its display name and omits the
+  native elapsed suffix.
 - A missing status keeps AE2's supplied title. Native and custom display names
   remain intact when the initial ETA is hidden.
 - The red can't-store warning is preserved when the initial ETA is hidden.
 - The behavior must cover 1.20.1 Forge, 1.20.1 Fabric, and 1.21.1 NeoForge,
   with independent verification on 26.1.2 NeoForge. The separate
   26.1.2 adapter is in scope; the earlier #350 exclusion no longer applies.
-- Pure decision logic retains full line and branch coverage; `TimeEstimateTest`
-  executes equal, reversed, and progressed counters. A focused ASM test checks
-  both hooks structurally: no terminal-only type gate, calls to
-  `hasMeasuredProgress` and `getGuiDisplayName`, and warning/copy operations.
+- A focused ASM test checks both hooks structurally: no terminal-only type
+  gate, TTC replacement, display-name fallback, and warning/copy operations.
 - Current-source `no-channel-status` captures on all four targets show a normal
   zero-progress title. Record both direct and terminal screen evidence and a
   custom-name zero-progress case on each target. Add manual prepared-client
