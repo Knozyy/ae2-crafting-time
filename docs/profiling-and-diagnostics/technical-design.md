@@ -269,7 +269,7 @@ half-up at scale three, stripped zeros, plain decimal output. Do not use the
 whole-second `formatTicks` path or feed rounded text back into calculations.
 
 Both `TtcText` and `StatsChatServer.details` use the derived values. Reuse the
-three-argument `value.window` text with `1`, singular unit, formatted ticks. Add
+single-argument `value.window` text with formatted ticks and the time symbol. Add
 singular item without changing the rate's plural unit. Label the list `Samples
 (per unit)` and explain effective throughput once. Average/latest contain the
 complete per-unit value; when either is missing, use rate/count-only text.

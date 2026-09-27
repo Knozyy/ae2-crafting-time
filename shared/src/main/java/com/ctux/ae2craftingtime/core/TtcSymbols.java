@@ -56,7 +56,7 @@ public final class TtcSymbols {
             case "text.ae2craftingtime.chat.summary" -> index == 2;
             case "text.ae2craftingtime.chat.details" -> index == 2 || index == 4;
             case "text.ae2craftingtime.chat.delayed" -> index == 2 || index == 3;
-            case "text.ae2craftingtime.value.window" -> index == 2;
+            case "text.ae2craftingtime.value.window" -> index == 0;
             case "text.ae2craftingtime.value.whole_seconds", "text.ae2craftingtime.value.seconds" -> index == 0;
             case "text.ae2craftingtime.value.accuracy" -> index == 4;
             case "text.ae2craftingtime.value.latest_accuracy" -> index <= 2;

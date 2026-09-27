@@ -253,14 +253,13 @@ class TtcTextTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"en_us, 1 item / 50 ticks", "uk_ua, 1 предм. / 50 тіків"})
-    void normalizedSamplesUseLocalizedSingularUnits(String locale, String expected) throws IOException {
+    @CsvSource({"en_us, 50 ticks", "uk_ua, 50 тіків"})
+    void normalizedSamplesShowOnlyLocalizedTime(String locale, String expected) throws IOException {
         try (var reader = new InputStreamReader(getClass().getResourceAsStream(
                 "/assets/ae2craftingtime/lang/" + locale + ".json"), StandardCharsets.UTF_8)) {
             var translations = JsonParser.parseReader(reader).getAsJsonObject();
             var window = translations.get("text.ae2craftingtime.value.window").getAsString();
-            var unit = translations.get("text.ae2craftingtime.unit.item.singular").getAsString();
-            assertEquals(expected, String.format(window, 1, unit, "50"));
+            assertEquals(expected, String.format(window, "50"));
         }
     }
 

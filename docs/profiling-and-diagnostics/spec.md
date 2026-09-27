@@ -121,7 +121,7 @@ in parallel; no eight- or nine-slot Unobtainium capacity is assumed.
 
 ### Requirements
 
-- **N1 — Meaning:** Display each observation as `1 item / M ticks`, with M equal
+- **N1 — Meaning:** Display each observation as `⏱ M ticks` under `Samples (per unit)`, with M equal
   to its elapsed ticks divided by completed output amount. Never call this
   isolated machine processing time or equate one output item with one recipe.
 - **N2 — Precision:** Use up to three decimals, round half up, and omit trailing
@@ -179,13 +179,13 @@ collection. Default retention is ten unless stated otherwise.
 
 | ID | Observation | Expected |
 | --- | --- | --- |
-| A1 | 1 item in 200 ticks | `1 item / 200 ticks` |
-| A2 | 9 items in 90 ticks | `1 item / 10 ticks`; one sample |
-| A3 | 8 items in 90 ticks | `1 item / 11.25 ticks` |
-| A4 | 10 items in 411 ticks | `1 item / 41.1 ticks` |
-| A5 | 9 items in 1 tick | `1 item / 0.111 ticks` |
-| A6 | 10,000 items in 1 tick | `1 item / <0.001 ticks` |
-| A7 | One recipe yields 4 items in 80 ticks | `1 item / 20 ticks`; one observation |
+| A1 | 1 item in 200 ticks | `⏱ 200 ticks` |
+| A2 | 9 items in 90 ticks | `⏱ 10 ticks`; one sample |
+| A3 | 8 items in 90 ticks | `⏱ 11.25 ticks` |
+| A4 | 10 items in 411 ticks | `⏱ 41.1 ticks` |
+| A5 | 9 items in 1 tick | `⏱ 0.111 ticks` |
+| A6 | 10,000 items in 1 tick | `⏱ <0.001 ticks` |
+| A7 | One recipe yields 4 items in 80 ticks | `⏱ 20 ticks`; one observation |
 | A8 | Nine distinct 1-item/200-tick intervals | Nine observations, not one whole-order sample |
 | A9 | 1,000 mB/20 ticks; 100 mana/20 ticks | `1 mB / 0.02 ticks`; `1 mana / 0.2 ticks` |
 | A10 | (1 item, 100 ticks), (9 items, 90 ticks) | Average 55 ticks/unit; latest 10; weighted rate unchanged for these pairs |

@@ -296,8 +296,7 @@ public final class TtcText {
             if (ticks.isPresent()) {
                 TimeEstimate.formatSampleTicks(ticks.getAsDouble()).ifPresent(value -> {
                     if (!values.getSiblings().isEmpty()) values.append(", ");
-                    values.append(TtcComponents.text("text.ae2craftingtime.value.window", 1,
-                            singularUnitName(stats), value));
+                    values.append(TtcComponents.text("text.ae2craftingtime.value.window", value));
                 });
             }
         }

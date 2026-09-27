@@ -76,7 +76,7 @@
   "text.ae2craftingtime.value.accuracy": "%s/%s jobs fully covered · MAPE %s%% · actual/TTC %sx · error %ss · avg coverage %s%%",
   "text.ae2craftingtime.value.accuracy_pending": "%s jobs tracked, no fully covered plan yet · avg coverage %s%%",
   "text.ae2craftingtime.value.latest_accuracy": "TTC %ss · wall %ss · ticks %ss · coverage %s/%s",
-  "text.ae2craftingtime.value.window": "%s %s / %s ticks",
+  "text.ae2craftingtime.value.window": "%s ticks",
   "text.ae2craftingtime.value.seconds": "%ss",
   "text.ae2craftingtime.value.throughput": "%s %s/t, %s %s/s",
   "text.ae2craftingtime.value.used_samples": "%s/%s",

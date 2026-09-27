@@ -76,7 +76,7 @@
   "text.ae2craftingtime.value.accuracy": "%s/%s завдань повністю покрито · MAPE %s%% · факт/TTC %sx · похибка %sс · сер. покриття %s%%",
   "text.ae2craftingtime.value.accuracy_pending": "Відстежено %s завдань, але повністю покритих планів ще немає · сер. покриття %s%%",
   "text.ae2craftingtime.value.latest_accuracy": "TTC %sс · реальний час %sс · тікі %sс · покриття %s/%s",
-  "text.ae2craftingtime.value.window": "%s %s / %s тіків",
+  "text.ae2craftingtime.value.window": "%s тіків",
   "text.ae2craftingtime.value.seconds": "%sс",
   "text.ae2craftingtime.value.throughput": "%s %s/т, %s %s/с",
   "text.ae2craftingtime.value.used_samples": "%s/%s",
