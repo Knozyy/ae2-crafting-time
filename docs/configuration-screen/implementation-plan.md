@@ -5,6 +5,36 @@ Lifecycle: see the [scope status and evidence](spec.md).
 Implement [#117](https://github.com/cTux/ae2-crafting-time/issues/117) from the
 [specification](spec.md) and [technical design](technical-design.md).
 
+## Focused follow-up: accurate switch default tooltips (#607)
+
+Follow the [scope and criteria](spec.md#accurate-switch-default-tooltips-607) and
+[design](technical-design.md#accurate-switch-default-tooltips-607).
+
+1. In shared `OptionsScreen` and `ServerOptionsScreen`, create fresh client/server
+   feature defaults and supply a localized On/Off component as the second help
+   argument. Keep current-value labels and every action unchanged (T1, T3).
+2. Change only `client_help` and `server_help` in both locale JSON files to accept
+   that default argument. Preserve their other explanations. Review all client
+   and server feature callers, including the five default-Off switches (T1, T2).
+3. After the hook creates the implementation PR, parse both locale JSON files,
+   compare keys and placeholder signatures, and verify both help calls supply
+   the two declared arguments. Review that defaults come from fresh owner-specific
+   models, independently of draft edits. Reuse existing `FeatureOptionsTest`,
+   `OptionsModelTest`, and config-file tests; no duplicate default table or fake
+   prose unit test is needed (T1-T3).
+4. Require existing test CI (`test jacocoTestReport` and Codecov) to pass with 100%
+   shared line/branch coverage, and existing build CI to compile all four release
+   targets. Bind both results to the reviewed implementation SHA and report them
+   separately from local locale validation; no duplicate local Gradle run is
+   required for this tooltip-only change (T3, T4).
+
+No Minecraft launches or new verification infrastructure are planned. The generic
+English-copy smoke selector may choose the full suite; that broad fallback is
+not the verification scope for this tooltip-only correction. If implementation
+changes interaction, layout, rendering, or defaults, reassess the plan first.
+Completion requires the checks above, independent review, and verified merge;
+retain the focused status as in-progress until those gates have evidence.
+
 ## Focused follow-up: preserve recurrent detection opt-in (#592)
 
 Follow the [scope and status](spec.md#recurrent-detection-default-592) without

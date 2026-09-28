@@ -10,6 +10,15 @@ Planning: [Technical design](technical-design.md) and [reviewed plan](implementa
 
 Verification limit: the user excluded Minecraft smoke from this run. Automated checks and builds are planned; readability at supported GUI scales remains unverified and the issue's visual criterion remains outstanding.
 
+## Current default
+
+The On defaults below and in the companion design/plan describe the original
+proposal. The current [configuration contract](../spec.md#feature-switches)
+supersedes them: a fresh model, missing/invalid value, and Reset All use Off.
+Reset section currently enables the switch; correcting that action is separate
+from the [tooltip correction](../spec.md#accurate-switch-default-tooltips-607).
+This note does not claim completion of the original visual verification scope.
+
 ## Behavior
 
 Add **Text shadow** to Client / Appearance with stable key `textShadow` and default **On**. Off removes the shadow from mod-drawn Crafting Plan and Crafting Status row text, compact amounts, status badges, totals, CPU-card totals, and supported Crafting Tree and ME Requester TTC labels. On restores their existing shadowed appearance, including horizontally scaled badges.

@@ -12,6 +12,15 @@ Verification prerequisite: CodexVM starts, but its guest tools did not become
 available during investigation. Verify guest runtimes and prepared native loader
 manifests before approving the runtime campaign. No Minecraft checks have run.
 
+## Current default
+
+The On defaults below and in the companion design/plan describe the original
+proposal. The current [configuration contract](../spec.md#feature-switches)
+supersedes them: a fresh model, missing/invalid value, and Reset All use Off.
+Reset section currently enables the switch; correcting that action is separate
+from the [tooltip correction](../spec.md#accurate-switch-default-tooltips-607).
+This note does not claim completion of the original visual verification scope.
+
 ## Behavior
 
 Add **Badge background** to Client / Appearance with key `badgeBackground` and

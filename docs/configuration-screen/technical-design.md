@@ -5,6 +5,31 @@ Lifecycle: see the [scope status and evidence](spec.md).
 This design implements the [specification](spec.md) for
 [#117](https://github.com/cTux/ae2-crafting-time/issues/117).
 
+## Accurate switch default tooltips (#607)
+
+Lifecycle and criteria: [focused scope](spec.md#accurate-switch-default-tooltips-607).
+Investigation baseline: `4cc030777a4632ce2b113d2436eb53189b38cadf`.
+
+`FeatureOptions.reset()` owns the defaults. `OptionsSession.resetAll()` resets
+the client and editable server models, but `OptionsScreen` and
+`ServerOptionsScreen` pass only the feature name into their shared help strings.
+Both locales hardcode On, so four client switches and server recurrent detection
+advertise the wrong default.
+
+Create one fresh owner-specific `FeatureOptions` model while each screen builds
+its feature rows, following the existing config-file writers' default lookup.
+Pass `defaults.enabled(feature)` as a localized `options.on` or `options.off`
+component into a second `%s` in `client_help` and `server_help`. Read the fresh
+model, never the live or draft value. Reuse Minecraft's existing value labels;
+do not duplicate a list of exceptions or add a defaults API.
+
+The two screens and locale resources are shared by 1.20.1 Forge/Fabric, 1.21.1
+NeoForge, and 26.1.2 NeoForge. No loader override, dependency, config key, wire
+format, permission, save/reset action, or renderer changes. Locale
+key/placeholder validation and target compilation cover the added translation
+argument; existing model tests cover the default values. A missing argument,
+owner mismatch, or lookup from the edited draft is a blocking regression.
+
 ## Decisions
 
 Use Minecraft's existing `Screen`, list, button, slider, and text-field widgets.

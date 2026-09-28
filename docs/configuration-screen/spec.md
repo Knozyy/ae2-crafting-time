@@ -58,6 +58,37 @@ crafts, or silently turn off sibling features. The server profiling master
 (`enabled`) is the exception: turning it off suspends all server-derived TTC and
 diagnostics. It is clearly labelled as the master switch.
 
+### Accurate switch default tooltips (#607)
+
+Status: ready-to-implement
+
+Scope: Correct client and server switch tooltip defaults without changing settings behavior.
+
+Issue: [#607](https://github.com/cTux/ae2-crafting-time/issues/607)
+
+Planning: [Design](technical-design.md#accurate-switch-default-tooltips-607) and
+[reviewed plan](implementation-plan.md#focused-follow-up-accurate-switch-default-tooltips-607).
+
+Every switch tooltip must describe its fresh model default in English and
+Ukrainian. Compact crafting amounts, TTC colors, text shadow, and badge background
+default Off on the client; recurrent detection defaults Off on the server. Other
+switches default On. The displayed default stays the same when the saved or draft
+value changes. Keep the existing explanation, apply timing, and ownership text.
+
+| ID | Acceptance criterion |
+| --- | --- |
+| T1 | Both screens derive each advertised default from the appropriate fresh `FeatureOptions` model, independently of the edited value. |
+| T2 | English and Ukrainian help strings have matching keys/placeholders and display localized On/Off values, including all default-Off exceptions. |
+| T3 | Existing defaults, reset actions, save/cancel, permissions, persistence, layout, and rendering remain unchanged on all four supported targets. |
+| T4 | Locale validation, existing model tests, target compilation, and required current-head CI pass before merge. |
+
+This scope needs no Minecraft launch: it changes tooltip arguments and copy,
+not widget layout or interaction. Static locale/argument checks and compilation
+cover the changed boundary; existing tests cover the source defaults. It does
+not claim new visual evidence or complete older rendering verification scopes.
+Client Reset section currently enables every switch; its separate behavior correction
+is outside this issue. Reset All continues to restore model defaults.
+
 ### Recurrent detection default (#592)
 
 Status: finished.
