@@ -35,6 +35,49 @@ changes interaction, layout, rendering, or defaults, reassess the plan first.
 Completion requires the checks above, independent review, and verified merge;
 retain the focused status as in-progress until those gates have evidence.
 
+## Focused follow-up: client section reset defaults (#608)
+
+Follow the [scope and criteria](spec.md#client-section-reset-defaults-608) and
+[design](technical-design.md#client-section-reset-defaults-608).
+
+1. Replace the client reset loop's literal `true` with the existing fresh model's
+   `defaults.enabled(feature)`. Preserve group filtering, Appearance colors and
+   opacity, Controls sorting, page reset, and the session lifecycle (R1-R3).
+2. In the existing `StandardAe2Scenario`, correct the badge section-reset
+   expectation and the `STATUS_OPTIONS` reset cases, including setup between
+   cases and the condition that advances to Done. Extend these native options
+   checks to edit and reset all four default-Off switches and a default-On
+   switch. Seed nondefault values outside the selected group and assert they
+   survive; check all colors/opacity and both sort defaults in their own groups.
+   Verify live state before Done, Cancel/reopen, and saved values after Done.
+   Keep the existing Reset All checks (R1-R4).
+3. After the hook creates the implementation PR, require current-head
+   `test jacocoTestReport` and Codecov with unchanged 100% shared line/branch
+   coverage, plus all four release-target builds. Reuse model/config-file tests;
+   the native scenario is the regression check for the changed callback.
+   Review the minimal production diff and the native scenario assertions against
+   the old literal-true behavior (R1-R4).
+4. Review the change-focused smoke selection with `-Changed -PlanOnly` after the
+   implementation PR exists. Use prepared compatible `1.20.1-forge` on Java 17
+   for focused English `standard-status-controls` and direct `badge-background`
+   runs. The direct badge run must reach its relaunch/reset/cancel continuation;
+   suite-only captures do not prove that path. Both scenarios use the same
+   shared options screen as the other targets. Record any broader selector
+   fallback and use this focused scope; expand only for a discovered distinct
+   runtime path or failure (R1-R4).
+5. Follow the prepared-smoke and VM skills for preflight, host builds, guest
+   staging, fixture protection, screenshot review, archival, timing, and exact
+   process cleanup. At investigation time the host's Java 17/21/25 resolved, but
+   CodexVM was stopped and guest launch manifests were unverified. Before the
+   campaign, verify the guest's matching prepared `launch.json`, installed native
+   loader, Java 17, and disposable fixture/lifecycle guard. Use the existing
+   provisioning path for a missing prerequisite; report a blocker rather than
+   inventing a replacement runner or claiming runtime readiness (R4).
+
+Completion requires reviewed current-head CI, focused reset/Done/Cancel evidence,
+and verified merge. Keep the canonical scope unfinished until those gates pass.
+No new verification infrastructure or full release campaign is part of #608.
+
 ## Focused follow-up: preserve recurrent detection opt-in (#592)
 
 Follow the [scope and status](spec.md#recurrent-detection-default-592) without

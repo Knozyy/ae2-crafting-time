@@ -90,8 +90,37 @@ This scope needs no Minecraft launch: it changes tooltip arguments and copy,
 not widget layout or interaction. Static locale/argument checks and compilation
 cover the changed boundary; existing tests cover the source defaults. It does
 not claim new visual evidence or complete older rendering verification scopes.
-Client Reset section currently enables every switch; its separate behavior correction
-is outside this issue. Reset All continues to restore model defaults.
+At the #607 baseline, Client Reset section enabled every switch; its correction
+belongs to [#608](#client-section-reset-defaults-608). Reset All restores model defaults.
+
+### Client section reset defaults (#608)
+
+Status: ready-to-implement
+
+Scope: Restore model defaults when resetting one client section.
+
+Issue: [#608](https://github.com/cTux/ae2-crafting-time/issues/608)
+
+Planning: [Design](technical-design.md#client-section-reset-defaults-608) and
+[reviewed plan](implementation-plan.md#focused-follow-up-client-section-reset-defaults-608).
+
+Client Reset section must use the same switch defaults as a fresh client config
+and Reset All. Displays restores Compact crafting amounts and TTC colors to Off;
+Appearance restores Text shadow and Badge background to Off. Other client
+switches restore On. This restores existing intent without changing any default.
+The scope covers the shared screen on 1.20.1 Forge/Fabric, 1.21.1 NeoForge, and
+26.1.2 NeoForge.
+
+| ID | Acceptance criterion |
+| --- | --- |
+| R1 | Reset restores every selected switch to its fresh model default, including all four default-Off switches and default-On switches. |
+| R2 | Only the selected client group changes. Appearance still resets every color to its model default and opacity to 176; Controls still resets both sort modes to 2. Other groups and the server draft retain their values. |
+| R3 | Reset changes only the session draft until Done saves it. Cancel discards it; reopening reflects the saved values. Reset All retains its existing behavior. |
+| R4 | Regression checks exercise the native reset action with both default-On and default-Off values, current-head tests/coverage and all four target builds pass, and focused UI evidence is retained. |
+
+Verification uses the existing options checks inside `standard-status-controls`
+and the direct `badge-background` scenario, including its reset/cancel continuation.
+It does not complete the broader configuration-screen verification campaign.
 
 ### Recurrent detection default (#592)
 

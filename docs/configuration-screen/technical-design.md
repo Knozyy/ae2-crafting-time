@@ -30,6 +30,44 @@ key/placeholder validation and target compilation cover the added translation
 argument; existing model tests cover the default values. A missing argument,
 owner mismatch, or lookup from the edited draft is a blocking regression.
 
+## Client section reset defaults (#608)
+
+Lifecycle and criteria: [focused scope](spec.md#client-section-reset-defaults-608).
+Investigation baseline: `09268a42fa1d41f5cfedea8e0d9aed9c9f1e125c`.
+
+In `shared/src/mcCommon/java/com/ctux/ae2craftingtime/mc1201/OptionsScreen.java`,
+`init()` filters features by client owner and selected group, then creates fresh
+`FeatureOptions` defaults for tooltips. Its reset callback instead passes literal
+`true` to `setEnabled`, overriding the four Off defaults owned by
+`shared/src/main/java/com/ctux/ae2craftingtime/core/FeatureOptions.java`.
+Reuse `defaults.enabled(feature)` in that existing loop. No new defaults table,
+reset abstraction, loader copy, or configuration format is needed.
+
+The same callback already resets all `ClientConfig.Color` values, including the
+hidden WAITING color, and opacity for Appearance, or both sort modes for Controls.
+Keep those paths and the return to page zero. Section navigation and pagination
+reuse `OptionsSession`; its client draft starts as a copy of live configuration.
+Done uses `OptionsSession.save()` and `ClientOptionsRuntime.apply()` to save then
+copy the draft into live state. Cancel closes without applying. Reset All uses
+`ClientConfig.reset()`. The server screen already resets from fresh server
+defaults. These lifecycle and server paths need no change.
+
+All four supported modules include this `mcCommon` screen. Existing
+`FeatureOptionsTest` and `OptionsModelTest` cover model defaults, copies, and full
+resets, but cannot catch the native callback's literal `true`. The shared
+`StandardAe2Scenario` has two stale expectations to correct: the badge continuation
+expects Appearance reset to enable the badge, and `STATUS_OPTIONS` cases 5/6
+expect Compact amounts On after section/full reset and wait for On before Done.
+Update their setup, transition conditions, and saved-value assertions together;
+case 6 must not assume the preceding section reset left Compact amounts On.
+Reuse those native interaction helpers to cover the other default-Off switches,
+a default-On switch, group isolation, and numeric/color preservation.
+
+Failure checks must distinguish a wrong reset value from a scenario waiting for
+the obsolete value. Keep timeout failures, live-versus-draft assertions, and
+Cancel/Done checks meaningful. No packet, permission, persistence, default-value,
+translation, or rendering change is intended.
+
 ## Decisions
 
 Use Minecraft's existing `Screen`, list, button, slider, and text-field widgets.
