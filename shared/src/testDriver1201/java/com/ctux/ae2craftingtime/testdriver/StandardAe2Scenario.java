@@ -125,6 +125,13 @@ final class StandardAe2Scenario {
     private boolean badgePersistSaving;
     private boolean badgeContinuationWritten;
     private int badgeResumeStep;
+    private boolean badgeShadowEdited;
+    private boolean badgeResetBadgeEdited;
+    private boolean badgeOutsideEdited;
+    private int badgeResetCheckPhase;
+    private final java.util.Set<String> badgeResetInputs = new java.util.HashSet<>();
+    private String optionSeekLabel;
+    private boolean optionSeekForward;
     private long badgeResumeRenderedAfter;
     private int badgeScaleStep;
     private int badgeOriginalScale;
@@ -1043,6 +1050,9 @@ final class StandardAe2Scenario {
             var waiting = rowText(snapshot, "minecraft:smooth_stone", "text.ae2craftingtime.waiting");
             var running = rowText(snapshot, "minecraft:stone", "text.ae2craftingtime.ttc");
             if (leaf.equals("standard-status-controls")) {
+                var client = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().copy();
+                client.features().setEnabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS, true);
+                com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.apply(client);
                 addonQuantityCases = StandardCraftFixture.addonQuantityCases();
                 var accessor = (com.ctux.ae2craftingtime.testdriver.mixin.CraftingStatusAccessor) minecraft.screen;
                 realStatus = accessor.ae2craftingtime_test_driver$status();
@@ -1095,9 +1105,10 @@ final class StandardAe2Scenario {
                 var ttc = row.description().stream().filter(text ->
                         com.ctux.ae2craftingtime.core.CraftingRowState.isBadge(text.key())
                         && !text.key().equals("text.ae2craftingtime.status.amounts")).findFirst();
-                int color = ttc.isPresent() && ttc.get().color() != null ? ttc.get().color()
-                        : com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current()
-                                .color(com.ctux.ae2craftingtime.core.ClientConfig.Color.TOTAL);
+                Integer color = ttc.isPresent() ? ttc.get().color() : null;
+                if (color == null && com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground())
+                    color = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current()
+                            .color(com.ctux.ae2craftingtime.core.ClientConfig.Color.TOTAL);
                 if (!java.util.Objects.equals(summary.color(), color) || !LayoutValidator.validateBadges(snapshot).isEmpty())
                     throw new IllegalStateException("Synthetic native amount case " + quantityCase + " color/layout " + summary);
             }
@@ -1258,9 +1269,10 @@ final class StandardAe2Scenario {
             if (snapshot.guiScale() <= 0 || requested > 0 && snapshot.guiScale() != requested) return false;
             var amount = row.description().stream().filter(text -> text.key().equals("text.ae2craftingtime.status.amounts"))
                     .findFirst().orElse(null);
-            if (amount == null || amount.bounds() == null || !amount.bounds().inside(row.cell())
+            var drawn = rowText(snapshot, row.outputId(), "text.ae2craftingtime.status.amounts");
+            if (amount == null || drawn == null || !amount.rendered().equals(drawn.rendered())
                     || !LayoutValidator.validateBadges(snapshot).isEmpty())
-                throw new IllegalStateException("Scaled amount badge escapes its native cell: " + amount);
+                throw new IllegalStateException("Scaled amount badge escapes its native cell: " + amount + " rendered " + drawn);
             screenshot.accept("status-scale-" + (amountFontMode == 0 ? "default" : "wide") + "-"
                     + (requested == 0 ? "auto" : requested) + ".png");
             if (++quantityScaleCase < 3) {
@@ -1287,7 +1299,7 @@ final class StandardAe2Scenario {
             amountFontReload = minecraft.reloadResourcePacks();
             frames.reset();
         } else if (phase == Stage.STATUS_OPTIONS) {
-            boolean compact = amountOptionCase == 1 || amountOptionCase >= 3;
+            boolean compact = amountOptionCase == 1 || amountOptionCase == 3 || amountOptionCase == 4;
             boolean time = amountOptionCase == 0 || amountOptionCase >= 3;
             if (minecraft.screen instanceof CraftingStatusScreen statusScreen) {
                 if (amountOptionSaving) {
@@ -1361,60 +1373,67 @@ final class StandardAe2Scenario {
             String timeLabel = net.minecraft.client.resources.language.I18n.get("config.ae2craftingtime.statusRows");
             String enabledLabel = net.minecraft.client.resources.language.I18n.get("options.on");
             if (amountOptionCase >= 4) {
-                var compactButton = minecraft.screen.children().stream()
-                        .filter(net.minecraft.client.gui.components.Button.class::isInstance)
-                        .map(net.minecraft.client.gui.components.Button.class::cast)
-                        .filter(button -> button.getMessage().getString().startsWith(compactLabel + ": "))
-                        .findFirst().orElse(null);
-                if (compactButton == null) {
-                    var next = minecraft.screen.children().stream()
-                            .filter(net.minecraft.client.gui.components.Button.class::isInstance)
-                            .map(net.minecraft.client.gui.components.Button.class::cast)
-                            .filter(button -> button.getMessage().getString().equals(">"))
-                            .findFirst().orElseThrow(() -> new IllegalStateException("Compact option page is missing"));
-                    DriverPlatform.click(minecraft, next.getX() + 4, next.getY() + 4);
-                    amountOptionRenderedAfter = TestDriverRuntime.renderedFrames + 3;
-                    frames.reset();
-                    return false;
+                String colorLabel = net.minecraft.client.resources.language.I18n.get("config.ae2craftingtime.ttcColors");
+                String label = switch (amountOptionOperationStep) {
+                    case 2, 3, 8 -> colorLabel;
+                    case 4, 5, 9 -> timeLabel;
+                    default -> compactLabel;
+                };
+                var button = seekOptionButton(minecraft, label + ": ");
+                if (button == null) return false;
+                boolean enabled = button.getMessage().getString().endsWith(enabledLabel);
+                switch (amountOptionOperationStep) {
+                    case 0 -> {
+                        if (enabled != (amountOptionCase != 6))
+                            throw new IllegalStateException("Wrong pre-reset compact value: case=" + amountOptionCase);
+                        DriverPlatform.click(minecraft, button.getX() + 4, button.getY() + 4);
+                        amountOptionOperationStep = 1;
+                    }
+                    case 1 -> {
+                        if (enabled != (amountOptionCase == 6))
+                            throw new IllegalStateException("Compact edit did not apply: case=" + amountOptionCase);
+                        amountOptionOperationStep = amountOptionCase == 5 ? 2 : 6;
+                    }
+                    case 2, 4 -> {
+                        if (enabled != (amountOptionOperationStep == 4))
+                            throw new IllegalStateException("Wrong pre-reset option value: " + label);
+                        DriverPlatform.click(minecraft, button.getX() + 4, button.getY() + 4);
+                        amountOptionOperationStep++;
+                    }
+                    case 3, 5 -> {
+                        if (enabled != (amountOptionOperationStep == 3))
+                            throw new IllegalStateException("Option edit did not apply: " + label);
+                        amountOptionOperationStep++;
+                    }
+                    case 6 -> {
+                        if (amountOptionCase == 5 && !enabled) {
+                            DriverPlatform.click(minecraft, button.getX() + 4, button.getY() + 4);
+                            amountOptionRenderedAfter = TestDriverRuntime.renderedFrames + 3;
+                            return false;
+                        }
+                        String actionKey = amountOptionCase == 4 ? "gui.cancel" : amountOptionCase == 5
+                                ? "config.ae2craftingtime.reset_group" : "config.ae2craftingtime.reset_all";
+                        clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get(actionKey));
+                        amountOptionOperationStep = 7;
+                        if (amountOptionCase == 4) amountOptionSaving = true;
+                    }
+                    case 7, 8, 9 -> {
+                        if (enabled != (amountOptionOperationStep == 9))
+                            throw new IllegalStateException("Reset did not restore model default: " + label);
+                        amountOptionOperationStep = amountOptionCase == 5 ? amountOptionOperationStep + 1 : 10;
+                    }
+                    case 10 -> {
+                        if (com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features()
+                                .enabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS)
+                                != (amountOptionCase == 5))
+                            throw new IllegalStateException("Reset changed live compact option before Done: case=" + amountOptionCase);
+                        amountOptionSaving = true;
+                        clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get("gui.done"));
+                    }
+                    default -> throw new IllegalStateException("Unexpected reset step " + amountOptionOperationStep);
                 }
-                if (amountOptionOperationStep == 0) {
-                    if (!compactButton.getMessage().getString().endsWith(enabledLabel))
-                        throw new IllegalStateException("Compact option must start enabled for reset/cancel");
-                    DriverPlatform.click(minecraft, compactButton.getX() + 4, compactButton.getY() + 4);
-                    amountOptionRenderedAfter = TestDriverRuntime.renderedFrames + 3;
-                    amountOptionOperationStep = 1;
-                    frames.reset();
-                    return false;
-                }
-                if (amountOptionOperationStep == 1) {
-                    if (compactButton.getMessage().getString().endsWith(enabledLabel)) return false;
-                    String actionKey = amountOptionCase == 4 ? "gui.cancel" : amountOptionCase == 5
-                            ? "config.ae2craftingtime.reset_group" : "config.ae2craftingtime.reset_all";
-                    var action = minecraft.screen.children().stream()
-                            .filter(net.minecraft.client.gui.components.Button.class::isInstance)
-                            .map(net.minecraft.client.gui.components.Button.class::cast)
-                            .filter(button -> button.getMessage().getString().equals(
-                                    net.minecraft.client.resources.language.I18n.get(actionKey)))
-                            .findFirst().orElseThrow(() -> new IllegalStateException("Option action missing: " + actionKey));
-                    DriverPlatform.click(minecraft, action.getX() + 4, action.getY() + 4);
-                    amountOptionRenderedAfter = TestDriverRuntime.renderedFrames + 3;
-                    amountOptionOperationStep = 2;
-                    if (amountOptionCase == 4) amountOptionSaving = true;
-                    frames.reset();
-                    return false;
-                }
-                if (compactButton.getMessage().getString().endsWith(enabledLabel)) {
-                    var done = minecraft.screen.children().stream()
-                            .filter(net.minecraft.client.gui.components.Button.class::isInstance)
-                            .map(net.minecraft.client.gui.components.Button.class::cast)
-                            .filter(button -> button.getMessage().getString().equals(
-                                    net.minecraft.client.resources.language.I18n.get("gui.done")))
-                            .findFirst().orElseThrow(() -> new IllegalStateException("Done option is missing"));
-                    amountOptionSaving = true;
-                    DriverPlatform.click(minecraft, done.getX() + 4, done.getY() + 4);
-                    amountOptionRenderedAfter = TestDriverRuntime.renderedFrames + 3;
-                    frames.reset();
-                }
+                amountOptionRenderedAfter = TestDriverRuntime.renderedFrames + 3;
+                frames.reset();
                 return false;
             }
             for (var child : minecraft.screen.children()) {
@@ -1463,10 +1482,22 @@ final class StandardAe2Scenario {
             }
             if (!amountServerOffCaptured) {
                 if (com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.profilingEnabled()) return false;
-                var descriptions = snapshot.rows().stream().flatMap(row -> row.description().stream()).toList();
-                if (descriptions.stream().noneMatch(text -> text.key().equals("text.ae2craftingtime.status.amounts"))) return false;
-                if (descriptions.stream().anyMatch(text -> com.ctux.ae2craftingtime.core.CraftingRowState.isBadge(text.key())
-                        && !text.key().equals("text.ae2craftingtime.status.amounts"))) return false;
+                var row = snapshot.rows().stream().filter(value -> value.storedAmount() > 0
+                        || value.activeAmount() > 0 || value.pendingAmount() > 0).findFirst().orElse(null);
+                if (row == null) return false;
+                var descriptions = snapshot.rows().stream().flatMap(value -> value.description().stream()).toList();
+                var nativeKeys = List.of(appeng.core.localization.GuiText.FromStorage,
+                        appeng.core.localization.GuiText.Crafting, appeng.core.localization.GuiText.Scheduled)
+                        .stream().map(label -> ((net.minecraft.network.chat.contents.TranslatableContents)
+                                label.text("").getContents()).getKey()).toList();
+                long[] raw = {row.storedAmount(), row.activeAmount(), row.pendingAmount()};
+                for (int category = 0; category < raw.length; category++) {
+                    String key = nativeKeys.get(category);
+                    if (raw[category] > 0 && row.description().stream().noneMatch(text -> text.key().equals(key)))
+                        return false;
+                }
+                if (descriptions.stream().anyMatch(text ->
+                        com.ctux.ae2craftingtime.core.CraftingRowState.isBadge(text.key()))) return false;
                 screenshot.accept("status-server-profiling-off.png");
                 amountServerOffCaptured = true;
             }
@@ -1960,6 +1991,77 @@ final class StandardAe2Scenario {
             return false;
         }
         if (TestDriverRuntime.renderedFrames < badgeResumeRenderedAfter) return false;
+        if (badgeResumeStep >= 20) {
+            if (badgeResumeStep == 29) {
+                if (minecraft.screen instanceof com.ctux.ae2craftingtime.mc1201.OptionsScreen) return false;
+                var config = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current();
+                if (config.planSort() != 2 || config.statusSort() != 2)
+                    throw new IllegalStateException("Controls reset did not save both default sort modes");
+                return true;
+            }
+            if (badgeResumeStep == 20) {
+                clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get(
+                        "config.ae2craftingtime.group.controls"));
+            } else if (badgeResumeStep == 25 || badgeResumeStep == 28) {
+                clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get(
+                        badgeResumeStep == 25 ? "config.ae2craftingtime.reset_group" : "gui.done"));
+            } else {
+                boolean plan = badgeResumeStep == 21 || badgeResumeStep == 22 || badgeResumeStep == 26;
+                String label = net.minecraft.client.resources.language.I18n.get(
+                        plan ? "config.ae2craftingtime.planSort" : "config.ae2craftingtime.statusSort") + ": ";
+                var sort = seekOptionButton(minecraft, label);
+                if (sort == null) return false;
+                int expected = badgeResumeStep == 22 || badgeResumeStep == 24 ? 0 : 2;
+                if (!sort.getMessage().getString().equals(label
+                        + com.ctux.ae2craftingtime.mc1201.TtcText.sortMode(expected).getString()))
+                    throw new IllegalStateException("Controls sort differs at step " + badgeResumeStep);
+                if (badgeResumeStep == 21 || badgeResumeStep == 23)
+                    DriverPlatform.click(minecraft, sort.getX() + 4, sort.getY() + 4);
+                if (badgeResumeStep == 27) screenshot.accept("controls-reset-group.png");
+            }
+            badgeResumeStep++;
+            badgeResumeRenderedAfter = TestDriverRuntime.renderedFrames + 3;
+            return false;
+        }
+        if (badgeResumeStep == 7 || badgeResumeStep == 11) {
+            if (badgeResetCheckPhase == 0) {
+                var badge = seekOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get(
+                        "config.ae2craftingtime.badgeBackground") + ": ");
+                if (badge == null) return false;
+                if (badge.getMessage().getString().endsWith(net.minecraft.client.resources.language.I18n.get("options.on")))
+                    throw new IllegalStateException("Reset did not restore badge Off");
+                badgeAssertSavedOff(minecraft);
+                badgeResetCheckPhase = 1;
+            }
+            if (badgeResetCheckPhase == 1) {
+                var shadow = seekOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get(
+                        "config.ae2craftingtime.textShadow") + ": ");
+                if (shadow == null) return false;
+                if (shadow.getMessage().getString().endsWith(net.minecraft.client.resources.language.I18n.get("options.on")))
+                    throw new IllegalStateException("Reset did not restore text shadow Off");
+                screenshot.accept(badgeResumeStep == 7 ? "badge-reset-group.png" : "badge-reset-all.png");
+                badgeResetCheckPhase = 2;
+            }
+            if (badgeResetCheckPhase == 2) {
+                if (!badgeAssertAppearanceDefaults(minecraft)) return false;
+                clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get(
+                        "config.ae2craftingtime.group.displays"));
+                badgeResetCheckPhase = 3;
+                badgeResumeRenderedAfter = TestDriverRuntime.renderedFrames + 3;
+                return false;
+            }
+            var colors = seekOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get(
+                    "config.ae2craftingtime.ttcColors") + ": ");
+            if (colors == null) return false;
+            if (colors.getMessage().getString().endsWith(net.minecraft.client.resources.language.I18n.get("options.on"))
+                    != (badgeResumeStep == 7))
+                throw new IllegalStateException("Reset changed another group or Reset All failed");
+            clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get("gui.cancel"));
+            badgeResetCheckPhase = 0;
+            badgeResumeStep++;
+            badgeResumeRenderedAfter = TestDriverRuntime.renderedFrames + 3;
+            return false;
+        }
         if (badgeResumeStep == 4 || badgeResumeStep == 8 || badgeResumeStep == 12) {
             if (minecraft.screen instanceof com.ctux.ae2craftingtime.mc1201.OptionsScreen) return false;
             badgeAssertSavedOff(minecraft);
@@ -1977,11 +2079,27 @@ final class StandardAe2Scenario {
             badgeResumeStep = 17;
         } else if (badgeResumeStep == 19) {
             if (minecraft.screen instanceof com.ctux.ae2craftingtime.mc1201.OptionsScreen) return false;
-            return true;
+            minecraft.setScreen(new com.ctux.ae2craftingtime.mc1201.OptionsScreen(null));
+            badgeResumeStep = 20;
         } else {
             if (!(minecraft.screen instanceof com.ctux.ae2craftingtime.mc1201.OptionsScreen)) return false;
             if (badgeResumeStep == 1 || badgeResumeStep == 5 || badgeResumeStep == 9
                     || badgeResumeStep == 13 || badgeResumeStep == 17) {
+                if (badgeResumeStep == 5) {
+                    var colors = seekOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get(
+                            "config.ae2craftingtime.ttcColors") + ": ");
+                    if (colors == null) return false;
+                    boolean colorsOn = colors.getMessage().getString().endsWith(
+                            net.minecraft.client.resources.language.I18n.get("options.on"));
+                    if (!badgeOutsideEdited) {
+                        if (colorsOn) throw new IllegalStateException("TTC colors did not start Off");
+                        DriverPlatform.click(minecraft, colors.getX() + 4, colors.getY() + 4);
+                        badgeOutsideEdited = true;
+                        badgeResumeRenderedAfter = TestDriverRuntime.renderedFrames + 3;
+                        return false;
+                    }
+                    if (!colorsOn) throw new IllegalStateException("Other-group edit did not apply");
+                }
                 clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get(
                         "config.ae2craftingtime.group.appearance"));
             } else {
@@ -2001,24 +2119,36 @@ final class StandardAe2Scenario {
                         clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get("gui.cancel"));
                     }
                     case 6 -> {
-                        if (enabled) throw new IllegalStateException("Cancel did not discard badge edit");
+                        if (enabled != badgeResetBadgeEdited)
+                            throw new IllegalStateException("Unexpected badge value before section reset");
+                        var shadow = optionButton(minecraft, net.minecraft.client.resources.language.I18n.get(
+                                "config.ae2craftingtime.textShadow") + ": ");
+                        if (shadow == null) throw new IllegalStateException("Text shadow option is missing");
+                        if (!badgeShadowEdited) {
+                            if (shadow.getMessage().getString().endsWith(
+                                    net.minecraft.client.resources.language.I18n.get("options.on")))
+                                throw new IllegalStateException("Text shadow did not start Off");
+                            DriverPlatform.click(minecraft, shadow.getX() + 4, shadow.getY() + 4);
+                            badgeShadowEdited = true;
+                            badgeResumeRenderedAfter = TestDriverRuntime.renderedFrames + 3;
+                            return false;
+                        }
+                        if (!shadow.getMessage().getString().endsWith(
+                                net.minecraft.client.resources.language.I18n.get("options.on")))
+                            throw new IllegalStateException("Text shadow edit did not apply before reset");
+                        if (!badgeResetBadgeEdited) {
+                            DriverPlatform.click(minecraft, toggle.getX() + 4, toggle.getY() + 4);
+                            badgeResetBadgeEdited = true;
+                            badgeResumeRenderedAfter = TestDriverRuntime.renderedFrames + 3;
+                            return false;
+                        }
                         clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get(
                                 "config.ae2craftingtime.reset_group"));
-                    }
-                    case 7 -> {
-                        if (!enabled) throw new IllegalStateException("Appearance reset did not enable badge");
-                        screenshot.accept("badge-reset-group.png");
-                        clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get("gui.cancel"));
                     }
                     case 10 -> {
                         if (enabled) throw new IllegalStateException("Cancel did not discard Appearance reset");
                         clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get(
                                 "config.ae2craftingtime.reset_all"));
-                    }
-                    case 11 -> {
-                        if (enabled) throw new IllegalStateException("Reset all did not disable badge");
-                        screenshot.accept("badge-reset-all.png");
-                        clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get("gui.cancel"));
                     }
                     case 14 -> {
                         if (enabled) throw new IllegalStateException("Cancel did not discard Reset all");
@@ -2047,6 +2177,53 @@ final class StandardAe2Scenario {
         if (config.badgeBackground() || config.color(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE) != 0x245A7D
                 || config.badgeOpacity() != 96)
             throw new IllegalStateException("Saved Off/custom badge settings changed after relaunch");
+    }
+
+    private boolean badgeAssertAppearanceDefaults(Minecraft minecraft) {
+        for (var child : minecraft.screen.children()) {
+            if (!(child instanceof net.minecraft.client.gui.components.EditBox input)) continue;
+            String label = input.getMessage().getString();
+            String expected = null;
+            for (var color : com.ctux.ae2craftingtime.core.ClientConfig.appearanceColors()) {
+                if (label.equals(net.minecraft.client.resources.language.I18n.get(
+                        "config.ae2craftingtime.color." + color.name().toLowerCase(java.util.Locale.ROOT))))
+                    expected = String.format(java.util.Locale.ROOT, "#%06X", color.defaultRgb());
+            }
+            if (label.equals(net.minecraft.client.resources.language.I18n.get("config.ae2craftingtime.badgeOpacity")))
+                expected = "176";
+            if (expected == null || !input.getValue().equals(expected))
+                throw new IllegalStateException("Appearance reset value differs: " + label);
+            badgeResetInputs.add(label);
+        }
+        if (optionButton(minecraft, ">") != null) {
+            clickOptionButton(minecraft, ">");
+            badgeResumeRenderedAfter = TestDriverRuntime.renderedFrames + 3;
+            return false;
+        }
+        if (badgeResetInputs.size() != com.ctux.ae2craftingtime.core.ClientConfig.appearanceColors().size() + 1)
+            throw new IllegalStateException("Appearance reset did not expose every input");
+        badgeResetInputs.clear();
+        return true;
+    }
+
+    private net.minecraft.client.gui.components.Button seekOptionButton(Minecraft minecraft, String label) {
+        var button = optionButton(minecraft, label);
+        if (button != null) {
+            optionSeekLabel = null;
+            return button;
+        }
+        if (!label.equals(optionSeekLabel)) {
+            optionSeekLabel = label;
+            optionSeekForward = false;
+        }
+        if (!optionSeekForward && optionButton(minecraft, "<") == null) optionSeekForward = true;
+        String direction = optionSeekForward ? ">" : "<";
+        if (optionButton(minecraft, direction) == null)
+            throw new IllegalStateException("Option is missing from all pages: " + label);
+        clickOptionButton(minecraft, direction);
+        amountOptionRenderedAfter = TestDriverRuntime.renderedFrames + 3;
+        badgeResumeRenderedAfter = TestDriverRuntime.renderedFrames + 3;
+        return null;
     }
 
     private static net.minecraft.client.gui.components.Button optionButton(Minecraft minecraft, String label) {

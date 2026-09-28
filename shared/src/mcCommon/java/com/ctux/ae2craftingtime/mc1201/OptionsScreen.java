@@ -132,7 +132,7 @@ public final class OptionsScreen extends OptionsBaseScreen {
         }
 
         addRenderableWidget(Button.builder(Component.translatable("config.ae2craftingtime.reset_group"), pressed -> {
-            for (var feature : features) draft.features().setEnabled(feature, true);
+            for (var feature : features) draft.features().setEnabled(feature, defaults.enabled(feature));
             if (group == OptionFeature.Group.APPEARANCE) {
                 for (var color : ClientConfig.Color.values()) draft.setColor(color, color.defaultRgb());
                 draft.setBadgeOpacity(176);
