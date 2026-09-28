@@ -135,24 +135,29 @@ class OptionsModelTest {
         assertEquals(4.0, config.outlierMultiplier());
         assertEquals(10, config.minimumNoProgressSeconds());
         assertEquals(2.0, config.typicalDurationMultiplier());
+        assertFalse(config.features().enabled(OptionFeature.RECURRENT_DETECTION));
         config.features().setEnabled(OptionFeature.NOTIFY_ON_DELAYED, false);
+        config.features().setEnabled(OptionFeature.RECURRENT_DETECTION, true);
         config.setMaxSamples(100);
         config.setOutlierMultiplier(1.0);
         config.setMinimumNoProgressSeconds(3600);
         config.setTypicalDurationMultiplier(1000.0);
         var copy = config.copy();
         assertFalse(copy.features().enabled(OptionFeature.NOTIFY_ON_DELAYED));
+        assertTrue(copy.features().enabled(OptionFeature.RECURRENT_DETECTION));
         assertEquals(100, copy.maxSamples());
         assertEquals(1.0, copy.outlierMultiplier());
         assertEquals(3600, copy.minimumNoProgressSeconds());
         assertEquals(1000.0, copy.typicalDurationMultiplier());
         copy.reset();
         assertTrue(copy.features().enabled(OptionFeature.NOTIFY_ON_DELAYED));
+        assertFalse(copy.features().enabled(OptionFeature.RECURRENT_DETECTION));
         assertEquals(10, copy.maxSamples());
         assertEquals(4.0, copy.outlierMultiplier());
         assertEquals(10, copy.minimumNoProgressSeconds());
         assertEquals(2.0, copy.typicalDurationMultiplier());
         assertFalse(config.features().enabled(OptionFeature.NOTIFY_ON_DELAYED));
+        assertTrue(config.features().enabled(OptionFeature.RECURRENT_DETECTION));
     }
 
     @Test

@@ -60,13 +60,14 @@ diagnostics. It is clearly labelled as the master switch.
 
 ### Recurrent detection default (#592)
 
-Status: ready-to-implement.
+Status: in-progress.
 
 [PR #593](https://github.com/cTux/ae2-crafting-time/pull/593)
 shipped the default-off change and English/Ukrainian player guidance for
 [#592](https://github.com/cTux/ae2-crafting-time/issues/592). The server-model copy
-still loses an explicit on value; closure requires the
-[focused copy regression](implementation-plan.md#focused-follow-up-preserve-recurrent-detection-opt-in-592).
+lost an explicit on value; the [focused copy regression](implementation-plan.md#focused-follow-up-preserve-recurrent-detection-opt-in-592)
+is in progress. Shared regression and 100% line/branch coverage, current-head
+GitHub CI, merge, and verified issue closure remain.
 
 Fresh server files and Reset use `recurrentDetection = false` on all four targets.
 An explicit `true` must survive loading, independent model copies, editing and

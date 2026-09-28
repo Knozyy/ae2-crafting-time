@@ -42,7 +42,11 @@ public final class ServerConfig {
 
     public ServerConfig copy() {
         var copy = new ServerConfig();
-        for (var feature : features.disabled()) copy.features.setEnabled(feature, false);
+        for (var feature : OptionFeature.values()) {
+            if (feature.owner() == OptionFeature.Owner.SERVER) {
+                copy.features.setEnabled(feature, features.enabled(feature));
+            }
+        }
         copy.maxSamples = maxSamples;
         copy.outlierMultiplier = outlierMultiplier;
         copy.minimumNoProgressSeconds = minimumNoProgressSeconds;
