@@ -430,6 +430,7 @@ public final class DedicatedCpuScenario {
         }
         var initial = "initial".equals(recurrentAction);
         if (initial && !recurrentVisited) {
+            recurrentPatterns.close();
             recurrentFixture = gridFixture.secondGrid();
             recurrentFixture.cpuListScenario = false;
             recurrentFixture.recurrentPlan = false;
@@ -548,6 +549,7 @@ public final class DedicatedCpuScenario {
     private void finish(MinecraftServer server, String result, String error) {
         done = true;
         try {
+            if (recurrentPatterns != null) recurrentPatterns.close();
             var json = new GsonBuilder().setPrettyPrinting().create().toJson(Map.ofEntries(
                     Map.entry("target", target), Map.entry("scenario", scenario), Map.entry("result", result),
                     Map.entry("error", error), Map.entry("adapters", IntegrationMixinPlugin.snapshot()),

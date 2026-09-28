@@ -822,6 +822,33 @@ class TestDriverCoreTest {
     }
 
     @Test
+    void flattenedPlanFooterRetainsDrawnTotalAndRespectsBadgeSetting() {
+        var gui = new Rect(20, 30, 238, 206);
+        var bounds = new Rect(100, gui.y() + 178, 35, 9);
+        var flattened = com.ctux.ae2craftingtime.mc1201.TtcComponents.rowSymbolsInTextColor(
+                TtcText.totalTtc("~7s"), 0xFFFFFF);
+        assertEquals("literal", UiObservationStore.observed(List.of(flattened), bounds).get(0).key());
+        // JUnit has no en_us client language; this is the rendered footer observed in the smoke failure.
+        var drawn = new UiSnapshot.ObservedText("literal", "TTC: ~7s", List.of(), bounds);
+        var total = UiObservationStore.planTotalText("appeng.client.gui.me.crafting.CraftConfirmScreen", gui, drawn);
+        assertEquals("text.ae2craftingtime.total_ttc", total.key());
+        assertEquals(drawn.rendered(), total.rendered());
+        assertEquals(bounds, total.bounds());
+        assertNull(UiObservationStore.planTotalText("appeng.client.gui.me.crafting.CraftingStatusScreen", gui, drawn));
+        assertNull(UiObservationStore.planTotalText("appeng.client.gui.me.crafting.CraftConfirmScreen", gui,
+                new UiSnapshot.ObservedText("literal", "TTC: ~7s", List.of(), null)));
+        assertNull(UiObservationStore.planTotalText("appeng.client.gui.me.crafting.CraftConfirmScreen", gui,
+                new UiSnapshot.ObservedText("literal", "TTC: ~7s", List.of(), new Rect(100, 40, 35, 9))));
+        assertNull(UiObservationStore.planTotalText("appeng.client.gui.me.crafting.CraftConfirmScreen", gui,
+                new UiSnapshot.ObservedText("literal", "Other: ~7s", List.of(), bounds)));
+        for (boolean enabled : List.of(false, true)) {
+            assertTrue(StandardAe2Scenario.recurrentBadgeMatches(enabled ? List.of(new Rect(98, bounds.y() - 2, 39, 13))
+                    : List.of(), bounds, enabled));
+            assertFalse(StandardAe2Scenario.recurrentBadgeMatches(enabled ? List.of() : List.of(bounds), bounds, enabled));
+        }
+    }
+
+    @Test
     void galleryPlansDistinguishUnknownRowsFromMissingObservations() {
         var known = UiObservationStore.observed(List.of(TtcText.ttc("~2s")), null);
         var unknown = UiObservationStore.observed(List.of(TtcText.ttcCollectingData()), null);

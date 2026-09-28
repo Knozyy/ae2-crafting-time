@@ -808,9 +808,9 @@ final class StandardAe2Scenario {
             if (label != null && snapshot.text().stream()
                     .filter(text -> text.key().equals("text.ae2craftingtime.plan.recurrent"))
                     .noneMatch(text -> !text.bold() && java.util.Objects.equals(text.color(), 0xFF5555)
-                            && text.bounds() != null && snapshot.badges().stream()
-                            .anyMatch(badge -> text.bounds().inside(badge))))
-                throw new IllegalStateException("Recurrent label has no containing rendered badge");
+                            && text.bounds() != null && recurrentBadgeMatches(snapshot.badges(), text.bounds(),
+                                    com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground())))
+                throw new IllegalStateException("Recurrent label or badge differs from client options");
             if (!connectedDedicated && recurrenceFixture.reported() && label != null
                     && !label.arguments().equals(List.of(Long.toString(recurrenceFixture.requestedAmount()))))
                 throw new IllegalStateException("Recurrence label lost requested quantity " + recurrenceFixture.requestedAmount());
@@ -834,6 +834,9 @@ final class StandardAe2Scenario {
             return false;
         }
         if (phase == Stage.PLAN_TOOLTIP && leaf.equals("recurrent-plan")) {
+            // Closing restores the original option, so the recurrent tooltip can disappear while the server task finishes.
+            if (!connectedDedicated && operation != null)
+                return server(minecraft, player -> { recurrenceFixture.close(); return true; });
             if (snapshot.tooltip().stream().anyMatch(text -> text.key().startsWith(
                     "text.ae2craftingtime.plan.stored_variant"))) return false;
             var recurrent = snapshot.tooltip().stream().anyMatch(text -> text.key().equals("text.ae2craftingtime.plan.recurrent_hint"));
@@ -887,8 +890,8 @@ final class StandardAe2Scenario {
                     return false;
                 }
             }
-            if (!connectedDedicated && !server(minecraft, player -> { recurrenceFixture.close(); return true; })) return false;
             if (!recurrenceCaptured) screenshot.accept("recurrent-plan-tooltip.png");
+            if (!connectedDedicated && !server(minecraft, player -> { recurrenceFixture.close(); return true; })) return false;
             return true;
         }
         boolean plan = phase.ordinal() < Stage.OPEN_STATUS.ordinal();
@@ -965,8 +968,12 @@ final class StandardAe2Scenario {
             }
             if (sort == 0) {
                 mark(checks, prefix, true);
-                if (plan && !snapshot.text().stream().anyMatch(t -> t.key().equals("text.ae2craftingtime.total_ttc"))) return false;
-                if (plan && (snapshot.badges().isEmpty() || !LayoutValidator.validateBadges(snapshot).isEmpty())) {
+                var total = plan ? snapshot.text().stream()
+                        .filter(t -> t.key().equals("text.ae2craftingtime.total_ttc")).findFirst().orElse(null) : null;
+                if (plan && total == null) return false;
+                if (plan && (total.bounds() == null || !recurrentBadgeMatches(snapshot.badges(), total.bounds(),
+                        com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground())
+                        || !LayoutValidator.validateBadges(snapshot).isEmpty())) {
                     throw new IllegalStateException("plan badge layout: " + LayoutValidator.validateBadges(snapshot));
                 }
                 if (plan) {
@@ -1648,6 +1655,10 @@ final class StandardAe2Scenario {
             return true;
         }
         return false;
+    }
+
+    static boolean recurrentBadgeMatches(List<Rect> badges, Rect text, boolean enabled) {
+        return badges.stream().anyMatch(badge -> text.inside(badge)) == enabled;
     }
 
     static boolean galleryPlanReady(List<UiSnapshot.Row> rows, int knownRows) {

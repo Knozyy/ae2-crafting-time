@@ -10,7 +10,7 @@ Stored-variant and resource-icon sections inherit their linked feature status.
 
 ## Recurrent fixture option ownership (#602)
 
-Status: ready-to-implement
+Status: in-progress
 
 Scope: Restore deterministic `recurrent-plan` setup after detection became opt-in.
 
@@ -38,13 +38,15 @@ default, recurrence rule, pattern, packet or saved configuration.
   semantic cases and retains an inspected Recurrent row and tooltip. Following
   `standard-plan-controls` in the same world sees the restored option. A compatible
   Fabric 1.20.1 dedicated recurrence run covers grid replacement, replan and
-  reconnect through the other shared caller.
+  reconnect through the other shared caller. The row's badge background follows
+  the client's Badge background switch, which defaults off.
 - **RF602-4:** Regression checks cover initial false/true, repeated setup, case
   transitions, restoration and unchanged siblings. Keep all four target adapters
   compatible and production artifacts independent of the test driver.
 
 These checks qualify this fixture repair, not the broader recurrence feature or
-addon matrices. Implementation and runtime verification remain pending.
+addon matrices. Implementation review, current-head checks, and integrated and
+dedicated runtime verification remain pending.
 
 ## Optional connection observation extension
 

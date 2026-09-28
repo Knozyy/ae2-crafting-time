@@ -12,11 +12,15 @@ import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
+import com.ctux.ae2craftingtime.core.FeatureOptions;
+import com.ctux.ae2craftingtime.core.OptionFeature;
 import com.ctux.ae2craftingtime.mc1201.PlanRecurrence;
+import com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime;
 import com.ctux.ae2craftingtime.testdriver.mixin.CraftConfirmMenuAccessor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Items;
 
@@ -32,10 +36,16 @@ final class RecurrentPlanFixture implements ICraftingProvider {
     private boolean successful;
     private AEKey substitute;
     private List<java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan>> boundaryPlans;
+    private MinecraftServer server;
+    private Boolean originalDetection;
 
     RecurrentPlanFixture(StandardCraftFixture fixture) { this.fixture = fixture; }
 
     boolean prepare(ServerPlayer player, String name) {
+        server = player.level().getServer();
+        if (enableDetection(ServerOptionsRuntime.current().features())) {
+            for (var connected : server.getPlayerList().getPlayers()) ServerOptionsRuntime.sendTo(connected);
+        }
         if (!configured.equals(name)) {
             configured = name;
             patterns.clear();
@@ -190,9 +200,27 @@ final class RecurrentPlanFixture implements ICraftingProvider {
     long requestedAmount() { return configured.equals("reported-100") ? 100 : 1; }
 
     void close() {
+        if (restoreDetection(ServerOptionsRuntime.current().features())) {
+            for (var connected : server.getPlayerList().getPlayers()) ServerOptionsRuntime.sendTo(connected);
+        }
         if (node != null) node.destroy();
         node = null;
         configured = "";
+        server = null;
+    }
+
+    boolean enableDetection(FeatureOptions options) {
+        boolean first = originalDetection == null;
+        if (originalDetection == null) originalDetection = options.enabled(OptionFeature.RECURRENT_DETECTION);
+        options.setEnabled(OptionFeature.RECURRENT_DETECTION, true);
+        return first;
+    }
+
+    boolean restoreDetection(FeatureOptions options) {
+        if (originalDetection == null) return false;
+        options.setEnabled(OptionFeature.RECURRENT_DETECTION, originalDetection);
+        originalDetection = null;
+        return true;
     }
 
     boolean clientReady(appeng.menu.me.crafting.CraftConfirmMenu menu) {

@@ -82,7 +82,8 @@ public final class UiObservationStore {
 
     public static void description(CraftingPlanSummaryEntry entry, List<Component> components) {
         if (active != null) {
-            active.planDescriptions.put(entry, observed(components, null));
+            // Production appends TTC at the same RETURN point; observe the list after all injectors finish.
+            active.planDescriptions.put(entry, components);
         }
     }
 
@@ -105,6 +106,11 @@ public final class UiObservationStore {
         }
         var observed = observed(component, transformed(graphics, x, y, x + width, y + height));
         if (recordStatusText(component.getString(), observed.bounds())) return;
+        var total = planTotalText(active.screen, active.gui, observed);
+        if (total != null) {
+            active.text.add(total);
+            return;
+        }
         if (observed.key().startsWith("text.ae2craftingtime.")
                 || active.screen.contains("CraftingStatusScreen")
                 || active.cpuCards.stream().anyMatch(card -> observed.bounds().overlaps(card.nameArea))) {
@@ -121,15 +127,33 @@ public final class UiObservationStore {
     }
 
     private static boolean recordStatusText(String rendered, Rect bounds) {
-        var semantic = active.descriptions.values().stream().flatMap(List::stream)
-                .filter(line -> line.key().startsWith("text.ae2craftingtime.")
-                        && line.rendered().equals(rendered))
-                .findFirst().orElse(null);
+        var semantic = semanticText(active.descriptions, active.planDescriptions, rendered);
         if (semantic == null) return false;
         if (active.text.stream().noneMatch(line -> line.key().equals(semantic.key()) && bounds.equals(line.bounds())))
             active.text.add(new UiSnapshot.ObservedText(semantic.key(), semantic.rendered(), semantic.arguments(),
                     bounds, semantic.color(), semantic.bold()));
         return true;
+    }
+
+    static UiSnapshot.ObservedText semanticText(Map<String, List<UiSnapshot.ObservedText>> descriptions,
+            Map<Object, List<Component>> planDescriptions, String rendered) {
+        return java.util.stream.Stream.concat(descriptions.values().stream(),
+                planDescriptions.values().stream().map(lines -> observed(lines, null))).flatMap(List::stream)
+                .filter(line -> line.key().startsWith("text.ae2craftingtime.")
+                        && line.rendered().equals(rendered))
+                .findFirst().orElse(null);
+    }
+
+    static List<UiSnapshot.ObservedText> planDescription(Map<Object, List<Component>> descriptions, Object identity) {
+        return observed(descriptions.getOrDefault(identity, List.of()), null);
+    }
+
+    static UiSnapshot.ObservedText planTotalText(String screen, Rect gui, UiSnapshot.ObservedText text) {
+        // The production footer flattens its translated component to recolor symbols before drawing it.
+        if (!screen.endsWith("CraftConfirmScreen") || text.bounds() == null
+                || text.bounds().y() != gui.y() + 178 || !text.rendered().startsWith("TTC:")) return null;
+        return new UiSnapshot.ObservedText("text.ae2craftingtime.total_ttc", text.rendered(),
+                text.arguments(), text.bounds(), text.color(), text.bold());
     }
 
     public static void fill(GuiGraphics graphics, int x1, int y1, int x2, int y2, int color) {
@@ -203,7 +227,7 @@ public final class UiObservationStore {
         var rows = active.rows.stream().map(row -> new UiSnapshot.Row(row.outputId, row.craftAmount,
                 row.missingAmount, row.cell,
                 row.identity == null ? rowDescription(active.descriptions, active.text, row.outputId, row.cell)
-                        : active.planDescriptions.getOrDefault(row.identity, List.of()),
+                        : planDescription(active.planDescriptions, row.identity),
                 row.storedAmount, row.activeAmount, row.pendingAmount)).toList();
         var mergedBadges = merge(active.badges);
         var cpuCards = active.cpuCards.stream().map(card -> {
@@ -360,7 +384,7 @@ public final class UiObservationStore {
         private int scroll;
         private final List<PendingRow> rows = new ArrayList<>();
         private final Map<String, List<UiSnapshot.ObservedText>> descriptions = new LinkedHashMap<>();
-        private final Map<Object, List<UiSnapshot.ObservedText>> planDescriptions = new java.util.IdentityHashMap<>();
+        private final Map<Object, List<Component>> planDescriptions = new java.util.IdentityHashMap<>();
         private final List<UiSnapshot.ObservedText> text = new ArrayList<>();
         private final List<Rect> badges = new ArrayList<>();
         private final List<UiSnapshot.Widget> widgets = new ArrayList<>();
