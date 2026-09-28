@@ -60,7 +60,7 @@ diagnostics. It is clearly labelled as the master switch.
 
 ### Accurate switch default tooltips (#607)
 
-Status: in-progress
+Status: finished
 
 Scope: Correct client and server switch tooltip defaults without changing settings behavior.
 
@@ -69,7 +69,9 @@ Issue: [#607](https://github.com/cTux/ae2-crafting-time/issues/607)
 Planning: [Design](technical-design.md#accurate-switch-default-tooltips-607) and
 [reviewed plan](implementation-plan.md#focused-follow-up-accurate-switch-default-tooltips-607).
 
-Remaining: Independent review, locale validation, current-head CI, and verified implementation merge.
+Implementation: [PR #610](https://github.com/cTux/ae2-crafting-time/pull/610) merged to `master` at [9855381756ccd14526a385f6db079620a7f9534d](https://github.com/cTux/ae2-crafting-time/commit/9855381756ccd14526a385f6db079620a7f9534d).
+
+Verification: [Issue completion evidence](https://github.com/cTux/ae2-crafting-time/issues/607#issuecomment-5877065808) confirms [PR #610](https://github.com/cTux/ae2-crafting-time/pull/610) merged after [tested head 36296cf1b20fcf61b7a6440582286df8ce7d8509](https://github.com/cTux/ae2-crafting-time/commit/36296cf1b20fcf61b7a6440582286df8ce7d8509) passed [Gradle tests/coverage](https://github.com/cTux/ae2-crafting-time/actions/runs/36469909276), [all four builds](https://github.com/cTux/ae2-crafting-time/actions/runs/36469909142), and local validation of all 201 locale keys/placeholders, both templates' two arguments, and fresh owner-specific model usage. No Minecraft launch was required for this tooltip-only scope.
 
 Every switch tooltip must describe its fresh model default in English and
 Ukrainian. Compact crafting amounts, TTC colors, text shadow, and badge background
