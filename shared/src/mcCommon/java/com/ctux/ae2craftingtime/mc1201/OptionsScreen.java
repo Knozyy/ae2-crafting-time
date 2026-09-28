@@ -1,6 +1,7 @@
 package com.ctux.ae2craftingtime.mc1201;
 
 import com.ctux.ae2craftingtime.core.ClientConfig;
+import com.ctux.ae2craftingtime.core.FeatureOptions;
 import com.ctux.ae2craftingtime.core.OptionFeature;
 import java.io.IOException;
 import java.util.Arrays;
@@ -89,6 +90,7 @@ public final class OptionsScreen extends OptionsBaseScreen {
 
         var features = Arrays.stream(OptionFeature.values())
                 .filter(feature -> feature.owner() == OptionFeature.Owner.CLIENT && feature.group() == group).toList();
+        var defaults = new FeatureOptions(OptionFeature.Owner.CLIENT);
         int totalRows = group == OptionFeature.Group.APPEARANCE ? ClientConfig.appearanceRowCount(features.size())
                 : features.size() + (group == OptionFeature.Group.CONTROLS ? 2 : 0);
         for (int i = page * rows; i < Math.min(totalRows, (page + 1) * rows); i++) {
@@ -114,7 +116,8 @@ public final class OptionsScreen extends OptionsBaseScreen {
                     right - left - sidebarWidth - 8, 23).build());
             toggle.setTooltip(Tooltip.create(Component.translatable(
                     "config.ae2craftingtime.client_help",
-                    Component.translatable("config.ae2craftingtime." + feature.key()))));
+                    Component.translatable("config.ae2craftingtime." + feature.key()),
+                    Component.translatable(defaults.enabled(feature) ? "options.on" : "options.off"))));
         }
 
         if (page > 0) {

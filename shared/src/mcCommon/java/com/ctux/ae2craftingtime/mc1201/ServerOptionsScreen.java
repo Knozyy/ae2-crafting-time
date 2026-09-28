@@ -1,5 +1,6 @@
 package com.ctux.ae2craftingtime.mc1201;
 
+import com.ctux.ae2craftingtime.core.FeatureOptions;
 import com.ctux.ae2craftingtime.core.OptionFeature;
 import com.ctux.ae2craftingtime.core.ServerConfig;
 import com.ctux.ae2craftingtime.core.ServerOptionsWire;
@@ -98,6 +99,7 @@ public final class ServerOptionsScreen extends OptionsBaseScreen {
         }
         var features = Arrays.stream(OptionFeature.values())
                 .filter(value -> value.owner() == OptionFeature.Owner.SERVER && value.group() == group).toList();
+        var tooltipDefaults = new FeatureOptions(OptionFeature.Owner.SERVER);
         int totalRows = features.size() + (group == OptionFeature.Group.ADVANCED ? 4 : 0);
         for (int i = page * rows; i < Math.min(totalRows, (page + 1) * rows); i++) {
             int x = left + 112;
@@ -121,7 +123,8 @@ public final class ServerOptionsScreen extends OptionsBaseScreen {
             toggle.active = source.editable() && available;
             toggle.setTooltip(Tooltip.create(Component.translatable(
                     "config.ae2craftingtime.server_help",
-                    Component.translatable("config.ae2craftingtime." + feature.key()))));
+                    Component.translatable("config.ae2craftingtime." + feature.key()),
+                    Component.translatable(tooltipDefaults.enabled(feature) ? "options.on" : "options.off"))));
         }
         if (page > 0) addRenderableWidget(Button.builder(Component.literal("<"), pressed -> {
             if (commitInputs()) Minecraft.getInstance().setScreen(new ServerOptionsScreen(parent, session, group, page - 1));

@@ -60,7 +60,7 @@ diagnostics. It is clearly labelled as the master switch.
 
 ### Accurate switch default tooltips (#607)
 
-Status: ready-to-implement
+Status: in-progress
 
 Scope: Correct client and server switch tooltip defaults without changing settings behavior.
 
@@ -68,6 +68,8 @@ Issue: [#607](https://github.com/cTux/ae2-crafting-time/issues/607)
 
 Planning: [Design](technical-design.md#accurate-switch-default-tooltips-607) and
 [reviewed plan](implementation-plan.md#focused-follow-up-accurate-switch-default-tooltips-607).
+
+Remaining: Independent review, locale validation, current-head CI, and verified implementation merge.
 
 Every switch tooltip must describe its fresh model default in English and
 Ukrainian. Compact crafting amounts, TTC colors, text shadow, and badge background
