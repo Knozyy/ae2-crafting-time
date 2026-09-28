@@ -2,6 +2,45 @@
 
 Lifecycle: see the [scope status and evidence](spec.md).
 
+## Recurrent fixture option ownership (#602)
+
+See the [repair scope and criteria](spec.md#recurrent-fixture-option-ownership-602).
+
+At base `6fff79148e87828ff680560e7bb08c49aed2450a`, `FeatureOptions.reset()`
+disables server `RECURRENT_DETECTION`. `CraftingTreeNodeMixin` gates collection
+and `CraftingCalculationMixin` gates attachment on that switch. The shared
+`RecurrentPlanFixture.prepare()` creates its cycle without opting in, while
+`validate()` expects recurrence. This proves a setup mismatch; runtime verification
+must still prove that correcting it resolves the reported failure.
+
+Own the temporary switch in `RecurrentPlanFixture`. Capture its original value
+only on first preparation, enable it through `ServerOptionsRuntime.current()`
+and publish with `ServerOptionsRuntime.sendTo` before calculation. The client
+maps `RECURRENT_STATUS` to the synchronized server switch, so changing only the
+server model cannot establish UI readiness. Reuse the in-memory option/snapshot
+pattern in `StandardAe2Scenario`; do not use the persistent user-edit path or
+inject diagnostic results. Keep the saved value across repeated preparation and
+case transitions, and retain native client readiness checks.
+
+Extend fixture close to restore the switch, synchronize currently connected
+clients and destroy the managed provider. Close is safe before setup and after a
+previous close. `StandardAe2Scenario` already closes after its final integrated
+case. `DedicatedCpuScenario` must close before replacing its fixture on grid
+change and on success or failure finalization, before halting the server. The
+replacement then captures the restored value, not the previous temporary true.
+Integrated failures abort and stop the disposable server; no override is saved.
+
+`SuiteFixture.restore()` restores world, inventory and profile state, not server
+options. Keep cleanup local to recurrence rather than broadening suite reset.
+All four targets share this fixture and both callers from `shared/src/testDriver1201`;
+26.1.2's native adapter exclusions do not replace these classes. No production
+mixin, protocol, pattern or per-loader configuration fix is needed.
+
+Test new Minecraft-free state decisions at a covered boundary and check the
+Minecraft-facing lifecycle/snapshot delegation with existing driver tests. Use
+real smoke for synchronization and suite isolation; source-text assertions or
+screenshots alone cannot prove those properties.
+
 ## Optional connection observation
 
 The observation mode uses test-driver mixins on all twelve `StatsNetwork` send

@@ -8,6 +8,44 @@ Implementation: [PR #128](https://github.com/cTux/ae2-crafting-time/pull/128), [
 Verification: [prepared-client results](../automated-ui-testing/prepared-clients-2026-09-08.md).
 Stored-variant and resource-icon sections inherit their linked feature status.
 
+## Recurrent fixture option ownership (#602)
+
+Status: ready-to-implement
+
+Scope: Restore deterministic `recurrent-plan` setup after detection became opt-in.
+
+Issue: [#602](https://github.com/cTux/ae2-crafting-time/issues/602).
+
+Planning: [design](technical-design.md#recurrent-fixture-option-ownership-602)
+and [implementation plan](implementation-plan.md#recurrent-fixture-option-ownership-602).
+
+The reported Forge 1.20.1 `two` case expects stone recurrence but gets an empty
+diagnosis before rendering. Fresh servers now correctly default detection off.
+This repair makes the fixture own its temporary opt-in; it changes no production
+default, recurrence rule, pattern, packet or saved configuration.
+
+- **RF602-1:** Before calculating a recurrence case, the shared fixture enables
+  `RECURRENT_DETECTION` on the logical server and synchronizes the client through
+  the existing server-options snapshot. Integrated and marked dedicated callers
+  use the same setup and retain real calculations and all negative controls.
+- **RF602-2:** Save the original switch once per fixture lifetime. Repeated
+  preparation and case changes must not overwrite it. Restore either original
+  value on close and synchronize connected clients. Close before dedicated grid
+  replacement and on success/failure finalization. Unused and repeated close are
+  harmless. Do not persist the override or change sibling settings. An aborted
+  integrated run stops its disposable server instead of advancing the suite.
+- **RF602-3:** The current-head Forge 1.20.1 compatible scenario passes existing
+  semantic cases and retains an inspected Recurrent row and tooltip. Following
+  `standard-plan-controls` in the same world sees the restored option. A compatible
+  Fabric 1.20.1 dedicated recurrence run covers grid replacement, replan and
+  reconnect through the other shared caller.
+- **RF602-4:** Regression checks cover initial false/true, repeated setup, case
+  transitions, restoration and unchanged siblings. Keep all four target adapters
+  compatible and production artifacts independent of the test driver.
+
+These checks qualify this fixture repair, not the broader recurrence feature or
+addon matrices. Implementation and runtime verification remain pending.
+
 ## Optional connection observation extension
 
 Issue [#537](https://github.com/cTux/ae2-crafting-time/issues/537) adds an

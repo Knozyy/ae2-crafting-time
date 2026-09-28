@@ -5,6 +5,62 @@ Lifecycle: see the [scope status and evidence](spec.md).
 Implement this as one feature commit. Let the commit hook create the PR before
 running Gradle checks, then report local verification and GitHub CI separately.
 
+## Recurrent fixture option ownership (#602)
+
+See the [repair scope and criteria](spec.md#recurrent-fixture-option-ownership-602).
+Merge these documents before implementation. The original feature rollout and
+unrelated addon matrices are not this driver repair's verification plan.
+
+1. Implement **RF602-1/2** in `RecurrentPlanFixture`: remember the original switch
+   once, enable/synchronize before calculation, and restore/synchronize on close.
+   Wire integrated completion and dedicated replacement/success/failure cleanup
+   to that lifecycle. Preserve repeated preparation and make unused/repeated
+   close harmless. Change no production default, pattern, packet or runner policy.
+2. Add the smallest regression for **RF602-2/4** at the existing driver/core test
+   boundary: initial false/true, repeated setup, case transitions, unused/repeated
+   close and unchanged siblings. Check dedicated replacement/failure cleanup
+   wiring. Keep new pure logic under the existing 100% line/branch gate and use
+   boundary checks for adapters. Run no tests before the hook-created PR exists.
+3. After PR creation, run `scripts/run-ui-smoke.ps1 -Changed -BaseRef origin/master -PlanOnly`
+   and retain selection reasons. Run the focused regression, existing option
+   default/copy checks and shared coverage. Compile affected shared driver
+   consumers on all four targets and verify production/driver artifact isolation.
+   Retain failing-control and passing-fix regression evidence with exact identities.
+4. For **RF602-3**, first run compatible Forge 1.20.1 (Forge 47.4.23, AE2 15.4.10,
+   Java 17): `recurrent-plan`, then `standard-plan-controls` in one schema-2
+   disposable world through the existing selected-case suite. Record original,
+   enabled and restored options, including the following leaf's value. Keep all
+   existing semantic assertions and capture/inspect the English row and tooltip.
+5. After the integrated case passes, run the marked dedicated `recurrent-plan`
+   path on compatible Fabric 1.20.1 (loader 0.19.5, AE2 15.1.0, Fabric API 0.92.11,
+   Java 17). Use `run-connected-dedicated-ui-smoke.ps1` with matching sealed
+   dependencies. Verify grid replacement, replan, reconnect and restoration.
+   Do not substitute an older server. Review selection for additional materially
+   different changed paths; do not default to full four-target suites.
+6. Archive semantic results, option-state observations, logs, PNGs/sidecars,
+   head/artifact identities and measured timings. Inspect non-PASS visual checks.
+   Confirm owned process exit, then cleanly shut down CodexVM after all visual
+   follow-up and verify its VMX is absent from `vmrun list`. Report CI separately.
+
+Preflight on 2026-09-28 verified current-compatible native manifests for all four
+loaders, guest Java 17/21/25, all 94 Forge 47.4.23 classpath entries, and an existing
+sealed Fabric 0.19.5 dedicated source. Older issue320 sources pin older loaders.
+Recheck the exact manifest, fixture marker, seal and dependency equality before
+launch. The dispatcher can add the session share; the existing dedicated
+provisioner covers a missing matching source. Surface unexpected provisioning
+work before expanding scope. Preflight launched no Minecraft process.
+
+Budget one integrated client launch at ten minutes and one dedicated server/client
+pair at fifteen minutes, excluding builds and visual review. These are planning
+budgets, not measured durations. Retain 300-second startup, 20-second callback and
+60-second active-checkpoint watchdogs. Diagnose from retained checkpoints; final
+proof requires a clean run on the frozen implementation head.
+
+Completion requires **RF602-1/2/4** regression/lifecycle evidence, **RF602-3**
+integrated and dedicated results, inspected row/tooltip evidence and current-head
+CI. A passing calculation alone is insufficient. Preserve default-off behavior
+and the broader feature's separate status.
+
 ## Issue #353: Restore embedded context class loading
 
 This focused correction uses the checks below without repeating the original
