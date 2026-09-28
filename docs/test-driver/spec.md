@@ -8,6 +8,18 @@ Implementation: [PR #128](https://github.com/cTux/ae2-crafting-time/pull/128), [
 Verification: [prepared-client results](../automated-ui-testing/prepared-clients-2026-09-08.md).
 Stored-variant and resource-icon sections inherit their linked feature status.
 
+## Plan readiness with optional backgrounds (#585)
+
+Status: planned; implementation and runtime verification pending.
+
+Issue: [#585](https://github.com/cTux/ae2-crafting-time/issues/585). See the [design](technical-design.md#plan-readiness-with-optional-backgrounds-585) and [plan](implementation-plan.md#plan-readiness-with-optional-backgrounds-585).
+
+Restore visible Crafting Plan smoke completion with Badge background off. This driver fix changes no production option, renderer, recipe, result schema or timeout policy.
+
+- **PS585-1/2:** Plan readiness uses rendered total TTC and the expected output row, independent of background fills. Preserve fresh-frame deduplication, three stable ordered rows, row TTC, sorting, tooltip, Tree node draw, requester assertions, reset/details and optional-read recovery. Missing frames, target, total or drawn Tree TTC must fail.
+- **PS585-3:** Validate required text geometry and any fills actually drawn. Empty fills are valid with the option off; invalid geometry or missing TTC fails in either mode.
+- **PS585-4:** Report screen, target and unmet rendered-content/stability condition through existing diagnostics. Deadlines and truthful checkpoint progress remain unchanged.
+- **PS585-5:** Cover shared and native 26.1.2 code with regression, compile and focused smoke checks; retain results and captures, separating watchdog failures from UI assertions.
 ## Recurrent fixture option ownership (#602)
 
 Status: in-progress

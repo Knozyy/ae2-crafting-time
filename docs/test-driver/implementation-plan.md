@@ -5,6 +5,18 @@ Lifecycle: see the [scope status and evidence](spec.md).
 Implement this as one feature commit. Let the commit hook create the PR before
 running Gradle checks, then report local verification and GitHub CI separately.
 
+## Plan readiness with optional backgrounds (#585)
+
+Merge the spec and design before implementation.
+
+1. Repair shared and native 26.1.2 readiness, plan/requester layout and initial Tree node-TTC evidence. Preserve expected output, total draw, stable-frame, reset and recovery semantics.
+2. Validate text geometry and optional drawn fills; add bounded semantic stall diagnostics without changing callback scheduling, progress rules or deadlines.
+3. Update `TestDriverCoreTest` for rendered total with fills on/off and failures for null/menu-only/missing-total frames. Add focused Tree-draw, layout and diagnostic checks plus a failing old-predicate control.
+4. After the hook creates the PR, run plan-only changed selection, focused driver tests, affected shared/native compilation and artifact isolation. Bind results to the implementation head; report CI separately.
+5. Run `craft-plan -BaseOnly` on prepared matching Forge 1.20.1 (AE2 15.4.10, Java 17) and NeoForge 26.1.2 (AE2 26.1.10-beta, Java 25). For Forge addon scenarios and `badge-background`, first confirm matching prepared graphs and leaves; if absent, record the prerequisite and do not provision new graphs.
+6. Inspect retained captures and callback/checkpoint evidence, distinguish watchdog failures from UI assertions, and shut down the owned CodexVM after visual review. No runtime pass is claimed here.
+
+Preflight verified the CodexVM, prepared target launch files, guest JDKs and tracked fixture directories; recheck profile/dependency matching, fixture markers and ownership before launch. Original #585 report directories are absent, so use existing preparation only.
 ## Recurrent fixture option ownership (#602)
 
 See the [repair scope and criteria](spec.md#recurrent-fixture-option-ownership-602).
@@ -273,7 +285,7 @@ fixture preparation for every leaf. Both target runtime implementations use
 the same dispatch and exact check contracts. The 26.1.2 fixture/observer adapters
 retain their native APIs. `ui-smoke-groups.json` owns host alias expansion and
 required evidence; Java `DriverResult` enforces the matching check sets.
-`SuitePlan` and the host accept 1–64 unique cases/worlds. Group results live in
+`SuitePlan` and the host accept 1ï¿½64 unique cases/worlds. Group results live in
 the campaign report; existing schema-1 leaf and flat-suite reports are preserved.
 Runtime acceptance still requires independent, group and full-suite evidence
 on all four targets; code or contract tests alone do not establish a UI pass.

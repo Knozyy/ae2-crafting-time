@@ -2,6 +2,49 @@
 
 Lifecycle: see the [scope status and evidence](spec.md).
 
+## Plan readiness with optional backgrounds (#585)
+
+See the [criteria](spec.md#plan-readiness-with-optional-backgrounds-585).
+At `a48f6d5e8b9e857b38dc497178a5028285b0839b`, `FeatureOptions.reset()` disables
+`BADGE_BACKGROUND`; `TtcBadge.fillRoundedRect()` returns without drawing when it
+is off. `UiObservationStore.fill()` records actual fills independently of drawn
+text captured by `text()`. Both `CraftPlanScenario.renderedPlan()` copies still
+require a nonempty badge list plus `total_ttc`. Consequently `stable()` resets
+forever for an otherwise rendered unboxed plan. The existing
+`capturesRequireRenderedContentInsteadOfOnlyPopulatedMenus` regression encodes
+that obsolete requirement. This proves a source mismatch; the reported timeout
+and campaign watchdog still require runtime causal validation.
+
+Shared `stable()` callers are `stabilizePlan`, the confirmation-screen branch of
+`verifyCraftingTree`, `cycleSorts` and `checkTooltip`. Wireless plan capture uses
+`stabilizePlan`; addon CPU fixtures take a separate selection path. The native
+26.1.2 copy has the same callers. Both copies also require badges in plan/requester
+layout and Tree node entry. Shared Tree gates its initial `node-ttc` assertion,
+while native Tree currently gates every frame. Repair both copies and sibling
+paths, not only the reported first `PLAN_STABLE` wait.
+
+Use observed total text as the plan-render signal, retaining target-row guards,
+fresh-frame checks and the ordered-row stability count. Keep row TTC, sort and
+tooltip assertions. Validate real text bounds and any recorded fills without
+demanding decoration. Tree must prove an actual TTC draw associated with its
+observed node before first success; extend the existing observation boundary only
+if current text capture cannot prove it. Never infer display from profiler data,
+node presence or production formatter calls. After intentional reset, preserve
+existing no-samples/details behavior instead of requiring the original resolved
+estimate again. Recovery cases retain their absence-of-overlay contract.
+
+Extend existing `currentScreen()`/checkpoint diagnostics with stable semantic
+facts: target presence, total draw and unmet readiness condition. Do not include
+frame IDs or elapsed time: `TestDriverRuntime` uses checkpoint string changes to
+refresh progress, which would conceal stalls. Source evidence does not justify
+changing callback scheduling or watchdog policy.
+
+Shared consumers are Forge/Fabric 1.20.1 and NeoForge 1.21.1; 26.1.2 owns native
+scenario/observation adapters. Keep production behavior, driver isolation,
+result keys and screenshot names unchanged. Regression checks cover absent
+frames/content, badge-off/on content, invalid layout and stable-frame reset;
+runtime checks prove renderer/observer behavior and checkpoint flow.
+
 ## Recurrent fixture option ownership (#602)
 
 See the [repair scope and criteria](spec.md#recurrent-fixture-option-ownership-602).
@@ -667,7 +710,7 @@ chunk loaded in the disposable world and seeds a deterministic profile sample.
 ME Requester also uses a separate screen flow. Its fixture places and configures
 one requester with a deterministic profiler sample on the disposable AE2 grid.
 The final frame records active menu slot bounds in GUI coordinates and checks
-badges against those bounds and the screen's widgets.
+drawn TTC text and any enabled badges against those bounds and the screen's widgets.
 
 AE2 Network Analyser uses a bounded screen-only flow. The fixture equips its
 real analyser item, opens `GuiAnalyser` through normal item use, and verifies
@@ -712,7 +755,7 @@ The final case closes normally. A failed case aborts the suite; untouched cases
 remain `NOT_RUN`. Record a single process ID plus per-case start/end timestamps.
 Wireless checkpoints wait for an actually rendered item tooltip, including
 range-only terminals that do not require tooltip TTC. Stable plan captures also
-require drawn TTC badges and total text, not only populated row data.
+require drawn total TTC text, not only populated row data. Badge backgrounds are optional.
 
 The normal per-case result files and screenshots remain the source of assertion
 evidence. Test plan validation, summary completion/failure, and world-path guards
@@ -726,7 +769,7 @@ which overload the integration calls.
 
 Crafting Tree reuses the plan-opening flow and then clicks its actual toolbar
 button. Its small scenario adapter reads the upstream widget's layout to find
-a crafted node. Final GuiGraphics badge fills and rendered tooltip components
+a crafted node. Final node TTC text draws, optional badge fills and rendered tooltip components
 are the evidence; production TTC helpers are never treated as proof of display.
 Both original and Refreshed screen names are recognized without loading either
 optional class. Each tree checkpoint is captured after a completed frame.
