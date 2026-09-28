@@ -5,6 +5,31 @@ Lifecycle: see the [scope status and evidence](spec.md).
 Implement [#117](https://github.com/cTux/ae2-crafting-time/issues/117) from the
 [specification](spec.md) and [technical design](technical-design.md).
 
+## Focused follow-up: preserve recurrent detection opt-in (#592)
+
+Follow the [scope and status](spec.md#recurrent-detection-default-592) without
+reopening the broader configuration-screen campaign below.
+
+1. Change only `ServerConfig.copy()` to copy every server-owned switch's value,
+   reusing the `ClientConfig.copy()` pattern. Keep defaults and numeric fields.
+2. Extend `OptionsModelTest.serverDefaultsEditsCopiesAndResets` to enable recurrence,
+   copy it, and assert the copy retains it alongside unrelated switches and numeric
+   values. Reset the copy and assert recurrence is off while the source stays on.
+   Keep `FeatureOptionsTest` and `ServerConfigFileTest` coverage for fresh defaults,
+   generated false, explicit true on load, and reset false.
+3. After the hook creates the fix PR, run
+   `./gradlew.bat :shared:test :shared:jacocoTestReport`; shared line and branch
+   coverage must remain 100%. Confirm the new regression fails with the old copy
+   implementation. Record required GitHub CI separately at the final PR head.
+4. Review the shared source-set wiring for all four release targets and the
+   existing English/Ukrainian GuideME and wiki default/opt-in guidance. No new
+   fixture or Minecraft launch is needed for this model-copy-only correction.
+
+Completion: default-off generation/reset and explicit opt-in preservation pass,
+unrelated values remain intact, current-head CI passes, and the fix is merged
+before verified issue closure. If the diff expands into adapters or UI behavior,
+reassess verification before proceeding.
+
 ## 1. Lock the typed config contract
 
 - Add Minecraft-free client/server setting models with the exact defaults,

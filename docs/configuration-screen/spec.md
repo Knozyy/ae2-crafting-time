@@ -51,12 +51,32 @@ belong to the client; profiling and shared behavior remain server-authoritative.
 
 ### Feature switches
 
-Switches default **on** except fast-to-slow TTC colors, compact crafting amounts,
-text shadow, and badge background, which default **off**. Turning one off
-removes only the named feature; it does not erase learned samples, change active
+Switches default **on** except recurrent ingredient detection, fast-to-slow TTC
+colors, compact crafting amounts, text shadow, and badge background, which default
+**off**. Turning one off removes only the named feature; it does not erase learned samples, change active
 crafts, or silently turn off sibling features. The server profiling master
 (`enabled`) is the exception: turning it off suspends all server-derived TTC and
 diagnostics. It is clearly labelled as the master switch.
+
+### Recurrent detection default (#592)
+
+Status: ready-to-implement.
+
+[PR #593](https://github.com/cTux/ae2-crafting-time/pull/593)
+shipped the default-off change and English/Ukrainian player guidance for
+[#592](https://github.com/cTux/ae2-crafting-time/issues/592). The server-model copy
+still loses an explicit on value; closure requires the
+[focused copy regression](implementation-plan.md#focused-follow-up-preserve-recurrent-detection-opt-in-592).
+
+Fresh server files and Reset use `recurrentDetection = false` on all four targets.
+An explicit `true` must survive loading, independent model copies, editing and
+Done. Players can opt in through Server → Diagnostics → Detect recurrent
+ingredients or the world server file. Copying must preserve every server switch
+and numeric value without changing the source. Other defaults and crafting
+calculations remain unchanged. This precautionary default does not establish a
+cause for the unverified performance/crash report in the issue.
+
+### Switch inventory
 
 | Owner and group | Independent switches | Off behavior |
 | --- | --- | --- |

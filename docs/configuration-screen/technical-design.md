@@ -21,7 +21,7 @@ static `Ae2CraftingTimeConfig` accessors become the server-model facade so
 profiling call sites do not gain loader branches.
 
 The [feature-switch inventory](spec.md#feature-switches) is the setting
-contract. Use one boolean per named behavior, all defaulting to true. Do not
+contract. Use one boolean per named behavior with the defaults in that inventory. Do not
 derive independent switches from category flags. `enabled` is the only master:
 when off, dependent server rows are unavailable without changing their stored
 values. Storage sections follow the Client/Server tabs and their logical groups.
@@ -38,7 +38,26 @@ When the new owner file is absent, read known keys from the existing
 precedence; missing keys in them use defaults. Do not delete or rewrite the legacy file. `showInTree` maps to the
 client tree toggle; the other current keys map to `ServerConfig`.
 `notifyOnDelayed` keeps its server-wide meaning, as does `showChatMessages`.
-Missing new keys default on. Existing values are never replaced by new switches.
+Missing keys use their model defaults, including recurrent detection off.
+Existing values are never replaced by new switches.
+
+### Preserve explicit values when copying (#592)
+
+The [focused scope and status](spec.md#recurrent-detection-default-592) covers the
+default-off follow-up. `FeatureOptions.reset()` owns the defaults;
+`ServerConfigFile.load()` applies explicit values afterward. `ServerConfig.copy()`
+currently creates a default model and copies only disabled switches, so an
+explicitly enabled recurrence switch becomes disabled again. All four targets
+share this model and its callers: `OptionsSession.reload()` copies the received
+snapshot, `OptionsSession.save()` copies the submitted draft, and
+`ServerOptionsRuntime.accept()` copies the accepted effective values.
+
+Copy every server-owned switch's effective value, following the existing
+`ClientConfig.copy()` loop, and preserve the numeric fields. `FeatureOptions.copy()`
+already clears defaults before copying; `ServerOptionsWire.decode()` already sets
+each switch explicitly. Neither needs a change. Keep the fix in the shared model;
+leave packets, persistence format, permissions, loader adapters and calculations
+unchanged. Reset intentionally restores defaults; copying must never do so.
 
 Both writers use a temporary sibling followed by atomic replacement. Server
 writes remain on the logical server. Parsing and writing live in Minecraft-free
