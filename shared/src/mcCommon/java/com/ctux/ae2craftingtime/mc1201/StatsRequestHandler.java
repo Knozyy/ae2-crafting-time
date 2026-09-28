@@ -39,17 +39,20 @@ public final class StatsRequestHandler {
         }
         var missing = ProfilerBridge.blockReasons(context.craftingCpu(), context.grid(), gameTick);
         var blockReasons = new HashMap<String, CraftingBlockReason>();
+        var chanceOutputs = new HashMap<String, Integer>();
         for (var key : keys) {
             var profileKey = new ProfileKey(networkId, key);
             if (missing.containsKey(profileKey)) {
                 blockReasons.put(key, missing.get(profileKey));
             }
+            ProfilerBridge.chanceOutput(context.craftingCpu(), profileKey)
+                    .ifPresent(value -> chanceOutputs.put(key, value));
             ProfilerBridge.entry(profileKey, new ProfileKey(key), context.craftingCpu(), gameTick)
                     .ifPresent(entries::add);
             ProfilerBridge.waitingTicks(profileKey, context.craftingCpu(), gameTick)
                     .ifPresent(value -> waitingTicks.put(key, value));
         }
-        return new Response(entries, networkAmounts(context.grid(), keys), waitingTicks, blockReasons,
+        return new Response(entries, networkAmounts(context.grid(), keys), waitingTicks, blockReasons, chanceOutputs,
                 ProfilerBridge.remainingJobSeconds(context.craftingCpu()),
                 StatsRequestContext.cpuContext(player.containerMenu));
     }
@@ -72,6 +75,7 @@ public final class StatsRequestHandler {
 
     public record Response(List<StatsEntry> entries, Map<String, Long> networkAmounts,
             Map<String, Long> waitingTicks, Map<String, CraftingBlockReason> blockReasons,
+            Map<String, Integer> chanceOutputs,
             OptionalLong totalTtcSeconds, long cpuContext) {
     }
 }

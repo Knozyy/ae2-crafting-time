@@ -23,7 +23,7 @@ public final class StatsNetwork {
     private static final ResourceLocation REQUEST_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID,
             "stats_request_v2");
     private static final ResourceLocation SNAPSHOT_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID,
-            "stats_snapshot_v10");
+            "stats_snapshot_v11");
     private static final ResourceLocation CHAT_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "stats_chat_v2");
     private static final ResourceLocation HIGHLIGHT_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID,
             "provider_highlight_v5");
@@ -36,8 +36,8 @@ public final class StatsNetwork {
     private static final ResourceLocation PLAN_RECURRENCE_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "plan_recurrence_v1");
     private static final ResourceLocation PLAN_STORED_VARIANTS_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "plan_stored_variants_v1");
     private static final ResourceLocation WARNING_PREFERENCE_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "warning_preference_v1");
-    private static final ResourceLocation SERVER_OPTIONS_SNAPSHOT_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "server_options_snapshot_v1");
-    private static final ResourceLocation SERVER_OPTIONS_UPDATE_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "server_options_update_v1");
+    private static final ResourceLocation SERVER_OPTIONS_SNAPSHOT_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "server_options_snapshot_v2");
+    private static final ResourceLocation SERVER_OPTIONS_UPDATE_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "server_options_update_v2");
 
     public static void registerServer() {
         ServerPlayNetworking.registerGlobalReceiver(REQUEST_ID,

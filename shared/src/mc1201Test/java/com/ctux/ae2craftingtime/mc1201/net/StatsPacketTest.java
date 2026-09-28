@@ -23,6 +23,29 @@ import java.util.OptionalLong;
 
 class StatsPacketTest {
     @Test
+    void snapshotRejectsInvalidChanceEvidence() {
+        for (var chance : new int[] {0, 10000}) {
+            var buffer = new FriendlyByteBuf(Unpooled.buffer());
+            StatsPacketCodec.writeKeys(buffer, List.of("mekanism:sawdust"));
+            buffer.writeVarInt(0); // Network amounts.
+            buffer.writeVarInt(0); // Waiting ticks.
+            buffer.writeVarInt(0); // Block reasons.
+            buffer.writeVarInt(1);
+            buffer.writeUtf("mekanism:sawdust");
+            buffer.writeVarInt(chance);
+            assertThrows(IllegalArgumentException.class, () -> StatsSnapshotS2C.decode(buffer));
+        }
+        var unrequested = new FriendlyByteBuf(Unpooled.buffer());
+        StatsPacketCodec.writeKeys(unrequested, List.of());
+        unrequested.writeVarInt(0);
+        unrequested.writeVarInt(0);
+        unrequested.writeVarInt(0);
+        unrequested.writeVarInt(1);
+        unrequested.writeUtf("mekanism:sawdust");
+        assertThrows(IllegalArgumentException.class, () -> StatsSnapshotS2C.decode(unrequested));
+    }
+
+    @Test
     void snapshotRejectsUnknownBlockReason() {
         for (var reason : new int[] {-1, CraftingBlockReason.values().length}) {
             var buffer = new FriendlyByteBuf(Unpooled.buffer());
@@ -40,7 +63,7 @@ class StatsPacketTest {
     void snapshotRoundTripsEveryBlockReason() {
         for (var reason : CraftingBlockReason.values()) {
             var packet = new StatsSnapshotS2C(List.of("minecraft:iron_ingot"), List.of(), Map.of(), Map.of(),
-                    Map.of("minecraft:iron_ingot", reason), OptionalLong.empty(), 7);
+                    Map.of("minecraft:iron_ingot", reason), Map.of(), OptionalLong.empty(), 7);
             var buffer = new FriendlyByteBuf(Unpooled.buffer());
             StatsSnapshotS2C.encode(packet, buffer);
             assertEquals(packet, StatsSnapshotS2C.decode(buffer));
@@ -51,7 +74,7 @@ class StatsPacketTest {
     void snapshotRoundTripsMissingProvidersWithoutLearnedStatsAtBothSizeLimits() {
         for (var count : new int[] {0, PacketLimits.MAX_KEYS}) {
             var keys = java.util.stream.IntStream.range(0, count).mapToObj(i -> "test:output_" + i).toList();
-            var packet = new StatsSnapshotS2C(keys, List.of(), Map.of(), Map.of(), keys.stream().collect(java.util.stream.Collectors.toMap(key -> key, key -> CraftingBlockReason.NO_POWER)), OptionalLong.empty(), 0x123456789L);
+            var packet = new StatsSnapshotS2C(keys, List.of(), Map.of(), Map.of(), keys.stream().collect(java.util.stream.Collectors.toMap(key -> key, key -> CraftingBlockReason.NO_POWER)), Map.of(), OptionalLong.empty(), 0x123456789L);
             var buffer = new FriendlyByteBuf(Unpooled.buffer());
             StatsSnapshotS2C.encode(packet, buffer);
             assertEquals(packet, StatsSnapshotS2C.decode(buffer));
@@ -113,7 +136,7 @@ class StatsPacketTest {
                         new ProfileStats(1, 20, 50, 1000, 20, ProfileUnit.MILLIBUCKET))),
                 Map.of("minecraft:water", 8_000L, "minecraft:lava", 0L),
                 Map.of("minecraft:water", 40L), Map.of("minecraft:lava", CraftingBlockReason.NO_PROVIDER),
-                OptionalLong.of(2_445), 0x123456789L);
+                Map.of("minecraft:water", 5000), OptionalLong.of(2_445), 0x123456789L);
 
         StatsSnapshotS2C.encode(packet, buffer);
 
@@ -155,6 +178,7 @@ class StatsPacketTest {
         assertEquals(Map.of(), packet.networkAmounts());
         assertEquals(Map.of(), packet.waitingTicks());
         assertEquals(Map.of(), packet.blockReasons());
+        assertEquals(Map.of(), packet.chanceOutputs());
         assertFalse(packet.totalTtcSeconds().isPresent());
         assertEquals(-1, packet.cpuContext());
     }
@@ -162,6 +186,7 @@ class StatsPacketTest {
     @Test
     void snapshotRejectsNegativeTotalTtc() {
         var buffer = new FriendlyByteBuf(Unpooled.buffer());
+        buffer.writeVarInt(0);
         buffer.writeVarInt(0);
         buffer.writeVarInt(0);
         buffer.writeVarInt(0);
@@ -187,6 +212,7 @@ class StatsPacketTest {
         assertThrows(IllegalArgumentException.class, () -> StatsSnapshotS2C.decode(oversizedAmounts));
 
         var oversizedEntries = new FriendlyByteBuf(Unpooled.buffer());
+        oversizedEntries.writeVarInt(0);
         oversizedEntries.writeVarInt(0);
         oversizedEntries.writeVarInt(0);
         oversizedEntries.writeVarInt(0);
@@ -226,6 +252,7 @@ class StatsPacketTest {
     @Test
     void snapshotRejectsOversizedSampleHistoryBeforeAllocation() {
         var buffer = new FriendlyByteBuf(Unpooled.buffer());
+        buffer.writeVarInt(0);
         buffer.writeVarInt(0);
         buffer.writeVarInt(0);
         buffer.writeVarInt(0);

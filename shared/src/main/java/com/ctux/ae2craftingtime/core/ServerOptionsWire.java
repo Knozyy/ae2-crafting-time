@@ -6,7 +6,7 @@ import java.util.Objects;
 /** One fixed, versioned server-options payload for snapshots and edit requests. */
 public final class ServerOptionsWire {
     public static final int LENGTH = 38;
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
 
     public record Snapshot(int revision, boolean editable, ServerConfig config) { }
 

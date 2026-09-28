@@ -2,7 +2,7 @@
 navigation:
   title: No data yet
   parent: statuses/index.md
-  position: 9
+  position: 10
 ---
 
 # No data yet

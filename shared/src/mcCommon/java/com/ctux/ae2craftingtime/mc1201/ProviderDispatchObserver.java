@@ -65,6 +65,10 @@ public final class ProviderDispatchObserver {
         try (var context = ProviderDispatchContext.begin(provider)) {
             var accepted = original.call(provider, dispatchedPattern, input);
             evaluation.attempt(context.finish(accepted));
+            if (accepted && ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.CHANCE_OUTPUT_DETECTION)) {
+                ProfilerBridge.observeChanceOutput(networkId, scope, dispatchedPattern,
+                        ChanceOutputHooks.detect(provider, dispatchedPattern, input));
+            }
             if (evaluation.succeeded()) {
                 complete(null);
             }

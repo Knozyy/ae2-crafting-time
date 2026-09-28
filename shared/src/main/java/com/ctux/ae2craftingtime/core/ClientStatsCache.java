@@ -13,6 +13,7 @@ public final class ClientStatsCache {
     private long totalTtcContext = -1;
     private OptionalLong totalTtcSeconds = OptionalLong.empty();
     private final Map<ProfileKey, CraftingBlockReason> blockReasons = new HashMap<>();
+    private final Map<ProfileKey, Integer> chanceOutputs = new HashMap<>();
 
     public void replace(List<StatsEntry> entries) {
         for (var entry : entries) {
@@ -56,10 +57,26 @@ public final class ClientStatsCache {
     public void replaceBlockReasons(List<ProfileKey> requestedKeys, Map<ProfileKey, CraftingBlockReason> values, long cpuContext) {
         if (blockContext != cpuContext) {
             blockReasons.clear();
+            chanceOutputs.clear();
             blockContext = cpuContext;
         }
         requestedKeys.forEach(blockReasons::remove);
         blockReasons.putAll(values);
+    }
+
+    public OptionalLong chanceOutput(ProfileKey key, long cpuContext) {
+        var value = blockContext == cpuContext ? chanceOutputs.get(key) : null;
+        return value == null ? OptionalLong.empty() : OptionalLong.of(value);
+    }
+
+    public void replaceChanceOutputs(List<ProfileKey> requestedKeys, Map<ProfileKey, Integer> values, long cpuContext) {
+        if (blockContext != cpuContext) {
+            blockReasons.clear();
+            chanceOutputs.clear();
+            blockContext = cpuContext;
+        }
+        requestedKeys.forEach(chanceOutputs::remove);
+        chanceOutputs.putAll(values);
     }
 
     public OptionalLong totalTtcSeconds(long cpuContext) {
@@ -74,6 +91,8 @@ public final class ClientStatsCache {
     public void clearCpuState() {
         waitingTicks.clear();
         blockReasons.clear();
+        chanceOutputs.clear();
+        blockContext = -1;
         totalTtcContext = -1;
         totalTtcSeconds = OptionalLong.empty();
     }
@@ -82,6 +101,7 @@ public final class ClientStatsCache {
         stats.remove(key);
         waitingTicks.remove(key);
         blockReasons.remove(key);
+        chanceOutputs.remove(key);
     }
 
     public void clear() {

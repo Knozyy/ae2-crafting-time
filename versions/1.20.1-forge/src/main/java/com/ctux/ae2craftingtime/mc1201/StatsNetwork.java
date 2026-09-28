@@ -20,7 +20,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 @SuppressWarnings({ "deprecation", "removal" })
 public final class StatsNetwork {
-    private static final String PROTOCOL = "23";
+    private static final String PROTOCOL = "24";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(Ae2CraftingTime.MOD_ID, "main"),
             () -> PROTOCOL,

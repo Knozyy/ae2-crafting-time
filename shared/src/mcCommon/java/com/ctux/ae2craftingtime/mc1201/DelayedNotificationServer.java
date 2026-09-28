@@ -96,7 +96,10 @@ public final class DelayedNotificationServer {
         ProfilerBridge.replaceProviderStart(key, owner, dimension, positions, name, displayKey);
         pushAutoHighlight(player, dimension, key, positions, displayKey, highlightSender);
         if (WarningPreferenceServer.canSend(player, chatEnabled)) {
-            player.sendSystemMessage(DelayedChatText.delayedMessage(name, recordId, idleTicks, typicalTicks));
+            var chance = ProfilerBridge.chanceOutput(scope, key);
+            player.sendSystemMessage(chance.isPresent()
+                    ? DelayedChatText.chanceMessage(name, recordId, idleTicks, chance.getAsInt())
+                    : DelayedChatText.delayedMessage(name, recordId, idleTicks, typicalTicks));
         }
     }
 

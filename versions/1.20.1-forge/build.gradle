@@ -108,6 +108,7 @@ dependencies {
     implementation(jarJar('io.github.llamalad7:mixinextras-forge:0.5.5'))
     modImplementation "appeng:appliedenergistics2-forge:${providers.gradleProperty('runtimeAe2Forge1201Version').getOrElse('15.0.10')}"
     compileOnly 'org.appliedenergistics:guideme:20.1.15'
+    compileOnly 'maven.modrinth:Ce6I4WUE:uxe1WQp4'
     compileOnly 'maven.modrinth:advancedae:1.3.6-1.20.1'
     compileOnly 'maven.modrinth:qelfSMnn:v8c3El4q'
     compileOnly 'curse.maven:ae2-network-analyser-961856:5107131'

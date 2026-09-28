@@ -27,7 +27,7 @@ class TtcSymbolsTest {
                 "chat.details.low_confidence"})
             assertEquals(TtcSymbols.Symbol.WARNING, TtcSymbols.heading("text.ae2craftingtime." + key));
         for (var key : new String[] {"no_provider", "no_channel", "no_target", "input_blocked",
-                "locked", "no_space", "chat.no_space.word"})
+                "locked", "no_space", "chance_output", "chat.chance_output.word", "chat.no_space.word"})
             assertEquals(TtcSymbols.Symbol.ERROR, TtcSymbols.heading("text.ae2craftingtime." + key));
         for (var key : new String[] {"no_stats", "unknown", "chat.no_cached", "details_hint", "reset_hint",
                 "stats.ttc", "stats.used_samples", "stats.samples", "stats.accuracy",
@@ -61,6 +61,7 @@ class TtcSymbolsTest {
         var positions = Map.ofEntries(
                 Map.entry("ttc", 0), Map.entry("total_ttc", 0), Map.entry("chat.summary", 2),
                 Map.entry("chat.details", 2), Map.entry("chat.delayed", 2),
+                Map.entry("chat.chance_output", 3),
                 Map.entry("value.window", 0), Map.entry("value.whole_seconds", 0),
                 Map.entry("value.seconds", 0), Map.entry("value.accuracy", 4),
                 Map.entry("value.latest_accuracy", 0));

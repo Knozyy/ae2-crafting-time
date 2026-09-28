@@ -13,6 +13,29 @@ import java.util.OptionalLong;
 
 class ClientStatsCacheTest {
     @Test
+    void chanceEvidenceIsCpuScopedAndReplacedByFreshSnapshots() {
+        var cache = new ClientStatsCache();
+        var key = new ProfileKey("mekanism:sawdust");
+        assertTrue(cache.chanceOutput(key, 1).isEmpty());
+        cache.replaceChanceOutputs(List.of(key), Map.of(key, 5000), 1);
+        assertEquals(5000, cache.chanceOutput(key, 1).orElseThrow());
+        assertTrue(cache.chanceOutput(key, 2).isEmpty());
+        cache.replaceChanceOutputs(List.of(key), Map.of(), 1);
+        assertTrue(cache.chanceOutput(key, 1).isEmpty());
+        cache.replaceChanceOutputs(List.of(key), Map.of(key, 5000), 1);
+        cache.replaceBlockReasons(List.of(key), Map.of(), 2);
+        assertTrue(cache.chanceOutput(key, 2).isEmpty());
+        cache.replaceBlockReasons(List.of(key), Map.of(key, CraftingBlockReason.NO_TARGET), 2);
+        cache.replaceChanceOutputs(List.of(key), Map.of(key, 5000), 3);
+        assertEquals(null, cache.blockReason(key, 3));
+        cache.remove(key);
+        assertTrue(cache.chanceOutput(key, 3).isEmpty());
+        cache.replaceChanceOutputs(List.of(key), Map.of(key, 5000), 3);
+        cache.clearCpuState();
+        assertTrue(cache.chanceOutput(key, 3).isEmpty());
+    }
+
+    @Test
     void channelReasonWithoutSamplesIsReplacedAndCannotCrossCpuOrNetwork() {
         var cache = new ClientStatsCache();
         var key = new ProfileKey("grid", "minecraft:diamond");

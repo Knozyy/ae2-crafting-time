@@ -46,6 +46,17 @@ public final class ClientStats {
         return CACHE.blockReason(key, context);
     }
 
+    public static OptionalLong chanceOutput(ProfileKey key) {
+        var context = Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen
+                ? StatsRequestContext.cpuContext(screen.getMenu()) : -1;
+        return CACHE.chanceOutput(key, context);
+    }
+
+    public static void replaceChanceOutputs(List<String> requestedKeys, Map<String, Integer> values, long cpuContext) {
+        CACHE.replaceChanceOutputs(requestedKeys.stream().map(ProfileKey::new).toList(),
+                values.entrySet().stream().collect(Collectors.toMap(entry -> new ProfileKey(entry.getKey()), Map.Entry::getValue)), cpuContext);
+    }
+
     public static OptionalLong totalTtcSeconds() {
         if (Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen
                 && screen.getMenu() instanceof CraftingStatusMenu status && CpuTtcRequests.enabled()) {

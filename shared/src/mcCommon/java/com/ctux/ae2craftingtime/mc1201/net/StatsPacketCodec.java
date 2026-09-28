@@ -51,6 +51,11 @@ public final class StatsPacketCodec {
             buffer.writeUtf(key, PacketLimits.MAX_OUTPUT_ID_LENGTH);
             buffer.writeEnum(reason);
         });
+        buffer.writeVarInt(snapshot.chanceOutputs().size());
+        snapshot.chanceOutputs().forEach((key, chance) -> {
+            buffer.writeUtf(key, PacketLimits.MAX_OUTPUT_ID_LENGTH);
+            buffer.writeVarInt(chance);
+        });
         buffer.writeVarInt(snapshot.entries().size());
         for (var entry : snapshot.entries()) {
             var stats = entry.stats();
@@ -101,6 +106,15 @@ public final class StatsPacketCodec {
             PacketLimits.checkedSubset(requestedKeys, List.of(key));
             blockReasons.put(key, buffer.readEnum(CraftingBlockReason.class));
         }
+        var chanceCount = PacketLimits.checkedSize(buffer.readVarInt(), PacketLimits.MAX_KEYS, "chance outputs");
+        var chanceOutputs = new HashMap<String, Integer>();
+        for (int i = 0; i < chanceCount; i++) {
+            var key = buffer.readUtf(PacketLimits.MAX_OUTPUT_ID_LENGTH);
+            PacketLimits.checkedSubset(requestedKeys, List.of(key));
+            var chance = buffer.readVarInt();
+            if (chance <= 0 || chance >= 10000) throw new IllegalArgumentException("invalid output chance");
+            chanceOutputs.put(key, chance);
+        }
         var size = PacketLimits.checkedSize(buffer.readVarInt(), PacketLimits.MAX_KEYS, "entries");
         var entries = new ArrayList<StatsEntry>(size);
         for (int i = 0; i < size; i++) {
@@ -137,12 +151,13 @@ public final class StatsPacketCodec {
         if (totalTtcSeconds.isPresent() && totalTtcSeconds.getAsLong() < 0) {
             throw new IllegalArgumentException("total TTC must not be negative");
         }
-        return new Snapshot(requestedKeys, entries, networkAmounts, waitingTicks, blockReasons, totalTtcSeconds,
+        return new Snapshot(requestedKeys, entries, networkAmounts, waitingTicks, blockReasons, chanceOutputs, totalTtcSeconds,
                 buffer.readLong());
     }
 
     public record Snapshot(List<String> requestedKeys, List<StatsEntry> entries, Map<String, Long> networkAmounts,
             Map<String, Long> waitingTicks, Map<String, CraftingBlockReason> blockReasons,
+            Map<String, Integer> chanceOutputs,
             OptionalLong totalTtcSeconds, long cpuContext) {
     }
 }

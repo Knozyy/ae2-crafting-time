@@ -2,7 +2,7 @@
 navigation:
   title: Recurrent
   parent: statuses/index.md
-  position: 11
+  position: 12
 ---
 
 # Recurrent

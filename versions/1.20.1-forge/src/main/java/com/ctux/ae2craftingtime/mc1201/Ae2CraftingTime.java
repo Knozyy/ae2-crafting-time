@@ -18,6 +18,8 @@ public final class Ae2CraftingTime {
     public static final String COMMON_CONFIG_FILE = "ae2craftingtime-common.toml";
 
     public Ae2CraftingTime() {
+        if (net.minecraftforge.fml.ModList.get().isLoaded("mekanism"))
+            ChanceOutputHooks.install(MekanismSawmillChanceDetector::detect);
         IntegrationLog.start("1.20.1-forge", net.minecraftforge.fml.loading.FMLEnvironment.dist.isClient(), "forge",
                 id -> net.minecraftforge.fml.ModList.get().getModContainerById(id).map(mod -> mod.getModInfo().getVersion().toString()).orElse(null));
         IntegrationLog.required("config-registration", () -> ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Ae2CraftingTimeConfig.SPEC, COMMON_CONFIG_FILE));
@@ -33,6 +35,8 @@ public final class Ae2CraftingTime {
         MinecraftForge.EVENT_BUS.addListener(this::onServerStarted);
         MinecraftForge.EVENT_BUS.addListener(this::onServerTick);
         MinecraftForge.EVENT_BUS.addListener(this::onServerStopping);
+        MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.event.TagsUpdatedEvent event) ->
+                ProfilerBridge.clearChanceEvidence());
         MinecraftForge.EVENT_BUS.addListener(this::onRegisterCommands);
         MinecraftForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
         MinecraftForge.EVENT_BUS.addListener(this::onPlayerLoggedOut);
@@ -62,6 +66,7 @@ public final class Ae2CraftingTime {
     }
 
     private void onServerStopping(ServerStoppingEvent event) {
+        ProfilerBridge.clearChanceEvidence();
         ProfilerBridge.flushCompletedSamples();
         CpuTtcRequestHandler.clear();
         WarningPreferenceServer.clearAll();

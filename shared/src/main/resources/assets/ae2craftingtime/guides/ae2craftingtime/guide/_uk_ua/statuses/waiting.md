@@ -28,4 +28,4 @@ navigation:
 *Результат заплановано після роботи, яка ще не створила потрібний складник.*
 
 [Назад: Немає приймача](no-target.md) | [Стани](index.md) |
-[Далі: ЗАТРИМКА](delayed.md) | [Діагностика затримок](../features/delay-diagnostics.md)
+[Далі: Випадковий вихід](chance-output.md) | [Діагностика затримок](../features/delay-diagnostics.md)

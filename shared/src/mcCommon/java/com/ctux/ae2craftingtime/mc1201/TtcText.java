@@ -62,6 +62,29 @@ public final class TtcText {
         return TtcComponents.text("text.ae2craftingtime.ttc_delayed");
     }
 
+    public static MutableComponent chanceOutput() {
+        return TtcComponents.text("text.ae2craftingtime.chance_output")
+                .withStyle(style -> style.withColor(TextColor.fromRgb(0xFF5555)).withBold(true));
+    }
+
+    public static List<Component> chanceOutputTooltip(long activeAmount, long chanceBasisPoints,
+            long idleTicks) {
+        var percentage = java.math.BigDecimal.valueOf(chanceBasisPoints, 2)
+                .stripTrailingZeros().toPlainString();
+        var lines = new ArrayList<Component>();
+        lines.add(chanceOutput());
+        lines.add(Component.translatable("text.ae2craftingtime.chance_output.explanation", percentage));
+        if (activeAmount > 0) {
+            lines.add(Component.translatable("text.ae2craftingtime.chance_output.outstanding", activeAmount));
+        }
+        if (idleTicks > 0) {
+            lines.add(Component.translatable("text.ae2craftingtime.chance_output.idle",
+                    secondsRounded(idleTicks)));
+        }
+        lines.add(Component.translatable("text.ae2craftingtime.chance_output.suggestion"));
+        return List.copyOf(lines);
+    }
+
     public static MutableComponent waiting() {
         return TtcComponents.text("text.ae2craftingtime.waiting");
     }
@@ -196,6 +219,7 @@ public final class TtcText {
         for (var hint : stall.hints(scheduledAmount)) {
             appendHint(lines, hint, stall);
         }
+        lines.add(Component.translatable("text.ae2craftingtime.chance_output.unknown_hint"));
         return List.copyOf(lines);
     }
 

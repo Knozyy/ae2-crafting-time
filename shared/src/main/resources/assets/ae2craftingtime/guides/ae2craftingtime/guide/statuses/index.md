@@ -13,7 +13,7 @@ blocks it. Start at the top and use the first label you see:
 
 With **Show emoji** on, the full labels keep their usual colors and gain these
 symbols: red ⚠ for No space, No provider, No channel, Locked, Input blocked,
-and No target; red ⚡ for No power; yellow ⌛ for Waiting; gold ⚠ for Delayed;
+No target, and Chance output; red ⚡ for No power; yellow ⌛ for Waiting; gold ⚠ for Delayed;
 and aqua ℹ for No data yet. Numeric estimates use ⏱. In Crafting Plan and
 Crafting Status rows, symbols match the text color. Crafting Plan uses
 red ↻ for Recurrent and gold ⚠ for Stored variant. Details use ℹ, successful
@@ -30,9 +30,10 @@ wording appears only when the estimate is unreliable.
 6. [Input blocked](input-blocked.md)
 7. [No target](no-target.md)
 8. [Waiting](waiting.md)
-9. [Delayed](delayed.md)
-10. [No data yet](no-data-yet.md)
-11. [A TTC estimate such as ~12s](estimated.md)
+9. [Chance output](chance-output.md)
+10. [Delayed](delayed.md)
+11. [No data yet](no-data-yet.md)
+12. [A TTC estimate such as ~12s](estimated.md)
 
 Crafting Plan has one separate diagnosis before you submit a job:
 [Recurrent](recurrent.md). It reports a proven recipe self-dependency, not a

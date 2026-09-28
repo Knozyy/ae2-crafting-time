@@ -37,6 +37,7 @@ import net.minecraft.core.BlockPos;
 public final class ProfilerBridge {
     private static CraftProfiler PROFILER = new CraftProfiler(Ae2CraftingTimeConfig.MAX_SAMPLES.get(),
             Ae2CraftingTimeConfig.OUTLIER_MULTIPLIER.get());
+    private static final com.ctux.ae2craftingtime.core.ChanceOutputTracker CHANCE = new com.ctux.ae2craftingtime.core.ChanceOutputTracker();
     private static TtcAccuracyTracker ACCURACY = new TtcAccuracyTracker(Ae2CraftingTimeConfig.MAX_SAMPLES.get());
     private static final Map<ProfileKey, String> DISPLAY_NAMES = new ConcurrentHashMap<>();
     private static Ae2CraftingTimeSavedData savedData;
@@ -55,6 +56,26 @@ public final class ProfilerBridge {
             PROFILER.observeProviders(scope, pattern, outputs, hasProvider);
     }
 
+    public static void observeChanceOutput(String networkId, Object scope, IPatternDetails pattern,
+            Map<AEKey, Integer> verifiedChance) {
+        if (!isEnabled() || scope == null || pattern == null) return;
+        var outputs = new HashSet<ProfileKey>();
+        var chances = new HashMap<ProfileKey, Integer>();
+        for (var output : pattern.getOutputs()) {
+            var key = key(networkId, output.what());
+            outputs.add(key);
+            var chance = verifiedChance.get(output.what());
+            if (chance != null) chances.put(key, chance);
+        }
+        CHANCE.observe(scope, outputs, chances);
+    }
+
+    public static void clearChanceEvidence() { CHANCE.clearAll(); }
+
+    public static java.util.OptionalInt chanceOutput(Object scope, ProfileKey key) {
+        return scope == null || !isEnabled() || !ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.CHANCE_OUTPUT_DETECTION)
+                ? java.util.OptionalInt.empty() : CHANCE.chance(scope, key);
+    }
     public static void observeDispatchPower(String networkId, Object scope, IPatternDetails pattern,
             double required, double extracted, long tick) {
         isEnabled();
@@ -221,6 +242,11 @@ public final class ProfilerBridge {
         PROFILER.setJobOwner(scope, owner);
         PROFILER.setJobEstimate(scope, jobEstimate);
         ProviderStartTracker.clear(scope);
+        CHANCE.plan(scope, plan.patternTimes().keySet().stream().map(pattern -> {
+            Set<ProfileKey> keys = new HashSet<>();
+            for (var output : pattern.getOutputs()) keys.add(key(networkId, output.what()));
+            return keys;
+        }).toList());
         for (var crafted : craftedAmounts) {
             if (crafted.getLongValue() <= 0) {
                 continue;
@@ -424,6 +450,7 @@ public final class ProfilerBridge {
                 && ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.ACCURACY_RECORDING), tick, nanoTime);
         PROFILER.clearPending(scope);
         ProviderStartTracker.clear(scope);
+        CHANCE.clear(scope);
         BlockReasonNotifier.clear(scope);
         // Identical outputs on another CPU/network still need red: only clear
         // and forget keys with no remaining live tracking.
@@ -676,6 +703,7 @@ public final class ProfilerBridge {
         PROFILER.configure(config);
         PROFILER.loadSamples(data.samples());
         ProviderStartTracker.clearAll();
+        CHANCE.clearAll();
         ProviderLocateRecords.clearAll();
         BlockReasonNotifier.clearAll();
         ProviderLocateRecords.restoreStarts(data.providerStarts());

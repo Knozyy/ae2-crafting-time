@@ -17,6 +17,7 @@ public enum OptionFeature {
     WAITING_STATUS(Owner.CLIENT, Group.WARNINGS, "waitingStatus"),
     COLLECTING_STATUS(Owner.CLIENT, Group.WARNINGS, "collectingStatus"),
     DELAYED_STATUS(Owner.CLIENT, Group.WARNINGS, "delayedStatus"),
+    CHANCE_OUTPUT_STATUS(Owner.CLIENT, Group.WARNINGS, "chanceOutputStatus"),
     RECURRENT_STATUS(Owner.CLIENT, Group.WARNINGS, "recurrentStatus"),
     NO_PROVIDER_STATUS(Owner.CLIENT, Group.WARNINGS, "noProviderStatus"),
     NO_POWER_STATUS(Owner.CLIENT, Group.WARNINGS, "noPowerStatus"),
@@ -51,7 +52,8 @@ public enum OptionFeature {
     ADVANCED_AE(Owner.SERVER, Group.INTEGRATIONS, "advancedAe"),
     NEO_ECO(Owner.SERVER, Group.INTEGRATIONS, "neoEco"),
     AE2_LIGHTNING_TECH(Owner.SERVER, Group.INTEGRATIONS, "ae2LightningTech"),
-    APPLIED_MEKANISTICS(Owner.SERVER, Group.INTEGRATIONS, "appliedMekanistics");
+    APPLIED_MEKANISTICS(Owner.SERVER, Group.INTEGRATIONS, "appliedMekanistics"),
+    CHANCE_OUTPUT_DETECTION(Owner.SERVER, Group.DIAGNOSTICS, "chanceOutputDetection");
 
     public enum Owner { CLIENT, SERVER }
     public enum Group { DISPLAYS, WARNINGS, APPEARANCE, CONTROLS, GENERAL, DIAGNOSTICS, NOTIFICATIONS, INTEGRATIONS, ADVANCED }

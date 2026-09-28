@@ -2,7 +2,7 @@
 navigation:
   title: Циклічне
   parent: statuses/index.md
-  position: 11
+  position: 12
 ---
 
 # Циклічне

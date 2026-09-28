@@ -65,8 +65,17 @@ public abstract class CraftingStatusTableRendererMixin {
         }
         ae2craftingtime$appendTooltip(cir.getReturnValue(), entry.getActiveAmount(), entry.getPendingAmount(),
                 ae2craftingtime$noSpace(entry), ae2craftingtime$blockReason(entry),
-                () -> ClientOptionsRuntime.enabled(OptionFeature.DETAILED_TOOLTIPS)
+                () -> (ClientOptionsRuntime.enabled(OptionFeature.DETAILED_TOOLTIPS)
+                        || ClientOptionsRuntime.enabled(OptionFeature.CHANCE_OUTPUT_STATUS)
+                        && ClientStats.chanceOutput(ProfilerBridge.key(entry.getWhat())).isPresent())
                         && ae2craftingtime$appendStatsTooltip(entry, cir.getReturnValue()));
+        var reason = ae2craftingtime$blockReason(entry);
+        if (reason != null && ClientOptionsRuntime.enabled(OptionFeature.statusFor(reason))
+                && ClientOptionsRuntime.enabled(OptionFeature.CHANCE_OUTPUT_STATUS)) {
+            ClientStats.chanceOutput(ProfilerBridge.key(entry.getWhat())).ifPresent(chance ->
+                    cir.getReturnValue().add(Component.translatable("text.ae2craftingtime.chance_output.context",
+                            java.math.BigDecimal.valueOf(chance, 2).stripTrailingZeros().toPlainString())));
+        }
     }
 
     private static MutableComponent ae2craftingtime$compactAmounts(List<Component> lines, long stored, String storedText,
@@ -162,6 +171,11 @@ public abstract class CraftingStatusTableRendererMixin {
                 return;
             }
         }
+        if (ClientOptionsRuntime.enabled(OptionFeature.CHANCE_OUTPUT_STATUS)
+                && ClientStats.chanceOutput(key).isPresent()) {
+            lines.add(TtcText.chanceOutput());
+            return;
+        }
         ClientStats.CACHE.get(key).ifPresentOrElse(stats -> {
             var stall = ClientStats.CACHE.stall(key);
             if (stall.isPresent() && ClientOptionsRuntime.enabled(OptionFeature.DELAYED_STATUS)) {
@@ -183,10 +197,17 @@ public abstract class CraftingStatusTableRendererMixin {
         var normalized = AeKeyAmounts.normalize(entry.getWhat(), amount);
         ClientStatsRequests.request(key);
         var stats = ClientStats.CACHE.get(key);
+        var chance = ClientOptionsRuntime.enabled(OptionFeature.CHANCE_OUTPUT_STATUS)
+                ? ClientStats.chanceOutput(key) : java.util.OptionalLong.empty();
+        var stall = ClientStats.CACHE.stall(key);
+        if (chance.isPresent()) {
+            lines.addAll(TtcText.chanceOutputTooltip(entry.getActiveAmount(), chance.getAsLong(),
+                    stall.map(com.ctux.ae2craftingtime.core.StallDiagnostic::idleTicks).orElse(0L)));
+            return true;
+        }
         if (stats.isEmpty()) {
             return false;
         }
-        var stall = ClientStats.CACHE.stall(key);
         if (stall.isPresent() && ClientOptionsRuntime.enabled(OptionFeature.DELAYED_STATUS)) {
             lines.addAll(TtcText.stallLines(normalized, entry.getPendingAmount(), stats.get(), stall.get()));
             return true;

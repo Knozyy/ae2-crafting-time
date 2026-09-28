@@ -18,6 +18,7 @@
     "CraftingPlanSummaryEntryMixin",
     "CraftingTreeNodeMixin",
     "PatternProviderLogicMixin",
+    "PatternProviderLogicHostAccessor",
     "ECOCraftingCpuLogicMixin",
     "NeoEcoPendingDispatchMixin",
     "NeoEcoLongBatchDispatchMixin",

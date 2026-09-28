@@ -1,16 +1,16 @@
 # Chance-based output diagnostics
 
-Status: draft
+Status: implementation in progress
 
 Scope: Research and proposed status for non-guaranteed processing outputs.
 
 Issue: [#471](https://github.com/cTux/ae2-crafting-time/issues/471).
 
-Open gate: Identify a real machine/mod/version and a trustworthy server-side
-mapping from the dispatched pattern to its effective output probability.
-The status label, color, and symbol are settled below. Tooltip wording,
-precedence, and alert timing remain planning decisions.
-No detector or runtime qualification is claimed.
+Initial integration: Mekanism 10.4.16.80 Precision Sawmill on Minecraft
+1.20.1 Forge. Its server recipe for an acacia hanging sign has a guaranteed
+two-plank main output and a 50% sawdust secondary output. This is the first
+supported detector, not a generic inference from partial returns. Runtime
+qualification is still pending.
 
 ## Problem and evidence limits
 

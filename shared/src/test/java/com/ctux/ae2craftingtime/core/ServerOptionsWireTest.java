@@ -46,7 +46,7 @@ class ServerOptionsWireTest {
         assertThrows(IllegalArgumentException.class, () -> ServerOptionsWire.decode(null));
         assertThrows(IllegalArgumentException.class, () -> ServerOptionsWire.decode(new byte[3]));
         var badVersion = Arrays.copyOf(good, good.length);
-        badVersion[0] = 2;
+        badVersion[0] = 3;
         assertThrows(IllegalArgumentException.class, () -> ServerOptionsWire.decode(badVersion));
         var badRevision = Arrays.copyOf(good, good.length);
         ByteBuffer.wrap(badRevision).putInt(1, -1);

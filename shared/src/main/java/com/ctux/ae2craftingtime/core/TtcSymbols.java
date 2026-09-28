@@ -28,6 +28,7 @@ public final class TtcSymbols {
                     "text.ae2craftingtime.chat.delayed.word", "text.ae2craftingtime.chat.delayed.expired",
                     "text.ae2craftingtime.chat.details.low_confidence" -> Symbol.WARNING;
             case "text.ae2craftingtime.no_provider", "text.ae2craftingtime.no_channel",
+                    "text.ae2craftingtime.chance_output", "text.ae2craftingtime.chat.chance_output.word",
                     "text.ae2craftingtime.no_target", "text.ae2craftingtime.input_blocked",
                     "text.ae2craftingtime.locked", "text.ae2craftingtime.no_space",
                     "text.ae2craftingtime.chat.no_space.word" -> Symbol.ERROR;
@@ -56,6 +57,7 @@ public final class TtcSymbols {
             case "text.ae2craftingtime.chat.summary" -> index == 2;
             case "text.ae2craftingtime.chat.details" -> index == 2 || index == 4;
             case "text.ae2craftingtime.chat.delayed" -> index == 2 || index == 3;
+            case "text.ae2craftingtime.chat.chance_output" -> index == 3;
             case "text.ae2craftingtime.value.window" -> index == 0;
             case "text.ae2craftingtime.value.whole_seconds", "text.ae2craftingtime.value.seconds" -> index == 0;
             case "text.ae2craftingtime.value.accuracy" -> index == 4;

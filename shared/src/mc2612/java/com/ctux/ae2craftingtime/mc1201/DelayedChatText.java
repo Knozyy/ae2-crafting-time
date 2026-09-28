@@ -27,6 +27,17 @@ public final class DelayedChatText {
                 TimeEstimate.formatTicks(typicalTicks));
     }
 
+    public static MutableComponent chanceMessage(String outputName, UUID recordId, long idleTicks,
+            int chanceBasisPoints) {
+        var percentage = java.math.BigDecimal.valueOf(chanceBasisPoints, 2)
+                .stripTrailingZeros().toPlainString();
+        var idleSeconds = (long) Math.ceil(Math.max(0, idleTicks) / 20.0);
+        return Component.translatable("text.ae2craftingtime.chat.chance_output",
+                name(outputName, recordId),
+                Component.translatable("text.ae2craftingtime.chat.chance_output.word")
+                        .withStyle(ChatFormatting.RED), percentage,
+                Component.translatable("text.ae2craftingtime.value.whole_seconds", idleSeconds));
+    }
     public static MutableComponent blockedMessage(String outputName, UUID recordId, String wordKey,
             Component detail) {
         return Component.translatable("text.ae2craftingtime.chat.blocked",

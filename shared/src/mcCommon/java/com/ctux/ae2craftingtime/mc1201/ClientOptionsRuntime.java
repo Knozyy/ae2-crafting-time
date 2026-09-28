@@ -51,6 +51,7 @@ public final class ClientOptionsRuntime {
             case ACCURACY_DETAILS -> OptionFeature.ACCURACY_RECORDING;
             case WAITING_STATUS -> OptionFeature.WAITING_TRACKING;
             case DELAYED_STATUS -> OptionFeature.DELAYED_DETECTION;
+            case CHANCE_OUTPUT_STATUS -> OptionFeature.CHANCE_OUTPUT_DETECTION;
             case RECURRENT_STATUS -> OptionFeature.RECURRENT_DETECTION;
             case NO_PROVIDER_STATUS -> OptionFeature.NO_PROVIDER_DETECTION;
             case NO_POWER_STATUS -> OptionFeature.NO_POWER_DETECTION;

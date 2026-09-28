@@ -68,6 +68,7 @@ public final class ServerOptionsRuntime {
             }
             ServerConfigFile.save(file, update.config());
             current = update.config().copy();
+            ProfilerBridge.clearChanceEvidence();
             ProfilerBridge.configure(current);
             revision++;
             for (var player : activeServer.getPlayerList().getPlayers()) sendTo(player);

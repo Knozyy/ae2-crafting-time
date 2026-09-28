@@ -2,7 +2,7 @@
 navigation:
   title: TTC estimate
   parent: statuses/index.md
-  position: 10
+  position: 11
 ---
 
 # TTC estimate

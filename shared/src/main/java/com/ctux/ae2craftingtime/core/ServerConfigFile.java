@@ -16,6 +16,7 @@ public final class ServerConfigFile {
             Map.entry(OptionFeature.ACCURACY_RECORDING, "Record prediction accuracy for server diagnostics. False stops accuracy recording."),
             Map.entry(OptionFeature.WAITING_TRACKING, "Track crafts waiting for progress. False removes this server diagnostic from client status displays."),
             Map.entry(OptionFeature.DELAYED_DETECTION, "Classify crafts taking longer than the delay thresholds. False disables delayed status and related warnings."),
+            Map.entry(OptionFeature.CHANCE_OUTPUT_DETECTION, "Detect non-guaranteed outputs only from verified live machine recipes. False disables Chance output status."),
             Map.entry(OptionFeature.RECURRENT_DETECTION, "Detect proven ingredient or recipe loops. False disables this server diagnostic and its client status."),
             Map.entry(OptionFeature.NO_PROVIDER_DETECTION, "Detect crafts with no available provider. False disables this server diagnostic and its client status."),
             Map.entry(OptionFeature.NO_POWER_DETECTION, "Detect crafts blocked by insufficient power. False disables this server diagnostic and its client status."),
