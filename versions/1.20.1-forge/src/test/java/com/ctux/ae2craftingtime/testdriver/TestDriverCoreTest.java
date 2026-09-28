@@ -947,9 +947,52 @@ class TestDriverCoreTest {
             for (var text : List.of(literal, total)) {
                 var frame = new UiSnapshot("screen", "menu", badge, 100, 100, 1, 1, 0, List.of(),
                         List.of(text), drawBadge ? List.of(badge) : List.of(), List.of(), List.of(), List.of());
-                assertEquals(drawBadge && text == total, CraftPlanScenario.renderedPlan(frame));
+                assertEquals(text == total, CraftPlanScenario.renderedPlan(frame));
+                assertEquals(text == total ? "target=false total=true waiting=target"
+                                : "target=false total=false waiting=target",
+                        CraftPlanScenario.planReadiness(frame, "diamond"));
             }
         }
+        assertEquals("target=false total=false waiting=frame", CraftPlanScenario.planReadiness(null, "diamond"));
+        var row = new UiSnapshot.Row("diamond", 1, 0, badge, List.of());
+        var ready = new UiSnapshot("screen", "menu", badge, 100, 100, 1, 2, 0, List.of(row),
+                List.of(total), List.of(), List.of(), List.of(), List.of());
+        assertEquals("target=true total=true waiting=stable-rows", CraftPlanScenario.planReadiness(ready, "diamond"));
+        assertTrue(LayoutValidator.validate(ready).isEmpty());
+        var invalid = new UiSnapshot("screen", "menu", badge, 100, 100, 1, 3, 0, List.of(row),
+                List.of(new UiSnapshot.ObservedText(total.key(), total.rendered(), List.of(), new Rect(90, 90, 20, 10))),
+                List.of(), List.of(), List.of(), List.of());
+        assertFalse(LayoutValidator.validate(invalid).isEmpty());
+    }
+
+    @Test
+    void treeReadinessRequiresDurationDrawAtTheTargetNode() {
+        var screen = "com.neuvillette.ae2ct.gui.CraftingTreeScreen";
+        var node = new UiSnapshot.Row("diamond", 1, 0, new Rect(10, 10, 16, 16), List.of());
+        for (var label : List.of("~1s", "⏱ ~1:02", "~1:02:03", "Item ~1", "TTC: ~1s")) {
+            var literal = new UiSnapshot.ObservedText("literal", label, List.of(), new Rect(8, 31, 20, 5));
+            var text = CraftingTreeScenario.nodeTtcText(screen, literal);
+            boolean duration = !label.startsWith("Item") && !label.startsWith("TTC:");
+            assertEquals(duration, text.key().startsWith("text.ae2craftingtime.")); // Recovery must see unboxed TTC.
+            assertEquals(literal, CraftingTreeScenario.nodeTtcText("other-screen", literal));
+            for (var bounds : List.of(literal.bounds(), new Rect(50, 31, 20, 5), new Rect(8, 60, 20, 5))) {
+                var drawn = new UiSnapshot.ObservedText(text.key(), label, List.of(), bounds);
+                var frame = new UiSnapshot(screen, "menu", new Rect(0, 0, 100, 100), 100, 100, 1, 4, 0,
+                        List.of(node), List.of(drawn), List.of(), List.of(), List.of(node.cell()), List.of());
+                assertEquals(duration && bounds.equals(literal.bounds()), CraftingTreeScenario.nodeTtcDrawn(frame, node));
+                assertTrue(LayoutValidator.validate(frame).isEmpty());
+            }
+        }
+        var missing = new UiSnapshot(screen, "menu", new Rect(0, 0, 100, 100), 100, 100, 1, 5, 0,
+                List.of(node), List.of(), List.of(new Rect(8, 29, 20, 9)), List.of(), List.of(node.cell()), List.of());
+        assertFalse(CraftingTreeScenario.nodeTtcDrawn(missing, node));
+        var scaledNode = new UiSnapshot.Row("diamond", 1, 0, new Rect(10, 10, 32, 32), List.of());
+        var scaledText = CraftingTreeScenario.nodeTtcText(screen,
+                new UiSnapshot.ObservedText("literal", "~1s", List.of(), new Rect(6, 52, 40, 10)));
+        var scaledFrame = new UiSnapshot(screen, "menu", missing.gui(), 100, 100, 1, 6, 0,
+                List.of(scaledNode), List.of(scaledText), List.of(), List.of(), List.of(scaledNode.cell()), List.of());
+        assertTrue(CraftingTreeScenario.nodeTtcDrawn(scaledFrame, scaledNode));
+        assertTrue(LayoutValidator.validate(scaledFrame).isEmpty());
     }
 
     @Test

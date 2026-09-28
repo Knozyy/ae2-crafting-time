@@ -96,7 +96,14 @@ public final class UiObservationStore {
         if (active == null) {
             return;
         }
-        var observed = observed(component, transformed(graphics, x, y, x + width, y + height));
+        var observed = CraftingTreeScenario.nodeTtcText(active.screen,
+                observed(component, transformed(graphics, x, y, x + width, y + height)));
+        if (active.screen.endsWith("CraftConfirmScreen") && observed.bounds().y() == active.gui.y() + 178
+                && observed.rendered().startsWith("TTC:")) {
+            active.text.add(new UiSnapshot.ObservedText("text.ae2craftingtime.total_ttc", observed.rendered(),
+                    observed.arguments(), observed.bounds(), observed.color(), observed.bold()));
+            return;
+        }
         if (observed.key().startsWith("text.ae2craftingtime.")
                 || active.screen.contains("CraftingStatusScreen")
                 || active.cpuCards.stream().anyMatch(card -> observed.bounds().overlaps(card.nameArea))) {

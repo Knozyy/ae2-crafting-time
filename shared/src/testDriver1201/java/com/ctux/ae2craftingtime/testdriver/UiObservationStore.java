@@ -104,7 +104,8 @@ public final class UiObservationStore {
         if (active == null) {
             return;
         }
-        var observed = observed(component, transformed(graphics, x, y, x + width, y + height));
+        var observed = CraftingTreeScenario.nodeTtcText(active.screen,
+                observed(component, transformed(graphics, x, y, x + width, y + height)));
         if (recordStatusText(component.getString(), observed.bounds())) return;
         var total = planTotalText(active.screen, active.gui, observed);
         if (total != null) {

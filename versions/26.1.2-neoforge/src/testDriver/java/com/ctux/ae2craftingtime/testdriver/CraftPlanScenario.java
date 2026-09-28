@@ -383,7 +383,7 @@ public final class CraftPlanScenario {
         checks.put("ttc-row", snapshot.text().stream().anyMatch(CraftPlanScenario::isResolvedTtc));
         checks.put("total-ttc", snapshot.text().stream()
                 .anyMatch(text -> text.key().equals("text.ae2craftingtime.total_ttc")));
-        checks.put("layout", !snapshot.badges().isEmpty() && LayoutValidator.validateBadges(snapshot).isEmpty());
+        checks.put("layout", LayoutValidator.validate(snapshot).isEmpty());
         if (checks.values().stream().allMatch(Boolean::booleanValue)) {
             screenshotUnchecked("merequester-screen.png");
             try {
@@ -460,7 +460,7 @@ public final class CraftPlanScenario {
         checks.put("screen", snapshot.screen().equals(CraftConfirmScreen.class.getName()));
         checks.put("ttc-row", snapshot.rows().stream().filter(row -> row.outputId().equals(outputId))
                 .flatMap(row -> row.description().stream()).anyMatch(text -> text.key().equals("text.ae2craftingtime.ttc")));
-        checks.put("layout", !snapshot.badges().isEmpty() && LayoutValidator.validate(snapshot).isEmpty());
+        checks.put("layout", LayoutValidator.validate(snapshot).isEmpty());
         screenshot("craft-plan.png");
         clickSort(snapshot);
         advance(ScenarioState.BASE_CHECKED);
@@ -485,12 +485,13 @@ public final class CraftPlanScenario {
         }
         lastFrame = snapshot.frame();
         var target = snapshot.rows().stream().filter(row -> row.outputId().equals(outputId)).findFirst();
-        if (target.isEmpty() || snapshot.badges().isEmpty() || !stableRows.observe(ids(snapshot))) {
+        if (target.isEmpty() || (!checks.get("node-ttc") && !CraftingTreeScenario.nodeTtcDrawn(snapshot, target.get()))
+                || !stableRows.observe(ids(snapshot))) {
             return;
         }
         checks.put("screen", true);
         checks.put("node-ttc", true);
-        checks.put("layout", LayoutValidator.validateBadges(snapshot).isEmpty());
+        checks.put("layout", LayoutValidator.validate(snapshot).isEmpty());
         if (!treeHoverStarted) {
             screenshot("crafting-tree-screen.png");
             moveMouse(target.get().cell().centerX(), target.get().cell().centerY());
@@ -734,8 +735,16 @@ public final class CraftPlanScenario {
     }
 
     static boolean renderedPlan(UiSnapshot snapshot) {
-        return snapshot != null && !snapshot.badges().isEmpty() && snapshot.text().stream()
+        return snapshot != null && snapshot.text().stream()
                 .anyMatch(text -> text.key().equals("text.ae2craftingtime.total_ttc"));
+    }
+
+    static String planReadiness(UiSnapshot snapshot, String outputId) {
+        if (snapshot == null) return "target=false total=false waiting=frame";
+        boolean target = snapshot.rows().stream().anyMatch(row -> row.outputId().equals(outputId));
+        boolean total = renderedPlan(snapshot);
+        return "target=" + target + " total=" + total + " waiting="
+                + (!target ? "target" : !total ? "total-ttc" : "stable-rows");
     }
 
     private boolean stable(UiSnapshot snapshot) {
@@ -883,7 +892,7 @@ public final class CraftPlanScenario {
         }
         var screen = minecraft.screen.getClass().getName();
         var snapshot = UiObservationStore.latest();
-        return state == ScenarioState.PLAN_STABLE && snapshot != null ? screen + " rows=" + ids(snapshot) : screen;
+        return state == ScenarioState.PLAN_STABLE ? screen + " " + planReadiness(snapshot, outputId) : screen;
     }
 
     String checkpoint() {

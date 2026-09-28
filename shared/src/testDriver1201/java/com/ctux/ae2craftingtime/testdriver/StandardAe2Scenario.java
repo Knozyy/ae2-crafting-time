@@ -1778,8 +1778,9 @@ final class StandardAe2Scenario {
         if (!frames.observe(List.of(phase, badgeStep, CaptureEvidence.readiness(snapshot)))) return false;
         var rows = snapshot.rows().stream().map(row -> row.outputId() + ":" + row.craftAmount()).toList();
         var text = snapshot.text().stream().filter(value ->
-                com.ctux.ae2craftingtime.core.CraftingRowState.isBadge(value.key()))
-                .map(value -> value.key() + ":" + value.bounds() + ":" + value.color()).toList();
+                com.ctux.ae2craftingtime.core.CraftingRowState.isBadge(value.key())
+                        && snapshot.rows().stream().anyMatch(row -> value.bounds().inside(row.cell())))
+                .map(value -> value.key() + ":" + value.bounds()).toList();
         if (text.isEmpty()) return false;
         if (badgeStep == 1 || status && badgeStep == 0) {
             badgeRowsBefore = rows;
@@ -2015,7 +2016,7 @@ final class StandardAe2Scenario {
                                 "config.ae2craftingtime.reset_all"));
                     }
                     case 11 -> {
-                        if (!enabled) throw new IllegalStateException("Reset all did not enable badge");
+                        if (enabled) throw new IllegalStateException("Reset all did not disable badge");
                         screenshot.accept("badge-reset-all.png");
                         clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get("gui.cancel"));
                     }
