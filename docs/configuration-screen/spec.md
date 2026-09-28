@@ -60,14 +60,22 @@ diagnostics. It is clearly labelled as the master switch.
 
 ### Recurrent detection default (#592)
 
-Status: in-progress.
+Status: finished.
 
-[PR #593](https://github.com/cTux/ae2-crafting-time/pull/593)
-shipped the default-off change and English/Ukrainian player guidance for
-[#592](https://github.com/cTux/ae2-crafting-time/issues/592). The server-model copy
-lost an explicit on value; the [focused copy regression](implementation-plan.md#focused-follow-up-preserve-recurrent-detection-opt-in-592)
-is in progress. Shared regression and 100% line/branch coverage, current-head
-GitHub CI, merge, and verified issue closure remain.
+[PR #593](https://github.com/cTux/ae2-crafting-time/pull/593) shipped the
+default-off change and English/Ukrainian player guidance. The follow-up
+[PR #597](https://github.com/cTux/ae2-crafting-time/pull/597) preserves explicit
+server values when copying `ServerConfig`. Its reviewed and tested head was
+`737652991753865e65fc66bf510ac4374026a825`; it merged as
+`54662c06fe44a518b7287182bf2f6b931ec5ccc5`.
+Issue [#592](https://github.com/cTux/ae2-crafting-time/issues/592) closed when
+the fix merged on 2026-09-28 at 08:02:02 UTC.
+
+The shared regression passed with 100% line coverage (2295/2295) and branch
+coverage (1537/1537). The regression failed against the old copy implementation
+as expected, then passed on the complete candidate. Current-head GitHub CI also
+passed: [tests](https://github.com/cTux/ae2-crafting-time/actions/runs/36394293763)
+and [build](https://github.com/cTux/ae2-crafting-time/actions/runs/36394293765).
 
 Fresh server files and Reset use `recurrentDetection = false` on all four targets.
 An explicit `true` must survive loading, independent model copies, editing and
