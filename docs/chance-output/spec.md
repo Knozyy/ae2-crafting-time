@@ -8,7 +8,8 @@ Issue: [#471](https://github.com/cTux/ae2-crafting-time/issues/471).
 
 Open gate: Identify a real machine/mod/version and a trustworthy server-side
 mapping from the dispatched pattern to its effective output probability.
-Final wording, color, precedence, and alert timing remain planning decisions.
+The status label, color, and symbol are settled below. Tooltip wording,
+precedence, and alert timing remain planning decisions.
 No detector or runtime qualification is claimed.
 
 ## Problem and evidence limits
@@ -29,7 +30,7 @@ from the ratio of observed returns to dispatched output or from network stock.
 
 ## Proposed behavior to validate
 
-- Provisional **CHANCE OUTPUT** applies only when a supported server integration
+- **Chance output** applies only when a supported server integration
   proves that the job's encoded output is not guaranteed. Show a percentage only
   when its exact effective value is known.
 - Explain that AE2 may wait for missing output. On a delayed row, include
@@ -46,6 +47,30 @@ from the ratio of observed returns to dispatched output or from network stock.
 No scheduler changes, automatic retries/cancellation, invented outputs, or
 probability-based TTC correction are requested. The eventual status needs an
 on/off option through the existing options model.
+
+## Approved presentation
+
+Use **⚠ Chance output**: sentence case, with the label and leading warning
+symbol in Minecraft red (`#FF5555`). Reuse the existing red warning symbol
+(`TtcSymbols.Symbol.ERROR`, U+26A0) and shared status badge presentation.
+The matching Ukrainian label is **⚠ Випадковий вихід**.
+
+Apply this presentation to the affected output row, its tooltip heading, and
+any applicable delayed alert. Prefix the symbol exactly once at the client
+presentation boundary. Respect Show emoji: Off removes only the symbol,
+leaving the red label intact. Respect the existing badge background switch,
+color, and opacity. Do not hard-code the symbol into translation values.
+
+When the effective chance is verified, the tooltip heading may read
+**⚠ Chance output · 60%**. Unknown mappings retain the existing gold
+**⚠ Delayed** status and conditional hint. Red indicates the risk of missing
+promised output; it does not prove that the machine has stopped or finished.
+
+Acceptance: verify the exact English/Ukrainian labels, red label and symbol,
+single prefix, emoji On/Off, shared badge settings, and unchanged gold Delayed
+fallback. Carry this presentation into both GuideME translations and the Wiki
+when the feature is implemented. The concept preview approves presentation;
+it is not evidence of an implemented detector or Minecraft glyph rendering.
 
 ## Design and verification prerequisites
 
