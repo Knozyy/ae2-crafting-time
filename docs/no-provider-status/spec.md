@@ -33,7 +33,7 @@ pattern.
   scheduled batches have no provider.
 - Refresh through the existing one-second status request cycle. After a
   provider returns, allow the previous status to remain for at most one refresh.
-- Render the row as bold red `NO PROVIDER` / `Без провайдера`.
+- Render the row as normal-weight red `NO PROVIDER` / `Без провайдера`.
 - Add these tooltip lines:
   - `No connected Pattern Provider currently offers this pattern.`
   - `Restore a connected provider or put the pattern back.`

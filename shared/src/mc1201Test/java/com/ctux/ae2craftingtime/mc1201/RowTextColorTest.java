@@ -73,11 +73,11 @@ class RowTextColorTest {
         var collecting = Component.translatable("text.ae2craftingtime.ttc",
                 Component.translatable("text.ae2craftingtime.collecting_data")).withStyle(style -> style.withColor(color));
         var warnings = List.of(collecting, TtcText.waiting().withStyle(style -> style.withColor(color)),
-                TtcText.ttcDelayed().withStyle(style -> style.withColor(color).withBold(true)),
+                TtcText.ttcDelayed().withStyle(style -> style.withColor(color).withBold(false)),
                 TtcText.noSpace().withStyle(style -> style.withColor(color)),
                 TtcText.blockReason(com.ctux.ae2craftingtime.core.CraftingBlockReason.NO_POWER)
-                        .withStyle(style -> style.withColor(color).withBold(true)),
-                TtcText.recurrent().withStyle(style -> style.withColor(color).withBold(true)),
+                        .withStyle(style -> style.withColor(color).withBold(false)),
+                TtcText.recurrent().withStyle(style -> style.withColor(color).withBold(false)),
                 TtcText.storedVariant().withStyle(style -> style.withColor(color)));
         for (var status : warnings) {
             var original = status.copy();

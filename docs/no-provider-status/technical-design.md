@@ -68,7 +68,7 @@ before Waiting, DELAYED, or TTC. Both API variants of the status screen use
 the same predicate to exclude blocked rows from TTC sorting and coloring.
 Craft plan, Crafting Tree, and ME Requester do not consult this state.
 
-`TtcText` supplies the bold red label and the two exact issue tooltip sentences.
+`TtcText` supplies the normal-weight red label and the two exact issue tooltip sentences.
 Add matching English and Ukrainian keys and recognize the label in the existing
 compact-badge renderer on both API variants.
 

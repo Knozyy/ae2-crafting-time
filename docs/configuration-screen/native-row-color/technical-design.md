@@ -49,8 +49,8 @@ scope. The two row mixins are the only consumers of `TtcColorContext.get`.
 Status rows currently choose no-space first, then require a remaining amount,
 then choose block reason, waiting, delayed, and finally estimate/collecting.
 Keep that ordering and each feature gate. No-space and block reasons use
-Delayed color; block reasons and delayed TTC are bold. Plan recurrent remains
-red/bold. Only row copies of Waiting, collecting, and Stored variant lose their
+Delayed color; block reasons and delayed TTC use normal weight. Plan recurrent remains
+normal-weight red. Only row copies of Waiting, collecting, and Stored variant lose their
 explicit colors when the badge is off, or take Total when it is on. The general
 text factories and tooltip components keep their original colors. TTC estimates
 retain the fast-to-slow foreground when enabled. Compact amounts copy an

@@ -431,7 +431,7 @@ means three separately required files, not one literal slash-containing name.
 `profile-sample` requires both furnace outputs to gain a real sample beyond the
 setup baseline. `recovered` checks the same output's label clearance after real
 progress, or the empty status after proven completion. Bounds checks use the
-existing LayoutValidator. Delayed style is bold red (`0xFF5555`); tooltip checks
+existing LayoutValidator. Delayed style is normal-weight red (`0xFF5555`); tooltip checks
 the rendered stall diagnostics and their actual numeric inputs, not just that
 some tooltip exists. Setup seeds only retained throughput estimates.
 

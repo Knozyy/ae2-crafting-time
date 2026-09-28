@@ -225,6 +225,25 @@ scenario requirements below are the required next state; removing existing
 bilingual driver states is follow-up implementation work. Keep Ukrainian
 product translations and static resource checks.
 
+## Chance-output status scenario
+
+`chance-output-status` is a focused Forge 1.20.1 leaf requiring the compatible
+Mekanism graph. Its isolated native AE2 CPU dispatches a processing pattern for
+100 sawdust from acacia hanging signs into one directionally targeted Precision
+Sawmill. The pattern also promises the recipe's guaranteed two planks. The pinned
+Mekanism recipe declares a 50% secondary sawdust chance. The fixture clears
+accepted inputs in the unpowered sawmill until all 100 operations dispatch.
+The fixture leaves the machine unpowered for a controlled return: zero output,
+then 200 planks and 60 sawdust through the provider return inventory, with
+40 sawdust still promised.
+It must observe the real CPU job, authoritative recipe evidence, red Chance
+output label, 50% tooltip, contained badge, and cancellation clearing in
+English. Retain screenshots for zero, partial, tooltip, and cancellation.
+After cancellation, leave one previously dispatched sign in the sawmill, power
+the machine, and observe one actual recipe operation. Require two planks and
+record whether zero or one sawdust appeared; do not require either random
+outcome. The controlled return proves status arithmetic separately.
+
 ## No-provider status scenario
 
 `no-provider-status` submits a real 64-output processing job to an isolated
@@ -296,7 +315,7 @@ of the two craftable rows in AE2 order and both TTC directions.
 
 The [leaf contracts](../automated-ui-testing/technical-design.md#groups-and-independent-standard-flow)
 retain every original assertion. Waiting and running require real dependency
-progress. Delayed checks the active row, bold red label, diagnostic tooltip and
+progress. Delayed checks the active row, normal-weight red label, diagnostic tooltip and
 recovery after actual output. Its two intermediate outputs wait on the same
 provider, where it requires one stable first-retained render icon. A real row
 double-click adds a rainbow edge; releasing that selected output must reveal the

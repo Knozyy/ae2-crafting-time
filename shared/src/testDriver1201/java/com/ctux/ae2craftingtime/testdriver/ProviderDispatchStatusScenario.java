@@ -398,9 +398,9 @@ final class ProviderDispatchStatusScenario {
             throw new IllegalStateException(key + " has no contained rendered badge");
         }
         checks.put("tooltip", true);
-        if (NO_CHANNEL.equals(scenario) && (!warning.bold() || warning.color() == null
+        if (NO_CHANNEL.equals(scenario) && (warning.bold() || warning.color() == null
                 || (warning.color() & 0xffffff) != 0xff5555)) {
-            throw new IllegalStateException("NO CHANNEL must render bold red");
+            throw new IllegalStateException("NO CHANNEL must render normal red");
         }
         checks.put("layout", true);
         screenshot.accept(screenshotName);

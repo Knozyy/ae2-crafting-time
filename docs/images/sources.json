@@ -40,15 +40,18 @@
                                 ]
                    },
                    {
-                       "image":  "crafting-status-delayed.jpg",
-                       "source":  "delayed-status/status-delayed.png",
-                       "sha256":  "fd8ce318c6710017047c187401fb09dc6ec3183830dd6ebab91bee1abd4c5f37",
-                       "crop":  [
-                                    836,
-                                    252,
-                                    552,
-                                    100
-                                ]
+                       "image": "crafting-status-delayed.jpg",
+                       "source": "status-delayed.png",
+                       "sha256": "0ae87ce7725b9cc25e8e3f330da82d9e2158d41f10998c9fa3e1da2594a45a47",
+                       "crop": [
+                           836,
+                           252,
+                           552,
+                           100
+                       ],
+                       "run": "20260928T120608188Z-1d4ebd77",
+                       "sourceCommit": "55009dc5432fc710130bddd27a2b42839a82e600",
+                       "pack": "Prepared 1.20.1 Forge client"
                    },
                    {
                        "image":  "crafting-status-ttc-bottleneck-diagnostics.jpg",
@@ -62,70 +65,88 @@
                                 ]
                    },
                    {
-                       "image":  "crafting-status-no-space.jpg",
-                       "source":  "no-space-status/no-space-en-us.png",
-                       "sha256":  "0ab3846a4c5bfb02e0dbff37663aaeb52930c524be33b42334b21298ec9f554a",
-                       "crop":  [
-                                    996,
-                                    236,
-                                    1048,
-                                    276
-                                ]
+                       "image": "crafting-status-no-space.jpg",
+                       "source": "no-space-en-us.png",
+                       "sha256": "283dbb02980fe133acc4c5f1ec1c53d739b1c9e2eadd531a35a2d631dae03c04",
+                       "crop": [
+                           790,
+                           180,
+                           1330,
+                           500
+                       ],
+                       "run": "20260928T123423606Z-21cb2967",
+                       "sourceCommit": "55009dc5432fc710130bddd27a2b42839a82e600",
+                       "pack": "Prepared 1.20.1 Forge client"
                    },
                    {
-                       "image":  "crafting-status-no-provider.jpg",
-                       "source":  "no-provider-status/no-provider-en-us.png",
-                       "sha256":  "b6822a308e174500df50140d17065598b10f08edb62e95aac83c431b1f84e957",
-                       "crop":  [
-                                    996,
-                                    236,
-                                    1116,
-                                    436
-                                ]
+                       "image": "crafting-status-no-provider.jpg",
+                       "source": "no-provider-en-us.png",
+                       "sha256": "4ad606582497917211d04199a314a5af366205a5f9a1c043f434bc01e78df188",
+                       "crop": [
+                           790,
+                           180,
+                           1360,
+                           520
+                       ],
+                       "run": "20260928T123757613Z-be18a2e0",
+                       "sourceCommit": "55009dc5432fc710130bddd27a2b42839a82e600",
+                       "pack": "Prepared 1.20.1 Forge client"
                    },
                    {
-                       "image":  "crafting-status-no-power.jpg",
-                       "source":  "no-power-status/no-power-en-us.png",
-                       "sha256":  "4d1f2f85def30b2714bced44385ddc58d9cc078be7e685f23054a18d85449ba7",
-                       "crop":  [
-                                    996,
-                                    236,
-                                    1144,
-                                    356
-                                ]
+                       "image": "crafting-status-no-power.jpg",
+                       "source": "no-power-en-us.png",
+                       "sha256": "404daa2439f83f5dd22b915486807251045f77d7190813ae92cd0d11a23912da",
+                       "crop": [
+                           790,
+                           180,
+                           1360,
+                           500
+                       ],
+                       "run": "20260928T124123839Z-4319045a",
+                       "sourceCommit": "55009dc5432fc710130bddd27a2b42839a82e600",
+                       "pack": "Prepared 1.20.1 Forge client"
                    },
                    {
-                       "image":  "crafting-status-no-target.jpg",
-                       "source":  "no-target-status/no-target-en-us.png",
-                       "sha256":  "8a54d8f0562993c3b7d52b2ba1577a98f94251f05f5317c1392a939598a20d69",
-                       "crop":  [
-                                    992,
-                                    256,
-                                    1028,
-                                    476
-                                ]
+                       "image": "crafting-status-no-target.jpg",
+                       "source": "no-target-status/no-target-en-us.png",
+                       "sha256": "1baddeaef2509d109c6e2eb4f41a91c4f197e057ff0a0c868eb037fe0fc26de8",
+                       "crop": [
+                           790,
+                           180,
+                           1360,
+                           700
+                       ],
+                       "run": "20260928T122530576Z-eb27c96a",
+                       "sourceCommit": "55009dc5432fc710130bddd27a2b42839a82e600",
+                       "pack": "Prepared 1.20.1 Forge client"
                    },
                    {
-                       "image":  "crafting-status-input-blocked.jpg",
-                       "source":  "input-blocked-status/input-blocked-status-en-us.png",
-                       "sha256":  "c52a27cc3b608702099c3a55eeb7426e253e94adb7ab80f3dc15b48ecec6a299",
-                       "crop":  [
-                                    968,
-                                    256,
-                                    1112,
-                                    476
-                                ]
+                       "image": "crafting-status-input-blocked.jpg",
+                       "source": "input-blocked-status/input-blocked-status-en-us.png",
+                       "sha256": "c56312bb3c6781bd0637059f859cda875bc89f3d227dc5587e2d7ce5ed8de20f",
+                       "crop": [
+                           790,
+                           180,
+                           1360,
+                           700
+                       ],
+                       "run": "20260928T122530576Z-eb27c96a",
+                       "sourceCommit": "55009dc5432fc710130bddd27a2b42839a82e600",
+                       "pack": "Prepared 1.20.1 Forge client"
                    },
                    {
-                       "image":  "crafting-status-locked.jpg",
-                       "source":  "locked-status/locked-en-us.png",
-                       "sha256":  "132c468a4c6ce628162dd265e255ca1583ca367b8368677bd67f8ec9402fc839",
-                       "crop":  [
-                                    1012,
-                                    256,
-                                    1076,
-                                    516
-                                ]
+                       "image": "crafting-status-locked.jpg",
+                       "source": "locked-status/locked-en-us.png",
+                       "sha256": "79787aaba18feee8f416097fc5d546dad9b277c5930e3da5f9d1afe45810f819",
+                       "crop": [
+                           790,
+                           180,
+                           1360,
+                           700
+                       ],
+                       "run": "20260928T122530576Z-eb27c96a",
+                       "sourceCommit": "55009dc5432fc710130bddd27a2b42839a82e600",
+                       "pack": "Prepared 1.20.1 Forge client"
                    },
                    {
                        "image":  "ttc-low-confidence.jpg",
@@ -284,6 +305,48 @@
                        "run":  "20260908T120437Z-gallery-02",
                        "sourceCommit":  "0c07e64bf00cfd408936d3f1029d74288e167a52",
                        "capturedAt":  "2026-09-08T12:16:31.964179Z"
+                   },
+                   {
+                       "image": "crafting-status-chance-output.jpg",
+                       "source": "chance-output-tooltip.png",
+                       "sha256": "b5fb9cc938cc8dc8b994f208b56d82088439ee56ff840bd2ffce1e5b5a86a685",
+                       "crop": [
+                           800,
+                           175,
+                           1380,
+                           635
+                       ],
+                       "run": "20260928T113739069Z-3200eccb",
+                       "sourceCommit": "55009dc5432fc710130bddd27a2b42839a82e600",
+                       "pack": "Prepared 1.20.1 Forge client"
+                   },
+                   {
+                       "image": "crafting-status-chance-output-row.jpg",
+                       "source": "chance-output-40-outstanding.png",
+                       "sha256": "e293003dae1d841873b16ce3cbaeaca10f528ff74263af14093cfc70bab53c10",
+                       "crop": [
+                           805,
+                           180,
+                           950,
+                           200
+                       ],
+                       "run": "20260928T113739069Z-3200eccb",
+                       "sourceCommit": "55009dc5432fc710130bddd27a2b42839a82e600",
+                       "pack": "Prepared 1.20.1 Forge client"
+                   },
+                   {
+                       "image": "crafting-status-no-channel.jpg",
+                       "source": "no-channel-en-us.png",
+                       "sha256": "fd3bf02d69e10cba2baba43c6cfa7544c2f7d6aa5c783fa1fb4333ca7ad8556f",
+                       "crop": [
+                           780,
+                           180,
+                           1330,
+                           560
+                       ],
+                       "run": "20260928T121326679Z-ceba73a4",
+                       "sourceCommit": "55009dc5432fc710130bddd27a2b42839a82e600",
+                       "pack": "Prepared 1.20.1 Forge client"
                    }
                ],
     "guideQuality":  75

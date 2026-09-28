@@ -22,7 +22,8 @@ public final class CraftingRowState {
     }
 
     public static boolean isWidthLimited(String key) {
-        return key.equals("text.ae2craftingtime.plan.recurrent")
+        return key.equals("text.ae2craftingtime.chance_output")
+                || key.equals("text.ae2craftingtime.plan.recurrent")
                 || key.equals("text.ae2craftingtime.plan.stored_variant")
                 || key.equals("text.ae2craftingtime.status.amounts");
     }

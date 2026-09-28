@@ -98,13 +98,13 @@ class TtcTextTest {
 
     @ParameterizedTest
     @CsvSource({"en_us, Recurrent", "uk_ua, Циклічне"})
-    void recurrencePreservesNativeAmountAndUsesBoldRedLocalizedText(String locale, String label) throws IOException {
+    void recurrencePreservesNativeAmountAndUsesNormalRedLocalizedText(String locale, String label) throws IOException {
         var amount = "1.25 M mB";
         var component = TtcText.recurrent(amount);
         var contents = (TranslatableContents) component.getContents();
         assertEquals("text.ae2craftingtime.plan.recurrent", contents.getKey());
         assertEquals(List.of(amount), List.of(contents.getArgs()));
-        assertTrue(component.getStyle().isBold());
+        assertFalse(component.getStyle().isBold());
         assertEquals(TextColor.fromLegacyFormat(ChatFormatting.RED), component.getStyle().getColor());
         assertTrue(com.ctux.ae2craftingtime.core.CraftingRowState.isBadge(contents.getKey()));
         var hint = (TranslatableContents) TtcText.recurrentHint().getContents();
@@ -166,6 +166,14 @@ class TtcTextTest {
         }
     }
 
+    @Test
+    void chanceOutputUsesNormalRedForRowAndTooltipHeading() {
+        var label = TtcText.chanceOutput();
+        assertFalse(label.getStyle().isBold());
+        assertEquals(TextColor.fromLegacyFormat(ChatFormatting.RED), label.getStyle().getColor());
+        assertEquals(label, TtcText.chanceOutputTooltip(40, 5000, 0).get(0));
+    }
+
     @ParameterizedTest
     @CsvSource({"en_us, NO_PROVIDER, No provider", "uk_ua, NO_PROVIDER, Без провайдера",
             "en_us, NO_POWER, No power", "uk_ua, NO_POWER, Немає енергії",
@@ -173,11 +181,11 @@ class TtcTextTest {
             "en_us, NO_TARGET, No target", "uk_ua, NO_TARGET, Немає приймача",
             "en_us, INPUT_BLOCKED, Input blocked", "uk_ua, INPUT_BLOCKED, Вхід заблоковано",
             "en_us, LOCKED, Locked", "uk_ua, LOCKED, Заблоковано"})
-    void blockerHasBoldWarningStyleAndTranslatedAdvice(String locale,
+    void blockerHasNormalWarningStyleAndTranslatedAdvice(String locale,
             com.ctux.ae2craftingtime.core.CraftingBlockReason reason, String expected) throws IOException {
         var lines = TtcText.blockReasonTooltip(reason);
         assertEquals(3, lines.size());
-        assertTrue(lines.get(0).getStyle().isBold());
+        assertFalse(lines.get(0).getStyle().isBold());
         assertEquals(TextColor.fromLegacyFormat(ChatFormatting.RED), lines.get(0).getStyle().getColor());
         try (var reader = new InputStreamReader(getClass().getResourceAsStream(
                 "/assets/ae2craftingtime/lang/" + locale + ".json"), StandardCharsets.UTF_8)) {

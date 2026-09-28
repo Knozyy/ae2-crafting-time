@@ -61,13 +61,13 @@ Scope: shared red warning presentation ([#496](https://github.com/cTux/ae2-craft
 
 Planning: [PR #498](https://github.com/cTux/ae2-crafting-time/pull/498); merging the plan does not implement the style change.
 
-Use the existing red warning presentation, such as `NO PROVIDER`: bold Minecraft
+Use the existing red warning presentation, such as `NO PROVIDER`: normal-weight Minecraft
 red (`0xFF5555`) text with a shadow and the same compact, rounded dark background
 behind the complete `Recurrent: <amount>` line. Match its padding and opacity.
 The background belongs to the status label, not the whole table row; retain
 AE2's native missing-row tint and hover treatment.
 
-Use the same bold red text for the tooltip's `Recurrent: <amount>` line. Keep
+Use the same normal-weight red text for the tooltip's `Recurrent: <amount>` line. Keep
 the normal tooltip panel background and ordinary explanation text. Both locales
 must fit the existing cells with their formatted amounts and units. Apply this
 style without requiring learned timing samples and in every TTC sort mode.
@@ -103,7 +103,7 @@ preserve its missing-amount comparator.
 | R5 | Replan, menu replacement, another network, cancellation, disconnect, and late packets cannot show an old diagnosis. Dedicated single-client sessions and recipient/menu/revision boundary tests verify isolation. |
 | R6 | Both locales, all four targets, all TTC sort modes, no-sample plans, and quantities/units remain correct. Long text stays within the existing table layout. |
 | R7 | Craftability, calculation results, timing data, saved data, and optional separate screens are unchanged. Missing or rejected diagnostic data leaves the native plan usable. |
-| R8 (planned, #496) | Recurrent uses the existing bold red warning text, shadow, and compact dark badge in the plan row, with matching bold red tooltip text. Amounts, units, explanation, native row tint, tooltip panel, and other statuses retain their existing presentation. Both locales and all four targets preserve layout, all TTC sort modes, and no-sample behavior. Clearing the diagnosis or disabling the mod removes the Recurrent text and badge together. |
+| R8 (planned, #496) | Recurrent uses the existing normal-weight red warning text, shadow, and compact dark badge in the plan row, with matching normal-weight red tooltip text. Amounts, units, explanation, native row tint, tooltip panel, and other statuses retain their existing presentation. Both locales and all four targets preserve layout, all TTC sort modes, and no-sample behavior. Clearing the diagnosis or disabling the mod removes the Recurrent text and badge together. |
 
 Verify both locales through translation/component checks. Runtime smoke uses
 English only under the [current smoke policy](../automated-ui-testing/spec.md#smoke-policy);

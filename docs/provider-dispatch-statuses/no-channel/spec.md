@@ -23,7 +23,7 @@ when the server has direct evidence for that cause.
 
 ## Player behavior
 
-- **NC-01:** Show bold red `NO CHANNEL` for positive scheduled work after a
+- **NC-01:** Show normal-weight red `NO CHANNEL` for positive scheduled work after a
   real failed dispatch proves that the provider is powered, its network has
   finished booting, and its channel requirement is unmet. Before the first
   dispatch this replaces `Waiting`, including when no timing samples exist.

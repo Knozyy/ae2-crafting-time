@@ -20,7 +20,7 @@ CPU cannot return its remaining contents to writable ME storage.
   failure from drive fill percentages or a stationary craft.
 - Show the status only when the row has stored items and no active or scheduled
   work. Keep AE2's existing red title warning unchanged.
-- Render bold red `NO SPACE` / `Немає місця`.
+- Render normal-weight red `NO SPACE` / `Немає місця`.
 - Add these tooltip lines:
   - `The ME network can't accept this item.`
   - `Free space in storage cells or add more storage.`

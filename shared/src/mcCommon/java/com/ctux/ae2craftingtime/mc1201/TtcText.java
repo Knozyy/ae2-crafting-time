@@ -32,7 +32,7 @@ public final class TtcText {
 
     public static MutableComponent recurrent(Object... arguments) {
         return TtcComponents.text("text.ae2craftingtime.plan.recurrent", arguments)
-                .withStyle(style -> style.withColor(ChatFormatting.RED).withBold(true));
+                .withStyle(style -> style.withColor(ChatFormatting.RED).withBold(false));
     }
 
     public static MutableComponent recurrentHint() {
@@ -64,7 +64,7 @@ public final class TtcText {
 
     public static MutableComponent chanceOutput() {
         return TtcComponents.text("text.ae2craftingtime.chance_output")
-                .withStyle(style -> style.withColor(TextColor.fromRgb(0xFF5555)).withBold(true));
+                .withStyle(style -> style.withColor(TextColor.fromRgb(0xFF5555)).withBold(false));
     }
 
     public static List<Component> chanceOutputTooltip(long activeAmount, long chanceBasisPoints,
@@ -103,7 +103,7 @@ public final class TtcText {
     public static MutableComponent blockReason(CraftingBlockReason reason) {
         return TtcComponents.text("text.ae2craftingtime." + reason.name().toLowerCase(Locale.ROOT))
                 .withStyle(style -> style.withColor(TextColor.fromRgb(
-                        ClientOptionsRuntime.current().color(ClientConfig.Color.DELAYED))).withBold(true));
+                        ClientOptionsRuntime.current().color(ClientConfig.Color.DELAYED))).withBold(false));
     }
 
     public static List<Component> blockReasonTooltip(CraftingBlockReason reason) {

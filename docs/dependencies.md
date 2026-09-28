@@ -14,6 +14,10 @@ detector needs one direct Pattern Provider target, one matching live recipe,
 and an encoded secondary output with a verified probability. Other machines,
 loaders, ambiguous recipes, and mixed producers keep the normal delayed
 diagnostic; Crafting Time does not infer chance from missing output alone.
+The Forge TestDriver has a focused `chance-output-status` case with the pinned
+Mekanism graph; it exercises a real provider dispatch and controlled partial
+return, then one powered native sawmill operation without an exact random-yield
+assertion.
 
 On Fabric 1.20.1, Mod Menu 7.2.2 or newer can open AE2 Crafting Time's
 options screen from the mod list. Mod Menu is optional: the game and the local

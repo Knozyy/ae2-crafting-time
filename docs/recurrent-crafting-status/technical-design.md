@@ -104,7 +104,7 @@ the label; re-enabling may use only the still-current summary's evidence.
 ### Planned shared warning presentation (#496)
 
 Implement [R8](spec.md#acceptance-criteria) through the existing text and badge
-paths. `TtcText.recurrent` owns the bold red component shared by the plan row
+paths. `TtcText.recurrent` owns the normal-weight red component shared by the plan row
 and tooltip. Add only `text.ae2craftingtime.plan.recurrent` to
 `CraftingRowState.isBadge`'s existing key set. Keep the explanation key out.
 
@@ -116,7 +116,7 @@ component width, two-pixel padding, shadow, and `TtcBadge.fillRoundedRect` with
 resolved source-set wiring during implementation. No new renderer or per-target
 badge policy is needed.
 
-Badge drawing is a table-rendering concern. The tooltip receives the same bold
+Badge drawing is a table-rendering concern. The tooltip receives the same normal-weight
 red component through `CraftConfirmTableRendererMixin`, using its existing
 panel background. Preserve the supplied amount argument and plain explanation.
 The existing recurrence/enabled/positive-missing guards still control whether
@@ -127,10 +127,10 @@ Keep Recurrent outside TTC color interpolation and provider-warning highlight
 eligibility. Its shared badge membership changes only presentation. Preserve
 AE2's missing-row background and the behavior of other badge keys.
 
-Update `TtcTextTest`'s normal-weight/non-badge expectations to bold red/badge
+Update `TtcTextTest`'s normal-weight/non-badge expectations to normal-weight red/badge
 membership while retaining both locales and formatted-amount assertions. The
 existing `recurrent-plan` driver and `scripts/ui-smoke-groups.json` currently
-call the style checkpoint `red-normal`; update them together to verify bold red
+call the style checkpoint `red-warning-style`; update them together to verify normal-weight red
 text and an actual containing badge. Retain row/tooltip screenshots and compare
 with an existing red warning, including the 26.1.2 renderer path. A component
 assertion alone does not prove the background was drawn or the text fits.

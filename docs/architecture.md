@@ -80,7 +80,7 @@ batches.
 Missing-provider diagnostics record actual empty pattern-provider lookups per
 CPU. Before sending a status snapshot, the server rechecks those exact patterns
 and removes restored providers. A combined output stays blocked if any of its
-scheduled patterns still lacks a provider. The client shows bold red
+scheduled patterns still lacks a provider. The client shows normal-weight red
 `NO PROVIDER` only for pending work and the matching menu/CPU context.
 This state is runtime-only and clears with the job, disable, or sample reload.
 See the [specification](no-provider-status/spec.md),

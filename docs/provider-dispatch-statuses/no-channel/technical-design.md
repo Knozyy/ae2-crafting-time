@@ -127,7 +127,7 @@ capability check and existing mismatched-peer policy. No saved-data migration.
 
 Add badge recognition in `CraftingRowState` and include NO CHANNEL in
 `TtcText.isDispatchReason` for the mixed-row qualifier. Generic
-`TtcText.blockReason` already supplies the bold red style and translation key.
+`TtcText.blockReason` supplies the normal-weight red style and translation key.
 The shared `CraftingStatusTableRendererMixin` and both
 `CraftingCPUScreenMixin` variants must retain pending-only rendering and
 unknown-time sorting. Add the exact three locale keys from the spec in

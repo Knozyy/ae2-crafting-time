@@ -16,10 +16,10 @@ absent.
 
 ## Presentation
 
-- Show eligible craft-plan and crafting-status rows as bold TTC text on a
+- Show eligible craft-plan and crafting-status rows as TTC text on a
   translucent black rounded badge with two pixels of padding and text shadow.
 - Color known row estimates from green through yellow to red relative to the
-  current list. Show delayed rows as bold red `DELAYED`.
+  current list. Show delayed rows as normal-weight red `DELAYED`.
 - Show the craft-plan total below the CPU details. Show the running-job total in
   the status title only when it fits without overlapping the title.
 - Start both standard AE2 screens in `TTC: longest first` order. The toolbar

@@ -369,6 +369,13 @@ class TestDriverCoreTest {
     }
 
     @Test
+    void chanceOutputScenarioUsesTheNativeDriver() {
+        assertTrue(AddonCpuFixture.supports("chance-output-status"));
+        assertNull(AddonCpuFixture.create("chance-output-status"));
+        assertEquals(DriverResult.CHANCE_OUTPUT_CHECKS, DriverResult.requiredChecks("chance-output-status"));
+    }
+
+    @Test
     void cpuListScenarioRequiresEveryA5AndA7RuntimeTransition() {
         assertTrue(StandardAe2Scenario.supports("cpu-list-total-ttc"));
         assertEquals(CpuListTtcScenario.CHECKS, DriverResult.requiredChecks("cpu-list-total-ttc"));

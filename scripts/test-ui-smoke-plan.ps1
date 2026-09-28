@@ -175,6 +175,15 @@ try {
     Reject { & $planner -Interactive -Repository $temp -Target '1.20.1-forge' -Scenario standard-ae2 } 'Interactive group must fail'
     $manual = & $planner -Repository $temp -Target '1.20.1-forge' -Scenario delayed-status
     Assert ($manual.mode -eq 'manual' -and $manual.targets.Count -eq 1) 'Manual scope must remain labelled manual'
+    $chance = & $planner -Repository $temp -Target '1.20.1-forge' -Scenario chance-output-status
+    Assert ($chance.targets.Count -eq 1 -and $chance.targets[0].graphs[0].projectId[0] -eq 'IiATswDj' `
+        -and !$chance.targets[0].graphs[0].baseOnly) 'Chance fixture must select the pinned Mekanism graph'
+    Reject { & $planner -Repository $temp -Target '1.20.1-forge' -Scenario chance-output-status -BaseOnly } `
+        'Chance fixture must reject base-only graph'
+    Reject { & $planner -Repository $temp -Target '1.20.1-forge' -Scenario chance-output-status -ProjectId rxYaglEe } `
+        'Chance fixture must reject graphs without Mekanism'
+    Reject { & $planner -Repository $temp -Target '1.20.1-forge' -Scenario chance-output-status -Latest } `
+        'Chance fixture must reject unpinned latest recipe graph'
     $full = & $planner -Repository $temp
     $forgeGraphs = @($full.targets[0].graphs)
     $advancedGraphs = @($full.targets.graphs | Where-Object id -eq 'rxYaglEe')

@@ -2,6 +2,10 @@
 
 Lifecycle: see scope status and evidence for [original chapter](spec.md) and [Recurrent book/wiki delivery](spec.md#recurrent-addition-412).
 
+The Recurrent image instructions below describe the earlier bold-red version.
+After the normal-weight red status rule in #471, that image was removed from the
+book and Wiki. A fresh Recurrent capture awaits the separate fixture fix in #602.
+
 ## Decision
 
 Extend the shared guide to one parent and twelve child Markdown pages. Derive

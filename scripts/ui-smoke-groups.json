@@ -5,12 +5,16 @@
     "provider-dispatch-statuses": ["no-channel-status", "no-target-status", "input-blocked-status", "locked-status"]
   },
   "focusedCases": {
-    "1.20.1-forge": ["delayed-resource-icons", "appmek-resource-icons"],
+    "1.20.1-forge": ["delayed-resource-icons", "appmek-resource-icons", "chance-output-status"],
     "1.20.1-fabric": ["delayed-resource-icons"],
     "1.21.1-neoforge": ["delayed-resource-icons", "appmek-resource-icons"],
     "26.1.2-neoforge": ["delayed-resource-icons"]
   },
   "cases": {
+    "chance-output-status": {
+      "checks": ["real-job", "sawmill-recipe", "zero-return", "partial-return", "chance-label", "tooltip", "layout", "cancelled", "real-random-recipe"],
+      "screenshots": ["chance-output-zero-return.png", "chance-output-40-outstanding.png", "chance-output-tooltip.png", "chance-output-cancelled.png"]
+    },
     "delayed-resource-icons": {
       "checks": ["server-identity", "real-dispatch", "delayed-plates", "native-locate", "lifecycle", "capture-integrity", "cleanup", "fixture-only"],
       "screenshots": [],

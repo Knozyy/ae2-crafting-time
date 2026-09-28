@@ -112,7 +112,7 @@ Crafting Plan before submission, not a running CPU's Crafting Status.
 
 That normal-weight description matches the shipped presentation. The planned
 [#496 warning style](../../recurrent-crafting-status/spec.md#planned-warning-style-496)
-replaces it with bold red text and the existing compact dark badge. Update both
+replaces it with normal-weight red text and the existing compact dark badge. Update both
 locale pages, wiki source, and the shared screenshot when that UI change has
 reviewed runtime evidence; a planning-docs merge must not claim it is shipped.
 

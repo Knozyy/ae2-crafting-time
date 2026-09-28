@@ -35,6 +35,8 @@ public record DriverResult(
     public static final List<String> RESOURCE_FIXTURE_CHECKS = List.of(
             "server-identity", "real-dispatch", "delayed-plates", "native-locate",
             "lifecycle", "capture-integrity", "cleanup", "fixture-only");
+    public static final List<String> CHANCE_OUTPUT_CHECKS = List.of("real-job", "sawmill-recipe", "zero-return",
+            "partial-return", "chance-label", "tooltip", "layout", "cancelled", "real-random-recipe");
 
     public DriverResult {
         adapters = Map.copyOf(adapters);
@@ -64,6 +66,7 @@ public record DriverResult(
                 : scenario.equals(NoSpaceScenario.SCENARIO) ? NoSpaceScenario.CHECKS
                 : scenario.equals(NoPowerScenario.SCENARIO) ? NoPowerScenario.CHECKS
                 : scenario.equals(NoProviderScenario.SCENARIO) ? NoProviderScenario.CHECKS
+                : scenario.equals("chance-output-status") ? CHANCE_OUTPUT_CHECKS
                 : ProviderDispatchStatusScenario.supports(scenario) ? ProviderDispatchStatusScenario.checks(scenario)
                 : scenario.equals(CraftingTreeScenario.SCENARIO) ? CRAFTING_TREE_CHECKS
                 : scenario.equals(RequesterFixture.SCENARIO) ? ME_REQUESTER_CHECKS

@@ -25,7 +25,7 @@ supply the energy required to dispatch the next batch of that pattern.
 - Allow the status while earlier batches of the same output remain active.
 - Refresh through the existing one-second status request cycle and remove a
   resolved status within one refresh.
-- Render bold red `NO POWER` / `Немає енергії`.
+- Render normal-weight red `NO POWER` / `Немає енергії`.
 - Add these tooltip lines:
   - `The ME network can't power the next pattern dispatch.`
   - `Increase network power generation or stored energy.`

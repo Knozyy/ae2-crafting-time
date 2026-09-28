@@ -49,6 +49,10 @@ final class ServerDriverPlatform {
         return appeng.api.crafting.PatternDetailsHelper.encodeProcessingPattern(
                 inputs, java.util.List.of(output));
     }
+    static net.minecraft.world.item.ItemStack processingPattern(java.util.List<appeng.api.stacks.GenericStack> inputs,
+            java.util.List<appeng.api.stacks.GenericStack> outputs) {
+        return appeng.api.crafting.PatternDetailsHelper.encodeProcessingPattern(inputs, outputs);
+    }
     static appeng.api.crafting.IPatternDetails substitutePattern(appeng.api.crafting.IPatternDetails original,
             appeng.api.stacks.AEKey substitute) {
         return new appeng.api.crafting.IPatternDetails() {

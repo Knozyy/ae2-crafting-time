@@ -47,6 +47,7 @@ public final class CraftPlanScenario {
     private final NoProviderScenario noProvider;
     private final NoPowerScenario noPower;
     private final ProviderDispatchStatusScenario providerDispatchStatus;
+    private final ChanceOutputScenario chanceOutput;
     private final DriverOptions options;
     private final String driverFile;
     private final AddonCpuFixture<?> baseFixture;
@@ -92,11 +93,12 @@ public final class CraftPlanScenario {
         noProvider = NoProviderScenario.SCENARIO.equals(options.scenario()) ? new NoProviderScenario() : null;
         providerDispatchStatus = ProviderDispatchStatusScenario.supports(options.scenario())
                 ? new ProviderDispatchStatusScenario(options.scenario()) : null;
+        chanceOutput = ChanceOutputScenario.SCENARIO.equals(options.scenario()) ? new ChanceOutputScenario() : null;
         this.options = options;
         this.driverFile = driverFile;
         resourceFixture = DriverOptions.isResourceScenario(options.scenario()) ? new ResourceFixtureClient(minecraft, options, driverFile) : null;
         baseFixture = resourceFixture == null && standard == null && noSpace == null && noProvider == null && noPower == null
-                && providerDispatchStatus == null ? DriverPlatform.baseFixture(options.scenario()) : null;
+                && providerDispatchStatus == null && chanceOutput == null ? DriverPlatform.baseFixture(options.scenario()) : null;
         addonFixture = resourceFixture == null ? AddonCpuFixture.create(options.scenario()) : null;
         wirelessFixture = WirelessTerminalFixture.create(options.scenario());
         requesterFixture = RequesterFixture.supports(options.scenario()) ? RequesterFixture.create() : null;
@@ -115,7 +117,7 @@ public final class CraftPlanScenario {
         }
         var timeout = options.scenario().equals("standard-status-controls") ? Duration.ofMinutes(30)
                 : state == ScenarioState.STARTING || standard != null || noSpace != null || noProvider != null
-                || noPower != null || providerDispatchStatus != null ? START_TIMEOUT : STEP_TIMEOUT;
+                || noPower != null || providerDispatchStatus != null || chanceOutput != null ? START_TIMEOUT : STEP_TIMEOUT;
         if (elapsed().compareTo(timeout) > 0) {
             fail("timeout", state.name(), currentScreen());
             return;
@@ -207,7 +209,8 @@ public final class CraftPlanScenario {
         if (!marker.disposableWorldId().equals(options.world())) {
             throw new IllegalArgumentException("fixture world ID mismatch");
         }
-        if (standard != null || noSpace != null || noProvider != null || noPower != null || providerDispatchStatus != null) {
+        if (standard != null || noSpace != null || noProvider != null || noPower != null
+                || providerDispatchStatus != null || chanceOutput != null) {
             advance(ScenarioState.WORLD_READY);
             return;
         }
@@ -232,6 +235,13 @@ public final class CraftPlanScenario {
     }
 
     private void openTerminal() throws IOException {
+        if (chanceOutput != null) {
+            if (chanceOutput.tick(minecraft, marker, checks, this::screenshotUnchecked, this::moveMouse)) {
+                advance(ScenarioState.TERMINAL_OPEN);
+                writePass();
+            }
+            return;
+        }
         if (standard != null) {
             try {
                 var complete = standard.tick(minecraft, marker, checks, this::screenshotUnchecked, this::moveMouse);

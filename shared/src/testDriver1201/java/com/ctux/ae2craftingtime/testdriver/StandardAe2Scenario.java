@@ -802,12 +802,12 @@ final class StandardAe2Scenario {
             if (connectedDedicated && RecurrentPlanControl.state().recurrent() != (label != null)) return false;
             if (connectedDedicated && label != null
                     && !label.arguments().equals(List.of(Long.toString(RecurrentCampaign.REQUESTED_AMOUNT)))) return false;
-            if (label != null && (!label.bold() || !java.util.Objects.equals(label.color(), 0xFF5555)
+            if (label != null && (label.bold() || !java.util.Objects.equals(label.color(), 0xFF5555)
                     || label.arguments().size() != 1 || !label.rendered().endsWith(label.arguments().get(0))))
                 throw new IllegalStateException("Recurrence label lost its red warning style or amount");
             if (label != null && snapshot.text().stream()
                     .filter(text -> text.key().equals("text.ae2craftingtime.plan.recurrent"))
-                    .noneMatch(text -> text.bold() && java.util.Objects.equals(text.color(), 0xFF5555)
+                    .noneMatch(text -> !text.bold() && java.util.Objects.equals(text.color(), 0xFF5555)
                             && text.bounds() != null && snapshot.badges().stream()
                             .anyMatch(badge -> text.bounds().inside(badge))))
                 throw new IllegalStateException("Recurrent label has no containing rendered badge");
@@ -839,7 +839,7 @@ final class StandardAe2Scenario {
             var recurrent = snapshot.tooltip().stream().anyMatch(text -> text.key().equals("text.ae2craftingtime.plan.recurrent_hint"));
             if (recurrenceHover != recurrent) return false;
             if (recurrenceHover && snapshot.tooltip().stream().noneMatch(text ->
-                    text.key().equals("text.ae2craftingtime.plan.recurrent") && text.bold()
+                    text.key().equals("text.ae2craftingtime.plan.recurrent") && !text.bold()
                             && java.util.Objects.equals(text.color(), 0xFF5555))) return false;
             if (connectedDedicated) {
                 var action = recurrenceCaptured ? "captured" : recurrenceRejoined ? "rejoined" : recurrenceSwapped ? "swapped" : recurrenceVisited ? "grid" : "initial";
@@ -1528,8 +1528,8 @@ final class StandardAe2Scenario {
             stonePlateObserved |= hasPlate("minecraft:stone", 4);
             var warning = rowText(snapshot, "minecraft:stone", "text.ae2craftingtime.ttc_delayed");
             if (warning == null) return false;
-            if (!warning.bold() || !Integer.valueOf(0xFF5555).equals(warning.color())) {
-                throw new IllegalStateException("DELAYED must be bold red on the active stone row");
+            if (warning.bold() || !Integer.valueOf(0xFF5555).equals(warning.color())) {
+                throw new IllegalStateException("DELAYED must be normal red on the active stone row");
             }
             validateLayout(snapshot);
             if (!checks.get("delayed")) {

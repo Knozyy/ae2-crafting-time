@@ -161,6 +161,7 @@ if (!$Changed) {
     foreach ($id in $ids) {
         if ($Target -and $id -cne $Target) { continue }
         if ($Scenario -ceq 'appmek-resource-icons' -and $id -notin @('1.20.1-forge','1.21.1-neoforge')) { continue }
+        if ($Scenario -ceq 'chance-output-status' -and $id -cne '1.20.1-forge') { continue }
         $selection[$id] = @($Scenario)
     }
 }
@@ -207,14 +208,20 @@ foreach ($id in $ids) {
     }
     if ($primary.Count) {
         $primaryProjects = @($ProjectId)
-        $appmekResource = 'appmek-resource-icons' -cin $primary
-        if ($appmekResource -and !$ProjectId) {
+        $needsAppMekGraph = @($primary | Where-Object { $_ -cin @('appmek-resource-icons', 'chance-output-status') }).Count -gt 0
+        if ('chance-output-status' -cin $primary -and $Latest) {
+            throw 'Chance output fixture requires the pinned compatible Mekanism recipe graph'
+        }
+        if ($needsAppMekGraph -and $ProjectId -and 'IiATswDj' -cnotin $ProjectId) {
+            throw 'Chance/AppMek fixture requires Applied Mekanistics project IiATswDj'
+        }
+        if ($needsAppMekGraph -and !$ProjectId) {
             $primaryProjects = @($client.projects | Where-Object mod_id -CEQ 'appmek' | ForEach-Object project_id)
             if ($primaryProjects.Count -ne 1) { throw "AppMek resource fixture has no unique project graph for $id" }
         }
-        if ($BaseOnly -and $appmekResource) { throw 'AppMek resource fixture cannot use the base-only graph' }
+        if ($BaseOnly -and $needsAppMekGraph) { throw 'Chance/AppMek fixture cannot use the base-only graph' }
         $statusCompatible = 'standard-status-controls' -cin $primary
-        $primaryBaseOnly = $BaseOnly -or (!$appmekResource -and !$statusCompatible -and !$ProjectId -and
+        $primaryBaseOnly = $BaseOnly -or (!$needsAppMekGraph -and !$statusCompatible -and !$ProjectId -and
             !@($primary | Where-Object { $_ -cin $directCases }).Count)
         $graphs = @([pscustomobject]@{ id='primary'; profile=$(if ($Latest) { 'latest' } else { 'compatible' }); cases=$primary
             projectId=$primaryProjects; baseOnly=$primaryBaseOnly; reason='Requested dependency graph'

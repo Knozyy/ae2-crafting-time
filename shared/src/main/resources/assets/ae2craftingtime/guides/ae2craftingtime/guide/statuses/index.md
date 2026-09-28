@@ -21,6 +21,7 @@ stats resets use green ✓, locate hints and throughput use aqua →, and the
 suggestions heading uses gold ⚙. Turn Show emoji off for text-only labels.
 Gold ⚠ also marks low confidence and an expired provider link. The confidence
 wording appears only when the estimate is unreliable.
+Red status labels and their tooltip headings use normal-weight text.
 
 1. [No space](no-space.md)
 2. [No provider](no-provider.md)

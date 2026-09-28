@@ -6,7 +6,7 @@ param(
     [string]$CasesBase64,
     [switch]$Latest,
     [switch]$Interactive,
-    [ValidatePattern("^(suite|standard-ae2|provider-dispatch-statuses|recurrent-plan|stored-variant-plan|delayed-resource-icons|appmek-resource-icons|standard-plan-controls|badge-background|standard-status-controls|waiting-status|running-status|delayed-status|craft-lifecycle|cpu-list-total-ttc|craft-plan|no-space-status|no-provider-status|no-power-status|no-channel-status|no-target-status|input-blocked-status|locked-status|crafting-tree-screen|merequester-screen|crafting-tree-read-recovery|merequester-read-recovery|ae2networkanalyser-screen|aeinfinitybooster-terminal|ae2importexportcard-terminal|ae2(?:wcwt|wtlib)-terminal|[a-z0-9]+(?:-[a-z0-9]+)*-cpu)$")][string]$Scenario = "craft-plan",
+    [ValidatePattern("^(suite|standard-ae2|provider-dispatch-statuses|recurrent-plan|stored-variant-plan|delayed-resource-icons|appmek-resource-icons|chance-output-status|standard-plan-controls|badge-background|standard-status-controls|waiting-status|running-status|delayed-status|craft-lifecycle|cpu-list-total-ttc|craft-plan|no-space-status|no-provider-status|no-power-status|no-channel-status|no-target-status|input-blocked-status|locked-status|crafting-tree-screen|merequester-screen|crafting-tree-read-recovery|merequester-read-recovery|ae2networkanalyser-screen|aeinfinitybooster-terminal|ae2importexportcard-terminal|ae2(?:wcwt|wtlib)-terminal|[a-z0-9]+(?:-[a-z0-9]+)*-cpu)$")][string]$Scenario = "craft-plan",
     [string[]]$ProjectId,
     [string]$ArchiveRoot,
     [string]$ReportDirectory,

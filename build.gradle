@@ -164,7 +164,7 @@ tasks.register('checkGuideResources') {
 
                 def enImages = enLinks.findAll { it.endsWith('.png') || it.endsWith('.jpg') }
                 def ukImages = ukLinks.findAll { it.endsWith('.png') || it.endsWith('.jpg') }
-                check(enImages.size() == (page == 'chance-output.md' ? 0 : 1) && enImages == ukImages,
+                check(enImages.size() == (page == 'recurrent.md' ? 0 : 1) && enImages == ukImages,
                         "Status image differs by locale: $page")
                 enImages.each { image ->
                     check(image.endsWith('.png'), "Status image must be PNG: $image")

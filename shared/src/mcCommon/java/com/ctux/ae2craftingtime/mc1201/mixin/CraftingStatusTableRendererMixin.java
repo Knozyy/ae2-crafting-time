@@ -219,7 +219,7 @@ public abstract class CraftingStatusTableRendererMixin {
     private static Component delayedTtcLine() {
         return TtcText.ttcDelayed()
                 .withStyle(style -> style.withColor(TextColor.fromRgb(
-                        ClientOptionsRuntime.current().color(ClientConfig.Color.DELAYED))).withBold(true));
+                        ClientOptionsRuntime.current().color(ClientConfig.Color.DELAYED))).withBold(false));
     }
 
     private static boolean ae2craftingtime$noSpace(CraftingStatusEntry entry) {

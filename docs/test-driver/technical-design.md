@@ -254,6 +254,25 @@ the actual target invocation with named and intermediary descriptors; retain
 required injection counts and verify both mappings. A successful compile does
 not establish that the packaged native client can load the mixin.
 
+## Chance-output status fixture
+
+The Forge-only focused leaf uses the existing `CraftPlanScenario` driver and
+result contract. A disposable native CPU, drive and Pattern Provider form one
+grid. The provider's push direction points down to a registered Mekanism
+Precision Sawmill. A two-output AE2 processing pattern promises sawdust
+from one acacia hanging sign alongside the guaranteed two-plank output,
+matching the pinned live sawing recipe. Only successful provider dispatch can
+produce the server's 50% chance evidence. Clear accepted inputs in the
+unpowered machine until the CPU waits for all 100 sawdust, then return the
+200 planks and 60 sawdust through the provider return inventory. The native
+status row must
+show 100 promised before return and 40 outstanding afterward. UI observation
+checks the red label, tooltip and badge bounds; cancellation clears the label.
+The sawmill stays unpowered during status arithmetic. After cancellation, keep
+one previously dispatched sign in its input slot, fill its energy container,
+and poll its native output slots for two planks and zero or one sawdust. Record
+the observed roll without asserting an exact random yield.
+
 ## No-provider status scenario
 
 `NoProviderScenario` owns an isolated native CPU, drive, energy cell, and two

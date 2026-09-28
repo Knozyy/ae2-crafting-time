@@ -1,8 +1,11 @@
 # Screenshot gallery
 
-These crops come from UI smoke testing on **Project Infinity 0.0.52.0**
-(Minecraft 1.20.1, Forge 47.4.20, AE2 15.4.10). JPEGs focus on the relevant
-rows, estimates, or complete tooltip. Click an image to inspect its native size.
+The original crops came from UI smoke testing on **Project Infinity 0.0.52.0**
+(Minecraft 1.20.1, Forge 47.4.20, AE2 15.4.10). Red status crops were refreshed
+from the prepared 1.20.1 Forge client at commit `55009dc5432fc710130bddd27a2b42839a82e600`
+with AE2 15.4.10 and Forge 47.4.23. [sources.json](sources.json) records each
+source capture's SHA-256, archived run, and physical crop. JPEGs focus on the
+relevant rows or complete tooltip. Click an image to inspect its native size.
 The book uses larger exports of the same crops to keep its text readable.
 
 ## Crafting plan
@@ -15,16 +18,18 @@ With timing history available:
 
 ![Two-stage crafting plan with recipe and total estimates](crafting-plan-estimate.jpg)
 
-The Recurrent guide page uses a reviewed crop from the real native Crafting
-Plan `recurrent-plan` fixture. Its retained source is archive
+The older Recurrent crop came from the real native Crafting Plan
+`recurrent-plan` fixture. Its retained source is archive
 `20260922T201206763Z-d068777e`, path
 `1.20.1-forge/primary/run/evidence/recurrent-plan/recurrent-plan-tooltip.png`,
 commit `9afdd6b0228c5c77eef2bae6ecb149cb799fde8d`, SHA-256
 `ea72093d72a5eb66cccadfe2ea657da53f0a78509b43374e451fa5420ffd6c70`, and
 physical crop `[740, 110, 1400, 360]`, exported at 1600 pixels wide. The
-scenario passed its Recurrent row, bold red badge, tooltip, quantity, and layout
-checks; the crop was manually reviewed for the exact label and complete
-explanation. The wider campaign stopped on the unrelated CrazyAE2Addons CPU
+scenario passed its Recurrent row, badge, tooltip, quantity, and layout
+checks. That historical image is no longer embedded in the book or Wiki because
+red status text now has normal weight. A current Recurrent capture is blocked by
+the separate [#602](https://github.com/cTux/ae2-crafting-time/issues/602) fixture failure.
+The wider historical campaign stopped on the unrelated CrazyAE2Addons CPU
 fixture failure tracked in [#507](https://github.com/cTux/ae2-crafting-time/issues/507);
 it is not treated as a full-campaign pass.
 
@@ -33,6 +38,15 @@ When only part of the plan has history, the total covers the known work:
 ![Crafting plan with one known and one unknown recipe](crafting-plan-partial-estimate.jpg)
 
 ## Live crafting status
+
+Chance output after a controlled 100 promised / 60 returned / 40 outstanding
+Mekanism sawmill job, shown with Badge background off as in the reported view:
+
+![Normal-weight red Chance output row](crafting-status-chance-output-row.jpg)
+
+Hovering it shows the verified 50% recipe chance and the outstanding amount:
+
+![Chance output diagnosis and recovery advice](crafting-status-chance-output.jpg)
 
 Active recipes, scheduled work, and the remaining-time estimate:
 
@@ -59,6 +73,10 @@ When scheduled work loses its connected Pattern Provider or encoded pattern,
 the row shows NO PROVIDER and explains how to resume the job:
 
 ![NO PROVIDER warning and provider recovery advice](crafting-status-no-provider.jpg)
+
+When Pattern Providers for a scheduled recipe lack a channel:
+
+![NO CHANNEL warning and channel-route advice](crafting-status-no-channel.jpg)
 
 When the ME network can't supply enough energy to dispatch the next pattern,
 the row shows NO POWER and suggests increasing generation or stored energy:

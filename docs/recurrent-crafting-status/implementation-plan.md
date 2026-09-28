@@ -11,14 +11,14 @@ This documentation merge leaves #496 open for implementation and verification.
 
 ## Planned #496 implementation
 
-1. Change `TtcText.recurrent` to bold Minecraft red and include its translation
+1. Change `TtcText.recurrent` to normal-weight Minecraft red and include its translation
    key in the existing `CraftingRowState.isBadge` set. Reuse both target-specific
    `AbstractTableRendererMixin` paths and `TtcBadge` geometry/background. Retain
    the existing recurrence guards, amount formatting, tooltip explanation, native
    row tint, and tooltip panel. Keep detection and provider highlights unchanged.
 2. Update the existing localized component test's normal-weight/non-badge
    expectations. Update the `recurrent-plan` driver and smoke-group checkpoint
-   from `red-normal` to `red-warning-style`, checking bold red text and a rendered
+   from `red-normal` to `red-warning-style`, checking normal-weight red text and a rendered
    containing badge. Keep ordinary/seeded/alternative controls, all sort modes,
    no-sample cases, quantity/unit comparisons, replan/disable cleanup, and layout
    checks. Add coverage only for changed decisions.

@@ -53,7 +53,7 @@ delayed label only when the server has direct evidence for the new status.
   existing Waiting, DELAYED, TTC, and No data yet rules. Priority combines
   independently proven patterns in one row; it must not select a cause from
   disagreeing alternatives for one pattern.
-- **PD-08:** Render the three labels bold red in the existing compact badge.
+- **PD-08:** Render the three labels normal-weight red in the existing compact badge.
   They have no TTC color and sort as unknown time. Keep existing total-TTC
   behavior; this feature does not promise an ETA for a blocked job.
 - **PD-09:** Clear an observation on the next successful, unknown, or changed
