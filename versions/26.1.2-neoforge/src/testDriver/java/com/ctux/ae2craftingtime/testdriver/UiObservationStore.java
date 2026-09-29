@@ -4,6 +4,7 @@ import appeng.client.gui.AEBaseScreen;
 import com.ctux.ae2craftingtime.testdriver.mixin.ContainerScreenAccessor;
 import appeng.client.gui.me.crafting.CraftConfirmScreen;
 import appeng.menu.me.crafting.CraftingPlanSummaryEntry;
+import appeng.menu.me.crafting.CraftingStatusEntry;
 import com.ctux.ae2craftingtime.mc1201.TtcSortButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -85,6 +86,13 @@ public final class UiObservationStore {
         }
     }
 
+    public static void description(CraftingStatusEntry entry, List<Component> components) {
+        if (active != null) {
+            // The production RETURN injector may append the warning after this observer runs.
+            active.descriptions.put(entry.getWhat().getId().toString(), components);
+        }
+    }
+
     public static void tooltip(CraftingPlanSummaryEntry entry, List<Component> components) {
         if (active != null) {
             active.tooltip.clear();
@@ -92,12 +100,14 @@ public final class UiObservationStore {
         }
     }
 
-    public static void text(GuiGraphicsExtractor graphics, Component component, int x, int y, int width, int height) {
+    public static void text(GuiGraphicsExtractor graphics, Component component, int x, int y, int width, int height,
+            int color) {
         if (active == null) {
             return;
         }
         var observed = CraftingTreeScenario.nodeTtcText(active.screen,
                 observed(component, transformed(graphics, x, y, x + width, y + height)));
+        if (recordStatusText(component.getString(), observed.bounds(), color)) return;
         if (active.screen.endsWith("CraftConfirmScreen") && observed.bounds().y() == active.gui.y() + 178
                 && observed.rendered().startsWith("TTC:")) {
             active.text.add(new UiSnapshot.ObservedText("text.ae2craftingtime.total_ttc", observed.rendered(),
@@ -219,11 +229,35 @@ public final class UiObservationStore {
     }
 
     static List<UiSnapshot.ObservedText> rowDescription(
-            Map<String, List<UiSnapshot.ObservedText>> descriptions,
+            Map<String, List<Component>> descriptions,
             List<UiSnapshot.ObservedText> text, String outputId, Rect cell) {
         var recorded = descriptions.get(outputId);
-        if (recorded != null && !recorded.isEmpty()) return recorded;
+        if (recorded != null && !recorded.isEmpty()) return observed(recorded, null);
         return text.stream().filter(value -> value.bounds() != null && value.bounds().inside(cell)).toList();
+    }
+
+    private static boolean recordStatusText(String rendered, Rect bounds, int color) {
+        if (!(active.screen.endsWith("CraftingCPUScreen") || active.screen.endsWith("CraftingStatusScreen"))
+                || !statusRowText(bounds)) return false;
+        var semantic = active.descriptions.values().stream().map(lines -> observed(lines, null)).flatMap(List::stream)
+                .filter(line -> line.key().startsWith("text.ae2craftingtime.")
+                        && (line.rendered().equals(rendered) || rendered.equals("⚠ " + line.rendered())))
+                .findFirst().orElse(null);
+        if (semantic == null) return false;
+        if (active.text.stream().noneMatch(line -> line.key().equals(semantic.key()) && bounds.equals(line.bounds()))) {
+            active.text.add(new UiSnapshot.ObservedText(semantic.key(), rendered, semantic.arguments(),
+                    bounds, semantic.color() == null ? color & 0xffffff : semantic.color(), semantic.bold()));
+        }
+        return true;
+    }
+
+    private static boolean statusRowText(Rect bounds) {
+        for (int index = 0; index < 18; index++) {
+            var cell = new Rect(active.gui.x() + TABLE_X + index % 3 * PITCH_X,
+                    active.gui.y() + TABLE_Y + index / 3 * PITCH_Y, CELL_WIDTH, CELL_HEIGHT);
+            if (bounds.inside(cell)) return true;
+        }
+        return false;
     }
 
     public static void treeNode(GuiGraphicsExtractor graphics, AEKey key, int x, int y) {
@@ -253,25 +287,40 @@ public final class UiObservationStore {
     static List<UiSnapshot.ObservedText> observed(List<Component> components, Rect bounds) {
         var result = new ArrayList<UiSnapshot.ObservedText>();
         for (var component : components) {
-            result.add(observed(component, bounds));
-            result.addAll(observed(component.getSiblings(), bounds));
+            collect(component, bounds, result, true);
         }
         return List.copyOf(result);
     }
 
+    private static void collect(Component component, Rect bounds, List<UiSnapshot.ObservedText> result,
+            boolean includeSiblings) {
+        result.add(observed(component, bounds));
+        var wrapped = !(component.getContents() instanceof TranslatableContents)
+                && com.ctux.ae2craftingtime.mc1201.TtcComponents.translation(component) != null;
+        var siblings = component.getSiblings();
+        if (includeSiblings || wrapped) {
+            for (int i = wrapped ? 2 : 0; i < siblings.size(); i++) {
+                collect(siblings.get(i), bounds, result, false);
+            }
+        }
+    }
+
     private static UiSnapshot.ObservedText observed(Component component, Rect bounds) {
-        if (component.getContents() instanceof TranslatableContents translated) {
+        var translated = com.ctux.ae2craftingtime.mc1201.TtcComponents.translation(component);
+        if (translated != null) {
+            var style = component.getContents() instanceof TranslatableContents
+                    ? component.getStyle() : component.getSiblings().get(1).getStyle().applyTo(component.getStyle());
             var arguments = new ArrayList<String>();
             for (var argument : translated.getArgs()) {
-                if (argument instanceof Component nested
-                        && nested.getContents() instanceof TranslatableContents nestedTranslation) {
-                    arguments.add(nestedTranslation.getKey());
+                if (argument instanceof Component nested) {
+                    var nestedTranslation = com.ctux.ae2craftingtime.mc1201.TtcComponents.translation(nested);
+                    arguments.add(nestedTranslation == null ? nested.getString() : nestedTranslation.getKey());
                 } else {
-                    arguments.add(argument instanceof Component nested ? nested.getString() : String.valueOf(argument));
+                    arguments.add(String.valueOf(argument));
                 }
             }
             return new UiSnapshot.ObservedText(translated.getKey(), component.getString(), arguments, bounds,
-                    component.getStyle().getColor() == null ? null : component.getStyle().getColor().getValue(), component.getStyle().isBold());
+                    style.getColor() == null ? null : style.getColor().getValue(), style.isBold());
         }
         return new UiSnapshot.ObservedText("literal", component.getString(), List.of(), bounds);
     }
@@ -323,7 +372,7 @@ public final class UiObservationStore {
         private final double guiScale;
         private int scroll;
         private final List<PendingRow> rows = new ArrayList<>();
-        private final Map<String, List<UiSnapshot.ObservedText>> descriptions = new LinkedHashMap<>();
+        private final Map<String, List<Component>> descriptions = new LinkedHashMap<>();
         private final Map<Object, List<UiSnapshot.ObservedText>> planDescriptions = new java.util.IdentityHashMap<>();
         private final List<UiSnapshot.ObservedText> text = new ArrayList<>();
         private final List<Rect> badges = new ArrayList<>();

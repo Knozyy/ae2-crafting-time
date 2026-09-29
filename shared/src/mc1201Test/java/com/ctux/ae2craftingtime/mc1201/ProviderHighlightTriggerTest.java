@@ -90,6 +90,53 @@ class ProviderHighlightTriggerTest {
     }
 
     @Test
+    void chatBeamSharesEdgeExpiryAndRowReplacesItsProvenance() {
+        var shared = new BlockPos(1, 2, 3);
+        var other = new BlockPos(4, 5, 6);
+        ProviderHighlightClient.show("net", DIMENSION, List.of(shared, other), 15, IRON, true);
+        ProviderHighlightClient.show("other", DIMENSION, List.of(shared), 15, "minecraft:gold_ingot", true);
+        assertEquals(List.of(new ProviderHighlightClient.RenderBeam(DIMENSION, shared),
+                new ProviderHighlightClient.RenderBeam(DIMENSION, other)), ProviderHighlightClient.renderBeams());
+        var expires = ProviderHighlightClient.live().expiresAtMillis();
+        ProviderHighlightClient.trimPositions(DIMENSION, pos -> !pos.equals(other));
+        assertEquals(List.of(new ProviderHighlightClient.RenderBeam(DIMENSION, shared)),
+                ProviderHighlightClient.renderBeams());
+        assertEquals(expires, ProviderHighlightClient.live().expiresAtMillis());
+        ProviderHighlightClient.show("net", DIMENSION, List.of(shared), 15, IRON, false);
+        assertEquals(List.of(new ProviderHighlightClient.RenderBeam(DIMENSION, shared)),
+                ProviderHighlightClient.renderBeams());
+        ProviderHighlightClient.clearEdgeFor("other", "minecraft:gold_ingot");
+        assertTrue(ProviderHighlightClient.renderBeams().isEmpty());
+        assertEquals(1, ProviderHighlightClient.liveEdges().size());
+        ProviderHighlightClient.onSessionEnd();
+        assertTrue(ProviderHighlightClient.renderBeams().isEmpty());
+    }
+
+    @Test
+    void chatProvenanceRoundTripsWithoutPlateOrIcon() {
+        var chat = new Highlight("net", DIMENSION, List.of(new BlockPos(1, 2, 3)), IRON,
+                15, false, null, true);
+        var buffer = new FriendlyByteBuf(Unpooled.buffer());
+        ProviderHighlightCodec.write(buffer, chat);
+        assertEquals(chat, ProviderHighlightCodec.read(buffer));
+        assertEquals(0, buffer.readableBytes());
+    }
+
+    @Test
+    void rowReplacesOnlyItsVerifiedNetworkEdge() {
+        var target = new BlockPos(1, 2, 3);
+        var unrelated = new BlockPos(4, 5, 6);
+        ProviderHighlightClient.show("net", DIMENSION, List.of(target), 15, IRON, true);
+        ProviderHighlightClient.show("other", DIMENSION, List.of(unrelated), 15, IRON, true);
+
+        ProviderHighlightClient.show("net", DIMENSION, List.of(target), 15, IRON, false);
+
+        assertEquals(List.of(new ProviderHighlightClient.RenderBeam(DIMENSION, unrelated)),
+                ProviderHighlightClient.renderBeams());
+        assertEquals(2, ProviderHighlightClient.liveEdges().size());
+    }
+
+    @Test
     void manualShowNeverCreatesOrExtendsPlate() {
         ProviderHighlightClient.showPlate(DIMENSION, List.of(new BlockPos(1, 2, 3)), IRON);
         assertNull(ProviderHighlightClient.live());

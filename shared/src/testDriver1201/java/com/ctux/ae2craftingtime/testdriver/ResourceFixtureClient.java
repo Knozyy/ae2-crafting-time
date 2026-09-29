@@ -49,6 +49,11 @@ final class ResourceFixtureClient {
     private long sequence;
     private boolean reconnectRequested;
     private boolean locateSent;
+    private long foreignLocateFrame = -1;
+    private boolean chatLocateSent;
+    private long chatBeamStartedAt;
+    private long chatExpiryMillis;
+    private boolean beamSeenAfterRecovery;
     private boolean terminalInteractionSent;
     private boolean statusButtonSent;
     private boolean cpuSelectionSent;
@@ -85,6 +90,15 @@ final class ResourceFixtureClient {
         for (var check : List.of("server-identity", "real-dispatch", "delayed-plates", "native-locate",
                 "lifecycle", "capture-integrity", "cleanup")) checks.put(check, false);
         checks.put(options.resourceFixtureOnly() ? "fixture-only" : "typed-keys", false);
+        if (cases.contains(ResourceFixtureControl.Case.ITEM)) {
+            for (var check : List.of("roof", "foreign-owner", "chat-beam"))
+                checks.put(check, false);
+            if (options.connectedDedicated()) checks.put("reconnect-clears-beam", false);
+            else {
+                checks.put("beam-recovery", false);
+                checks.put("beam-expiry", false);
+            }
+        }
     }
 
     void tick() {
@@ -277,11 +291,63 @@ final class ResourceFixtureClient {
         var plates = ProviderHighlightClient.plates();
         if (!plates.stream().map(ProviderHighlightClient.Plate::outputId).collect(java.util.stream.Collectors.toSet())
                 .equals(expected)) return false;
-        if (manualLocate && !driveNativeLocate(jobs.get(0).get("resource").getAsString())) return false;
+        if (manualLocate && foreignLocateFrame < 0
+                && !driveNativeLocate(jobs.get(0).get("resource").getAsString())) return false;
         if (manualLocate && ProviderHighlightClient.liveEdges().isEmpty()) return false;
+        if (manualLocate && resourceCase != ResourceFixtureControl.Case.ITEM
+                && !ProviderHighlightClient.renderBeams().isEmpty())
+            throw new IllegalStateException("row locate created a beam during shared-provider case");
+        if (manualLocate && resourceCase == ResourceFixtureControl.Case.ITEM && checkpoint.equals("held")) {
+            var provider = providerPosition();
+            if (provider == null || !minecraft.level.getBlockState(provider.above(2))
+                    .is(net.minecraft.world.level.block.Blocks.STONE)) return false;
+            checks.put("roof", true);
+            if (foreignLocateFrame < 0) {
+                if (!ProviderHighlightClient.renderBeams().isEmpty())
+                    throw new IllegalStateException("row locate created a beam");
+                var foreign = jobs.get(0).get("foreignRecord").getAsString();
+                if (foreign.isBlank()) return false;
+                minecraft.gui.getChat().clearMessages(false);
+                minecraft.options.chatVisibility().set(net.minecraft.world.entity.player.ChatVisiblity.FULL);
+                minecraft.player.connection.sendCommand("ae2craftingtime locate " + foreign);
+                foreignLocateFrame = TestDriverRuntime.renderedFrames;
+                return false;
+            }
+            if (!chatLocateSent) {
+                var messages = ((com.ctux.ae2craftingtime.testdriver.mixin.ChatComponentAccessor)
+                        minecraft.gui.getChat()).ae2craftingtime_test_driver$messages();
+                var expired = net.minecraft.network.chat.Component.translatable(
+                        "text.ae2craftingtime.chat.delayed.expired").getString();
+                if (messages.stream().noneMatch(message -> expired.equals(message.content().getString()))) return false;
+                if (!ProviderHighlightClient.renderBeams().isEmpty())
+                    throw new IllegalStateException("foreign owner created a beam");
+                checks.put("foreign-owner", true);
+                var owned = jobs.get(0).get("chatRecord").getAsString();
+                if (owned.isBlank()) return false;
+                minecraft.player.connection.sendCommand("ae2craftingtime locate " + owned);
+                chatLocateSent = true;
+                return false;
+            }
+            if (ProviderHighlightClient.renderBeams().stream()
+                    .noneMatch(beam -> beam.position().equals(provider))) return false;
+            var chatEdge = ProviderHighlightClient.liveEdges().stream()
+                    .filter(edge -> edge.chatLocate() && edge.positions().contains(provider)).findFirst().orElse(null);
+            if (chatEdge == null) return false;
+            if (chatBeamStartedAt == 0) {
+                chatBeamStartedAt = System.currentTimeMillis();
+                chatExpiryMillis = chatEdge.expiresAtMillis();
+            }
+            checks.put("chat-beam", true);
+        }
         if (!manualLocate && options.connectedDedicated() && !checkpoint.equals("chunk-reloaded")
                 && !ProviderHighlightClient.liveEdges().isEmpty()) {
             throw new IllegalStateException("rainbow locate state survived reconnect");
+        }
+        if (!manualLocate && options.connectedDedicated() && resourceCase == ResourceFixtureControl.Case.ITEM
+                && checkpoint.equals("rejoined")) {
+            if (!ProviderHighlightClient.renderBeams().isEmpty())
+                throw new IllegalStateException("chat beam survived reconnect");
+            checks.put("reconnect-clears-beam", true);
         }
         if (!worldViewReady()) return false;
         if (!renderPlatesConverged(expected, jobs.size())) return false;
@@ -335,6 +401,24 @@ final class ResourceFixtureClient {
             return false;
         }
         if (!ProviderHighlightClient.plates().isEmpty() || !ProviderHighlightClient.renderPlates().isEmpty()) return false;
+        if (!options.connectedDedicated() && resourceCase == ResourceFixtureControl.Case.ITEM && checkpoint.equals("completed")
+                && chatBeamStartedAt > 0) {
+            var beam = !ProviderHighlightClient.renderBeams().isEmpty();
+            var rainbow = ProviderHighlightClient.liveEdges().stream().anyMatch(
+                    edge -> edge.chatLocate() && edge.expiresAtMillis() == chatExpiryMillis);
+            if (!beamSeenAfterRecovery) {
+                if (!beam || !rainbow) throw new IllegalStateException("chat rainbow/beam ended before plate recovery");
+                beamSeenAfterRecovery = true;
+                checks.put("beam-recovery", true);
+            }
+            if (System.currentTimeMillis() < chatExpiryMillis) {
+                if (!beam || !rainbow) throw new IllegalStateException("chat pair expired at different times");
+                if (!capture(resourceCase, "recovery-pair", jobs)) return false;
+                return false;
+            }
+            if (beam || rainbow) return false;
+            checks.put("beam-expiry", true);
+        }
         if (options.connectedDedicated() && !ProviderHighlightClient.liveEdges().isEmpty()) {
             throw new IllegalStateException("connected rainbow locate state survived reconnect");
         }
@@ -370,6 +454,14 @@ final class ResourceFixtureClient {
                 && position.equals(rendered.get(0).position().getX() + "," + rendered.get(0).position().getY()
                         + "," + rendered.get(0).position().getZ())
                 && ProviderHighlightClient.plates().size() == plateCount;
+    }
+
+    private BlockPos providerPosition() {
+        var providers = JsonParser.parseString(state.providers()).getAsJsonArray();
+        if (providers.size() != 1) return null;
+        var xyz = providers.get(0).getAsString().split(",", -1);
+        if (xyz.length != 3) return null;
+        return new BlockPos(Integer.parseInt(xyz[0]), Integer.parseInt(xyz[1]), Integer.parseInt(xyz[2]));
     }
 
     private boolean typedKeysConverged(List<com.google.gson.JsonObject> jobs) {
@@ -411,7 +503,7 @@ final class ResourceFixtureClient {
     private boolean driveNativeLocate(String outputId) {
         if (!ProviderHighlightClient.liveEdges().isEmpty()) {
             if (minecraft.screen != null) minecraft.setScreen(null);
-            return worldViewReady();
+            return captureViewReady(minecraft.screen != null, minecraft.getOverlay() != null);
         }
         if (locateSent) return false;
         if (minecraft.screen == null) {
@@ -470,7 +562,7 @@ final class ResourceFixtureClient {
                     org.lwjgl.opengl.GL11.glGetString(org.lwjgl.opengl.GL11.GL_RENDERER), System.nanoTime(), jobs.stream()
                             .map(value -> (com.google.gson.JsonElement) value.deepCopy()).toList(),
                     List.copyOf(ProviderHighlightClient.plates()), List.copyOf(ProviderHighlightClient.renderPlates()),
-                    observedRainbows);
+                    observedRainbows, List.copyOf(ProviderHighlightClient.renderBeams()));
             captureWrite = DriverScreenshots.capture(minecraft, path);
         }
         return false;
@@ -488,6 +580,8 @@ final class ResourceFixtureClient {
                 "screen", "world", "plates", capture.plates().stream().map(this::plateEvidence).toList(),
                 "renderPlates", capture.renderPlates().stream().map(this::renderPlateEvidence).toList(),
                 "rainbows", capture.rainbows().stream().map(ResourceFixtureClient::rainbowEvidence).toList(),
+                "beams", capture.beams().stream().map(beam -> Map.of(
+                        "dimensionId", beam.dimensionId(), "position", positionEvidence(beam.position()))).toList(),
                 "serverJobs", capture.jobs(), "frame", capture.frame(),
                 "observedAtMillis", capture.observedAtMillis()));
         checks.put("capture-integrity", true);
@@ -513,7 +607,8 @@ final class ResourceFixtureClient {
     private static Map<String, Object> rainbowEvidence(ProviderHighlightClient.Highlight highlight) {
         return Map.of("networkId", highlight.networkId(), "dimensionId", highlight.dimensionId(),
                 "positions", highlight.positions().stream().map(ResourceFixtureClient::positionEvidence).toList(),
-                "outputId", highlight.outputId(), "expiresAtMillis", highlight.expiresAtMillis());
+                "outputId", highlight.outputId(), "expiresAtMillis", highlight.expiresAtMillis(),
+                "chatLocate", highlight.chatLocate());
     }
 
     private static Map<String, Integer> positionEvidence(BlockPos position) {
@@ -714,6 +809,11 @@ final class ResourceFixtureClient {
 
     private void resetLocateState() {
         locateSent = false;
+        foreignLocateFrame = -1;
+        chatLocateSent = false;
+        chatBeamStartedAt = 0;
+        chatExpiryMillis = 0;
+        beamSeenAfterRecovery = false;
         terminalInteractionSent = false;
         statusButtonSent = false;
         cpuSelectionSent = false;
@@ -862,5 +962,5 @@ final class ResourceFixtureClient {
     private record Capture(String name, Path path, UiSnapshot semantic, int width, int height,
             long frame, long observedAtMillis, String renderer, long started, List<com.google.gson.JsonElement> jobs,
             List<ProviderHighlightClient.Plate> plates, List<ProviderHighlightClient.RenderPlate> renderPlates,
-            List<ProviderHighlightClient.Highlight> rainbows) { }
+            List<ProviderHighlightClient.Highlight> rainbows, List<ProviderHighlightClient.RenderBeam> beams) { }
 }

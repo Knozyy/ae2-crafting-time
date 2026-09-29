@@ -73,6 +73,7 @@ function Get-ResourceFixtureScreenshots([string[]]$FixtureCases, [bool]$Connecte
         $checkpoints = @('held') + $(if ($Production -and $fixtureCase -ceq 'WATER') { @('resource-reloaded','chunk-reloaded') }) +
             $(if ($Connected) { @('rejoined') } else { @() }) +
             $(if ($fixtureCase.EndsWith('OVERLAP')) { @('winner-promoted') } else { @() }) +
+            $(if ($fixtureCase -ceq 'ITEM' -and !$Connected) { @('recovery-pair') } else { @() }) +
             @('completed','cancel-held') +
             $(if ($Production -and $fixtureCase.EndsWith('OVERLAP')) { @('provider-removed') }) + @('cancelled')
         foreach ($checkpoint in $checkpoints) { "$prefix-$checkpoint.png" }

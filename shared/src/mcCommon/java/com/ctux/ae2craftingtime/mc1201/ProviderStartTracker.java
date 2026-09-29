@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -28,6 +29,28 @@ import net.minecraft.core.BlockPos;
  */
 public final class ProviderStartTracker {
     private static final Map<Object, Map<ProfileKey, Set<IPatternDetails>>> PATTERNS = new IdentityHashMap<>();
+    private static final Map<Object, Map<ProfileKey, Set<BlockPos>>> CANDIDATES = new IdentityHashMap<>();
+
+    public static void noteCandidate(IGrid grid, Object scope, String networkId, IPatternDetails pattern,
+            ICraftingProvider provider) {
+        if (grid == null || scope == null || pattern == null || provider == null) return;
+        List<IGridNode> nodes = new ArrayList<>();
+        try {
+            grid.getNodes().forEach(nodes::add);
+        } catch (Exception ignored) {
+            return;
+        }
+        var position = locate(nodes, provider);
+        if (position.isEmpty()) return;
+        var scoped = CANDIDATES.computeIfAbsent(scope, ignored -> new HashMap<>());
+        for (var output : pattern.getOutputs()) {
+            if (output != null && output.what() != null) {
+                var key = new ProfileKey(networkId, output.what().getId().toString());
+                var positions = scoped.computeIfAbsent(key, ignored -> new LinkedHashSet<>());
+                if (positions.size() < PacketLimits.MAX_HIGHLIGHT_POSITIONS) positions.add(position.get());
+            }
+        }
+    }
 
     public static void noteDispatch(Object scope, IPatternDetails pattern, Map<ProfileKey, Long> outputs) {
         if (scope == null || pattern == null || outputs == null || outputs.isEmpty()) {
@@ -44,11 +67,13 @@ public final class ProviderStartTracker {
     public static void clear(Object scope) {
         if (scope != null) {
             PATTERNS.remove(scope);
+            CANDIDATES.remove(scope);
         }
     }
 
     public static void clearAll() {
         PATTERNS.clear();
+        CANDIDATES.clear();
     }
 
     /** Selects a typed output from retained live patterns without guessing from its id. */
@@ -86,11 +111,11 @@ public final class ProviderStartTracker {
         }
         var scoped = PATTERNS.get(scope);
         if (scoped == null) {
-            return List.of();
+            return candidatePositions(scope, key);
         }
         var patterns = scoped.getOrDefault(key, Set.of());
         if (patterns.isEmpty()) {
-            return List.of();
+            return candidatePositions(scope, key);
         }
         CraftingService crafting;
         List<IGridNode> nodes;
@@ -99,7 +124,7 @@ public final class ProviderStartTracker {
             nodes = new ArrayList<>();
             grid.getNodes().forEach(nodes::add);
         } catch (Exception ignored) {
-            return List.of();
+            return candidatePositions(scope, key);
         }
         var positions = new ArrayList<BlockPos>();
         for (var pattern : patterns) {
@@ -126,7 +151,11 @@ public final class ProviderStartTracker {
                 }
             }
         }
-        return List.copyOf(positions);
+        return positions.isEmpty() ? candidatePositions(scope, key) : List.copyOf(positions);
+    }
+
+    private static List<BlockPos> candidatePositions(Object scope, ProfileKey key) {
+        return List.copyOf(CANDIDATES.getOrDefault(scope, Map.of()).getOrDefault(key, Set.of()));
     }
 
     private static Optional<BlockPos> locate(List<IGridNode> nodes, ICraftingProvider provider) {

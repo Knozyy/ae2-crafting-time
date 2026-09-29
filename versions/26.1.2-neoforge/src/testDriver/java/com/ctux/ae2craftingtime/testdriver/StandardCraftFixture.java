@@ -134,6 +134,9 @@ final class StandardCraftFixture {
                 DispatchStatusFixture.place(player, terminal.east(12), "pattern_provider");
                 level.setBlockAndUpdate(terminal.east(12).below(), Blocks.FURNACE.defaultBlockState());
             }
+            if (resourceFixture) {
+                level.setBlockAndUpdate(terminal.east(4).above(2), Blocks.STONE.defaultBlockState());
+            }
             if (holdFinalOutput) {
                 var obstruction = terminal.east(8).north();
                 PartHelper.setPart(level, obstruction, null, player, AEParts.GLASS_CABLE.item(appeng.api.util.AEColor.TRANSPARENT));

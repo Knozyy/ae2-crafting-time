@@ -17,7 +17,17 @@ import net.minecraft.core.BlockPos;
  */
 public final class ProviderLocateRecords {
     public record LocateRecord(UUID id, UUID owner, String dimensionId, List<BlockPos> positions,
-            String outputName, String outputId, long createdTick) {
+            String outputName, String outputId, long createdTick, String networkId) {
+        public LocateRecord {
+            networkId = networkId == null ? "" : networkId;
+            dimensionId = dimensionId == null ? "" : dimensionId;
+            positions = positions == null ? List.of() : List.copyOf(positions);
+            outputId = outputId == null ? "" : outputId;
+        }
+        public LocateRecord(UUID id, UUID owner, String dimensionId, List<BlockPos> positions,
+                String outputName, String outputId, long createdTick) {
+            this(id, owner, dimensionId, positions, outputName, outputId, createdTick, "");
+        }
     }
 
     public record ProviderStartInfo(UUID owner, String dimensionId, List<BlockPos> positions, String outputName,
@@ -55,13 +65,21 @@ public final class ProviderLocateRecords {
 
     private static final int MAX_RECORDS = 256;
     private static final int MAX_STARTS = 512;
+    private record StartIdentity(ProfileKey key, UUID owner) {
+    }
     private static final LinkedHashMap<UUID, LocateRecord> RECORDS = new LinkedHashMap<>();
-    private static final LinkedHashMap<ProfileKey, ProviderStartInfo> STARTS = new LinkedHashMap<>();
+    private static final LinkedHashMap<StartIdentity, ProviderStartInfo> STARTS = new LinkedHashMap<>();
 
     public static synchronized LocateRecord create(UUID owner, String dimensionId, List<BlockPos> positions,
             String outputName, String outputId, long tick) {
+        return create(owner, dimensionId, positions, outputName, outputId, tick, "");
+    }
+
+    public static synchronized LocateRecord create(UUID owner, String dimensionId, List<BlockPos> positions,
+            String outputName, String outputId, long tick, String networkId) {
         var record = new LocateRecord(UUID.randomUUID(), owner, dimensionId, positions == null ? List.of()
-                : List.copyOf(positions), outputName, outputId == null ? "" : outputId, tick);
+                : List.copyOf(positions), outputName, outputId == null ? "" : outputId, tick,
+                networkId == null ? "" : networkId);
         RECORDS.put(record.id(), record);
         evictEldest(RECORDS, MAX_RECORDS);
         return record;
@@ -79,9 +97,9 @@ public final class ProviderLocateRecords {
      * Records who started an output and where its providers were last seen.
      * Empty positions or a missing owner never erase a previously stored
      * entry; only strictly newer information replaces it. Dimension is merged
-     * the same way so identical outputs on different networks/dimensions stay
-     * independent via their distinct profile keys while the stored dimension
-     * survives for resync.
+     * the same way. The profile key and owner jointly identify a start, so
+     * separate players with an identical output on one grid keep their own
+     * targets through save and reload.
      */
     public static synchronized void noteStart(ProfileKey key, UUID owner, List<BlockPos> positions,
             String outputName) {
@@ -95,11 +113,11 @@ public final class ProviderLocateRecords {
 
     public static synchronized void noteStart(ProfileKey key, UUID owner, String dimensionId,
             List<BlockPos> positions, String outputName, AEKey displayKey) {
-        if (key == null) {
+        if (key == null || owner == null) {
             return;
         }
-        var previous = STARTS.get(key);
-        var mergedOwner = owner != null ? owner : previous == null ? null : previous.owner();
+        var identity = new StartIdentity(key, owner);
+        var previous = STARTS.get(identity);
         var mergedDimension = dimensionId != null && !dimensionId.isBlank() ? dimensionId
                 : previous == null ? "" : previous.dimensionId();
         List<BlockPos> mergedPositions;
@@ -112,16 +130,25 @@ public final class ProviderLocateRecords {
         }
         var mergedName = outputName != null && !outputName.isBlank() ? outputName
                 : previous == null ? key.outputId() : previous.outputName();
-        if (mergedOwner == null && mergedPositions.isEmpty()) {
-            return;
-        }
-        STARTS.put(key, new ProviderStartInfo(mergedOwner, mergedDimension, mergedPositions, mergedName,
+        STARTS.put(identity, new ProviderStartInfo(owner, mergedDimension, mergedPositions, mergedName,
                 displayKey != null ? displayKey : previous == null ? null : previous.displayKey()));
         evictEldest(STARTS, MAX_STARTS);
     }
 
     public static synchronized Optional<ProviderStartInfo> startFor(ProfileKey key) {
-        return key == null ? Optional.empty() : Optional.ofNullable(STARTS.get(key));
+        if (key == null) return Optional.empty();
+        ProviderStartInfo found = null;
+        for (var entry : STARTS.entrySet()) {
+            if (!key.equals(entry.getKey().key())) continue;
+            if (found != null) return Optional.empty();
+            found = entry.getValue();
+        }
+        return Optional.ofNullable(found);
+    }
+
+    public static synchronized Optional<ProviderStartInfo> startFor(ProfileKey key, UUID owner) {
+        return key == null || owner == null ? Optional.empty()
+                : Optional.ofNullable(STARTS.get(new StartIdentity(key, owner)));
     }
 
     /**
@@ -133,16 +160,18 @@ public final class ProviderLocateRecords {
      */
     public static synchronized void replaceStart(ProfileKey key, UUID owner, List<BlockPos> positions,
             String outputName) {
-        if (key == null) {
+        if (key == null || owner == null) {
             return;
         }
-        var previous = STARTS.get(key);
+        var identity = new StartIdentity(key, owner);
+        var previous = STARTS.get(identity);
         var keptDimension = previous == null ? "" : previous.dimensionId();
-        STARTS.put(key, new ProviderStartInfo(owner,
+        STARTS.put(identity, new ProviderStartInfo(owner,
                 keptDimension,
                 positions == null ? List.of() : List.copyOf(positions),
                 outputName == null || outputName.isBlank() ? key.outputId() : outputName,
                 previous == null ? null : previous.displayKey()));
+        if (positions == null || positions.isEmpty()) removeRecordsForKeys(List.of(key), owner);
         evictEldest(STARTS, MAX_STARTS);
     }
 
@@ -153,21 +182,22 @@ public final class ProviderLocateRecords {
 
     public static synchronized void replaceStart(ProfileKey key, UUID owner, String dimensionId,
             List<BlockPos> positions, String outputName, AEKey displayKey) {
-        if (key == null) {
+        if (key == null || owner == null) {
             return;
         }
-        STARTS.put(key, new ProviderStartInfo(owner,
+        STARTS.put(new StartIdentity(key, owner), new ProviderStartInfo(owner,
                 dimensionId == null ? "" : dimensionId,
                 positions == null ? List.of() : List.copyOf(positions),
                 outputName == null || outputName.isBlank() ? key.outputId() : outputName, displayKey));
+        if (positions == null || positions.isEmpty()) removeRecordsForKeys(List.of(key), owner);
         evictEldest(STARTS, MAX_STARTS);
     }
 
     /**
-     * Snapshot for world save. Excludes entries with no positions (broken or
-     * unlocatable): they can never produce a plate, so persisting them would
-     * only resurrect stale red after a reload. In-memory keeps empty to avoid
-     * showing an old box via fallback. Packet bounds still apply to positions
+     * Snapshot for world save. Empty starts are included only while an owned
+     * network-specific chat record needs its captured blocked-warning target.
+     * Invalidated empty starts have already removed their click records.
+     * Packet bounds still apply to positions
      * per entry, but active fallbacks are never silently dropped to fit a cap:
      * the cap only bounds persistence size.
      */
@@ -175,8 +205,13 @@ public final class ProviderLocateRecords {
         var snapshot = new ArrayList<StoredStart>();
         for (var entry : STARTS.entrySet()) {
             var info = entry.getValue();
-            if (info.owner() != null && info.positions() != null && !info.positions().isEmpty()) {
-                snapshot.add(new StoredStart(entry.getKey(), info.owner(), info.dimensionId(), info.positions(),
+            var hasOwnedClick = info.owner() != null && RECORDS.values().stream().anyMatch(record -> record != null
+                    && info.owner().equals(record.owner())
+                    && entry.getKey().key().networkId().equals(record.networkId())
+                    && entry.getKey().key().outputId().equals(record.outputId()));
+            if (info.owner() != null && info.positions() != null
+                    && (!info.positions().isEmpty() || hasOwnedClick)) {
+                snapshot.add(new StoredStart(entry.getKey().key(), info.owner(), info.dimensionId(), info.positions(),
                         info.outputName(), info.displayKey()));
             }
             if (snapshot.size() >= MAX_STARTS) {
@@ -197,16 +232,19 @@ public final class ProviderLocateRecords {
         }
         for (var key : keys) {
             if (key != null) {
-                STARTS.remove(key);
+                STARTS.keySet().removeIf(identity -> key.equals(identity.key()));
             }
         }
     }
 
+    public static synchronized void removeStarts(java.util.Collection<ProfileKey> keys, UUID owner) {
+        if (keys == null || owner == null) return;
+        for (var key : keys) STARTS.remove(new StartIdentity(key, owner));
+    }
+
     /**
-     * All persisted fallbacks owned by the player for the given output id,
-     * across every network. Chat links carry only the output id (no network),
-     * so validation tries each network's fallback and uses the first with
-     * still-valid provider targets instead of the captured record positions.
+     * All owner-bound starts for an output. The locate command filters these
+     * by the click record's verified network before resolving a target.
      */
     public static synchronized List<StoredStart> startsForOutput(UUID owner, String outputId) {
         var matches = new ArrayList<StoredStart>();
@@ -214,7 +252,7 @@ public final class ProviderLocateRecords {
             return List.copyOf(matches);
         }
         for (var entry : STARTS.entrySet()) {
-            var key = entry.getKey();
+            var key = entry.getKey().key();
             var info = entry.getValue();
             if (key == null || info == null || !outputId.equals(key.outputId())
                     || !owner.equals(info.owner())) {
@@ -224,6 +262,15 @@ public final class ProviderLocateRecords {
                     info.outputName(), info.displayKey()));
         }
         return List.copyOf(matches);
+    }
+
+    /** Old click records have no network ID; require a shared saved target. */
+    public static boolean matchesLegacyStart(LocateRecord record, StoredStart start) {
+        return record != null && start != null && record.networkId().isBlank()
+                && record.owner().equals(start.owner()) && record.outputId().equals(start.key().outputId())
+                && (start.dimensionId().isBlank() || record.dimensionId().equals(start.dimensionId()))
+                && !start.positions().isEmpty()
+                && start.positions().stream().anyMatch(record.positions()::contains);
     }
 
     /**
@@ -242,7 +289,7 @@ public final class ProviderLocateRecords {
                     record.positions() == null ? List.of() : List.copyOf(record.positions()),
                     record.outputName() == null ? "" : record.outputName(),
                     record.outputId() == null ? "" : record.outputId(),
-                    record.createdTick()));
+                    record.createdTick(), record.networkId()));
             if (snapshot.size() >= MAX_RECORDS) {
                 break;
             }
@@ -264,7 +311,7 @@ public final class ProviderLocateRecords {
                     record.positions() == null ? List.of() : List.copyOf(record.positions()),
                     record.outputName() == null ? "" : record.outputName(),
                     record.outputId() == null ? "" : record.outputId(),
-                    record.createdTick()));
+                    record.createdTick(), record.networkId()));
             evictEldest(RECORDS, MAX_RECORDS);
         }
     }
@@ -292,19 +339,30 @@ public final class ProviderLocateRecords {
         if (keys == null || keys.isEmpty() || owner == null) {
             return;
         }
-        var outputIds = new java.util.HashSet<String>();
+        var keysToRemove = new java.util.HashSet<ProfileKey>();
         for (var key : keys) {
             if (key != null && key.outputId() != null && !key.outputId().isBlank()) {
-                outputIds.add(key.outputId());
+                keysToRemove.add(key);
             }
         }
-        if (outputIds.isEmpty()) {
+        if (keysToRemove.isEmpty()) {
             return;
         }
         RECORDS.entrySet().removeIf(entry -> {
             var record = entry.getValue();
-            return record != null && owner.equals(record.owner()) && outputIds.contains(record.outputId());
+            return record != null && owner.equals(record.owner()) && matchesAny(record, keysToRemove);
         });
+    }
+
+    public static synchronized void removeRecordsForKeys(java.util.Collection<ProfileKey> keys) {
+        if (keys == null || keys.isEmpty()) return;
+        RECORDS.entrySet().removeIf(entry -> entry.getValue() != null
+                && matchesAny(entry.getValue(), keys));
+    }
+
+    private static boolean matchesAny(LocateRecord record, java.util.Collection<ProfileKey> keys) {
+        return keys.stream().anyMatch(key -> key != null && key.outputId().equals(record.outputId())
+                && (record.networkId().isBlank() || key.networkId().equals(record.networkId())));
     }
 
     public static synchronized void restoreStarts(List<StoredStart> stored) {

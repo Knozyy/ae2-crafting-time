@@ -148,6 +148,10 @@ final class StandardCraftFixture {
                 level.setBlockAndUpdate(terminal.east(offset).below(),
                         (holdFinalOutput ? Blocks.CHEST : Blocks.FURNACE).defaultBlockState());
             }
+            if (resourceFixture) {
+                // Opaque roof over the real provider: the chat beam must remain visible above it.
+                level.setBlockAndUpdate(terminal.east(4).above(2), Blocks.STONE.defaultBlockState());
+            }
             if (cpuListScenario) {
                 DispatchStatusFixture.place(player, terminal.east(12), "pattern_provider");
                 level.setBlockAndUpdate(terminal.east(12).below(), Blocks.FURNACE.defaultBlockState());

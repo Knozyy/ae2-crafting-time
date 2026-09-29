@@ -63,7 +63,8 @@ public abstract class CraftingCpuLogicMixin {
         ae2craftingtime$finishDispatchEvaluation();
         ae2craftingtime$dispatchPattern = pattern;
         ae2craftingtime$dispatchObserver = new ProviderDispatchObserver(
-                ProfilerBridge.networkId(cluster.getGrid()), cluster, pattern, cluster.getLevel().getGameTime());
+                ProfilerBridge.networkId(cluster.getGrid()), cluster.getGrid(),
+                cluster, pattern, cluster.getLevel().getGameTime());
         return pattern;
     }
 
@@ -170,9 +171,7 @@ public abstract class CraftingCpuLogicMixin {
         var server = cluster.getLevel().getServer();
         ProfilerBridge.updateCapacity(cluster, usedSlots, totalSlots, tick);
         IntegrationLog.cpu("ae2craftingtime", "cpu-capacity");
-        DelayedNotificationServer.maybeNotify(cluster, cluster.getGrid(), tick, server);
-        BlockReasonNotifier.maybeNotifyPower(cluster, cluster.getGrid(), tick, server);
-        BlockReasonNotifier.maybeNotifySpace(cluster, cluster.getGrid(), this, server);
+        DelayedNotificationServer.tick(cluster, cluster.getGrid(), this, tick, server);
     }
 
     @Inject(method = "trySubmitJob", at = @At("RETURN"), remap = false)

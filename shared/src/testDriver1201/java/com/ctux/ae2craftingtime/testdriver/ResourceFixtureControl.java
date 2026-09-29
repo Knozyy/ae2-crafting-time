@@ -241,6 +241,7 @@ final class ResourceFixtureControl {
         if (resourceCase == Case.FLUID_OVERLAP || resourceCase == Case.CHEMICAL_OVERLAP) {
             values.add("winner-promoted");
         }
+        if (resourceCase == Case.ITEM && !connected) values.add("recovery-pair");
         values.add("completed");
         values.add("cancel-held");
         if (production && (resourceCase == Case.FLUID_OVERLAP || resourceCase == Case.CHEMICAL_OVERLAP)) {

@@ -2,6 +2,7 @@ package com.ctux.ae2craftingtime.mc1201;
 
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.crafting.ICraftingProvider;
+import appeng.api.networking.IGrid;
 import appeng.api.stacks.KeyCounter;
 import com.ctux.ae2craftingtime.core.ProviderDispatchTracker.Evaluation;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -9,6 +10,7 @@ import java.util.Iterator;
 
 public final class ProviderDispatchObserver {
     private final String networkId;
+    private final IGrid grid;
     private final Object scope;
     private final IPatternDetails pattern;
     private final long tick;
@@ -16,8 +18,9 @@ public final class ProviderDispatchObserver {
     private boolean presenceObserved;
     private boolean completed;
 
-    public ProviderDispatchObserver(String networkId, Object scope, IPatternDetails pattern, long tick) {
+    public ProviderDispatchObserver(String networkId, IGrid grid, Object scope, IPatternDetails pattern, long tick) {
         this.networkId = networkId;
+        this.grid = grid;
         this.scope = scope;
         this.pattern = pattern;
         this.tick = tick;
@@ -44,6 +47,7 @@ public final class ProviderDispatchObserver {
                 var provider = delegate.next();
                 observePresence(true);
                 evaluation.candidate();
+                ProviderStartTracker.noteCandidate(grid, scope, networkId, pattern, provider);
                 return provider;
             }
 

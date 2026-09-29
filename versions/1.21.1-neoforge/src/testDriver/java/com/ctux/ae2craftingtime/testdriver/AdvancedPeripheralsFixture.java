@@ -127,6 +127,12 @@ final class AdvancedPeripheralsFixture extends AddonCpuFixture<AdvancedPeriphera
     }
 
     @Override
+    protected void cleanup(ServerPlayer player, Placement placement) {
+        // The suite is tearing down this grid. AP 0.8.1a cannot enumerate a nonempty job list during node removal.
+        placement.bridge().getJobs().clear();
+    }
+
+    @Override
     protected ICraftingCPU cpu(ServerPlayer player, Placement placement, IGrid grid) {
         return nativeCpu.cpu(player, placement.cpu(), grid);
     }

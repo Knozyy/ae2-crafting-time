@@ -11,7 +11,7 @@ import net.minecraft.core.BlockPos;
 /**
  * Client-side only. Holds independent rainbow edges (network, dimension,
  * block positions, expiry timestamp) for the per-loader render hooks, plus one
- * persistent red plate per delayed identity (network, dimension, output).
+ * persistent red plate per warning identity (network, dimension, output).
  * Edges and plates have independent lifetimes: edges expire after
  * {@link ProviderLocateCommand#HIGHLIGHT_SECONDS} seconds or when their
  * provider breaks; plates persist until the craft ends, is cancelled,
@@ -20,7 +20,7 @@ import net.minecraft.core.BlockPos;
  */
 public final class ProviderHighlightClient {
     public record Highlight(String networkId, String dimensionId, List<BlockPos> positions, String outputId,
-            long expiresAtMillis) {
+            long expiresAtMillis, boolean chatLocate) {
         public Highlight {
             networkId = networkId == null ? "" : networkId;
             positions = positions == null ? List.of() : List.copyOf(positions);
@@ -28,7 +28,12 @@ public final class ProviderHighlightClient {
         }
 
         public Highlight(String dimensionId, List<BlockPos> positions, String outputId, long expiresAtMillis) {
-            this("", dimensionId, positions, outputId, expiresAtMillis);
+            this("", dimensionId, positions, outputId, expiresAtMillis, false);
+        }
+
+        public Highlight(String networkId, String dimensionId, List<BlockPos> positions, String outputId,
+                long expiresAtMillis) {
+            this(networkId, dimensionId, positions, outputId, expiresAtMillis, false);
         }
     }
 
@@ -60,6 +65,9 @@ public final class ProviderHighlightClient {
         }
     }
 
+    public record RenderBeam(String dimensionId, BlockPos position) {
+    }
+
     private static final LinkedHashMap<String, Plate> PLATES = new LinkedHashMap<>();
     private static final LinkedHashMap<String, Highlight> EDGES = new LinkedHashMap<>();
 
@@ -70,7 +78,8 @@ public final class ProviderHighlightClient {
 
     /**
      * Shows the temporary rainbow edge for one manual locate without touching
-     * any red plate. Double-clicks and chat clicks use exactly this, so
+     * any red plate. Double-clicks and chat clicks share this state, with
+     * chat provenance selecting the temporary beam, so
      * recovering, finishing, or cancelling before expiry removes only the
      * plate. Empty requests clear the matching edge only, never the plate.
      * Each identity (network, dimension, output) tracks its own edge so two
@@ -83,6 +92,11 @@ public final class ProviderHighlightClient {
 
     public static void show(String networkId, String dimensionId, List<BlockPos> positions, int durationSeconds,
             String outputId) {
+        show(networkId, dimensionId, positions, durationSeconds, outputId, false);
+    }
+
+    public static void show(String networkId, String dimensionId, List<BlockPos> positions, int durationSeconds,
+            String outputId, boolean chatLocate) {
         if (outputId != null && !outputId.isBlank()
                 && (durationSeconds <= 0 || positions == null || positions.isEmpty())) {
             clearEdgeFor(networkId, outputId);
@@ -95,13 +109,14 @@ public final class ProviderHighlightClient {
             return;
         }
         EDGES.put(keyOf(networkId, dimensionId, outputId), new Highlight(networkId, dimensionId,
-                List.copyOf(positions), outputId, System.currentTimeMillis() + durationSeconds * 1000L));
+                List.copyOf(positions), outputId, System.currentTimeMillis() + durationSeconds * 1000L,
+                chatLocate));
     }
 
     /**
-     * Remembers the red plate (background plus item icon) for one delayed
+     * Remembers the red plate (background plus item icon) for one warning
      * identity without touching any rainbow edge. The server sends exactly
-     * this for automatic delayed pings, so plates appear with no open window
+     * this for automatic warnings, so plates appear with no open window
      * and no edge; manual locates use {@link #show} for edge only. Packet
      * bounds (positions count, id lengths) still apply, but active highlights
      * are never silently evicted: every identity persists until an explicit
@@ -154,6 +169,14 @@ public final class ProviderHighlightClient {
     static List<Highlight> liveEdgesAt(long nowMillis) {
         pruneExpiredEdges(nowMillis);
         return new ArrayList<>(EDGES.values());
+    }
+
+    public static List<RenderBeam> renderBeams() {
+        var candidates = liveEdges().stream().filter(Highlight::chatLocate)
+                .map(edge -> new ProviderDisplaySelection.Candidate<>(edge, edge.dimensionId(), edge.positions()))
+                .toList();
+        return ProviderDisplaySelection.firstByPosition(candidates).stream()
+                .map(selected -> new RenderBeam(selected.dimensionId(), selected.position())).toList();
     }
 
     private static void pruneExpiredEdges(long nowMillis) {
@@ -242,7 +265,7 @@ public final class ProviderHighlightClient {
                 emptiedEdges.add(entry.getKey());
             } else if (kept.size() != edge.positions().size()) {
                 entry.setValue(new Highlight(edge.networkId(), edge.dimensionId(), kept, edge.outputId(),
-                        edge.expiresAtMillis()));
+                        edge.expiresAtMillis(), edge.chatLocate()));
             }
         }
         emptiedEdges.forEach(EDGES::remove);

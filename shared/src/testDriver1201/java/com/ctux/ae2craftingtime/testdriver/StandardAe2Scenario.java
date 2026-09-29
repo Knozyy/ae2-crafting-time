@@ -112,6 +112,8 @@ final class StandardAe2Scenario {
     private String reportedCheckpoint;
     private int sort;
     private int badgeStep;
+    private int badgeReplanAttempts;
+    private long badgeNextReplanAt;
     private boolean badgeEditOpen;
     private boolean badgeAppearanceOpen;
     private boolean badgeSaving;
@@ -214,7 +216,7 @@ final class StandardAe2Scenario {
     private int variantSecondMenu;
 
     String checkpoint() { return "phase=" + phase + " fixture=" + fixture.checkpoint
-            + (leaf.equals("badge-background") ? " badge=" + badgeStep : "")
+            + (leaf.equals("badge-background") ? " badge=" + badgeStep + " replan=" + badgeReplanAttempts : "")
             + (leaf.equals("recurrent-plan") ? " recurrence=" + recurrenceCase + " sort=" + sort : "")
             + (leaf.equals("stored-variant-plan") ? " variant=" + variantStep + " lifecycle=" + variantLifecycle : "")
             + (cpuList == null ? "" : " " + cpuList.checkpoint()); }
@@ -274,7 +276,14 @@ final class StandardAe2Scenario {
         }
         if (leaf.equals("stored-variant-plan") && !connectedDedicated && variantStep == 9) {
             var closedMenu = variantMenu.containerId;
-            if (!server(minecraft, player -> StoredVariantObservation.closed(closedMenu))) return false;
+            if (!server(minecraft, player -> {
+                if (!StoredVariantObservation.closed(closedMenu)) return false;
+                if (recurrenceFixture.restoreDetection(
+                        com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current().features())) {
+                    com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.sendTo(player);
+                }
+                return true;
+            })) return false;
             mark(checks, "watcher-cleanup", true);
             return true;
         }
@@ -345,9 +354,16 @@ final class StandardAe2Scenario {
                 phase = Stage.TERMINAL;
                 return false;
             }
-            if (server(minecraft, player -> fixture.prepare(player, marker)
-                    && (!fixture.cpuListScenario || fixture.prepareCpuListJobs(player))
-                    && (!leaf.equals("recurrent-plan") || recurrenceFixture.prepare(player, RecurrentPlanFixture.CASES.get(recurrenceCase))))) {
+            if (server(minecraft, player -> {
+                if (fixture.storedVariantPlan && !connectedDedicated && recurrenceFixture.enableDetection(
+                        com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current().features())) {
+                    com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.sendTo(player);
+                }
+                return fixture.prepare(player, marker)
+                        && (!fixture.cpuListScenario || fixture.prepareCpuListJobs(player))
+                        && (!leaf.equals("recurrent-plan") || recurrenceFixture.prepare(player,
+                                RecurrentPlanFixture.CASES.get(recurrenceCase)));
+            })) {
                 if (leaf.equals("standard-plan-controls")) {
                     mark(checks, "item-resolution", ProviderHighlightShapes.resolveItem(null).isEmpty()
                             && ProviderHighlightShapes.resolveItem(appeng.api.stacks.AEFluidKey.of(
@@ -436,7 +452,8 @@ final class StandardAe2Scenario {
             var state = raw + "|" + rendered + "|" + hasEdge(overlapWinner, 4);
             if (minecraft.screen != null || !overlapFrames.observe(state)) return false;
             if (!raw.equals(java.util.Set.of("minecraft:stone", "minecraft:glass"))
-                    || !rendered.equals(java.util.Set.of(overlapWinner)) || !hasEdge(overlapWinner, 4)) return false;
+                    || !rendered.equals(java.util.Set.of(overlapWinner)) || !hasEdge(overlapWinner, 4)
+                    || hasBeam(4)) return false;
             screenshot.accept("delayed-world-overlap.png");
             mark(checks, "overlap", true);
             mark(checks, "stable-selection", true);
@@ -1034,6 +1051,7 @@ final class StandardAe2Scenario {
                         return false;
                     badgePlanStocked = true;
                     ((CraftConfirmScreen) minecraft.screen).getMenu().replan();
+                    badgeNextReplanAt = System.nanoTime() + 5_000_000_000L;
                     frames.reset();
                     return false;
                 }
@@ -1041,8 +1059,22 @@ final class StandardAe2Scenario {
             } else if (!leaf.equals("craft-lifecycle") && !server(minecraft, player -> { fixture.seed(player); return true; }))
                 return false;
             var start = minecraft.screen.children().stream().filter(AbstractWidget.class::isInstance)
-                    .map(AbstractWidget.class::cast).filter(w -> w.active && w.getMessage().getString().equals("Start"))
+                    .map(AbstractWidget.class::cast).filter(w -> w.getMessage().getString().equals("Start"))
                     .findFirst().orElseThrow(() -> new IllegalStateException("Crafting Plan Start button is missing"));
+            if (!start.active) {
+                if (leaf.equals("badge-background") && System.nanoTime() >= badgeNextReplanAt) {
+                    var menu = ((CraftConfirmScreen) minecraft.screen).getMenu();
+                    if (badgeReplanAttempts++ >= 3) {
+                        throw new IllegalStateException("Crafting Plan stayed partial after supplying input; no CPU="
+                                + menu.hasNoCPU() + ", simulation="
+                                + (menu.getPlan() != null && menu.getPlan().isSimulation()));
+                    }
+                    menu.replan();
+                    badgeNextReplanAt = System.nanoTime() + 10_000_000_000L;
+                    frames.reset();
+                }
+                return false;
+            }
             DriverPlatform.click(minecraft, start.getX() + 4, start.getY() + 4);
             phase = Stage.values()[phase.ordinal() + 1];
         } else if (phase == Stage.ACTIVE) {
@@ -1809,7 +1841,11 @@ final class StandardAe2Scenario {
         if (!frames.observe(List.of(phase, badgeStep, CaptureEvidence.readiness(snapshot)))) return false;
         var rows = snapshot.rows().stream().map(row -> row.outputId() + ":" + row.craftAmount()).toList();
         var text = snapshot.text().stream().filter(value ->
-                com.ctux.ae2craftingtime.core.CraftingRowState.isBadge(value.key())
+                (com.ctux.ae2craftingtime.core.CraftingRowState.isBadge(value.key())
+                        || value.key().equals("native-status-text")
+                        && (badgeStep == 3 ? badgeTextBefore != null
+                                && badgeTextBefore.contains(value.key() + ":" + value.bounds())
+                                : snapshot.badges().stream().anyMatch(badge -> value.bounds().inside(badge))))
                         && snapshot.rows().stream().anyMatch(row -> value.bounds().inside(row.cell())))
                 .map(value -> value.key() + ":" + value.bounds()).toList();
         if (text.isEmpty()) return false;
@@ -2323,8 +2359,21 @@ final class StandardAe2Scenario {
     private static UiSnapshot.ObservedText rowText(UiSnapshot snapshot, String output, String key) {
         var row = snapshot.rows().stream().filter(r -> r.outputId().equals(output)).findFirst();
         if (row.isEmpty()) return null;
-        return snapshot.text().stream().filter(t -> t.key().equals(key) && t.bounds() != null
-                && t.bounds().inside(row.get().cell())).findFirst().orElse(null);
+        var translated = snapshot.text().stream().filter(t -> t.key().equals(key) && t.bounds() != null
+                && t.bounds().inside(row.get().cell())).findFirst();
+        if (translated.isPresent()) return translated.get();
+        if (!key.equals("text.ae2craftingtime.waiting") && !key.equals("text.ae2craftingtime.ttc")
+                && !key.equals("text.ae2craftingtime.ttc_delayed")) return null;
+        return snapshot.text().stream().filter(t -> t.key().equals("native-status-text") && t.bounds() != null
+                && t.bounds().inside(row.get().cell()) && snapshot.badges().stream()
+                        .anyMatch(badge -> t.bounds().inside(badge))
+                && (key.equals("text.ae2craftingtime.waiting")
+                        ? t.rendered().equals(com.ctux.ae2craftingtime.mc1201.TtcText.waiting().getString())
+                        : key.equals("text.ae2craftingtime.ttc_delayed")
+                                ? t.rendered().equals(com.ctux.ae2craftingtime.mc1201.TtcText.ttcDelayed().getString())
+                                : t.rendered().startsWith(com.ctux.ae2craftingtime.core.TtcSymbols.Symbol.TIME.glyph()
+                                        + " ~")))
+                .findFirst().orElse(null);
     }
 
     private boolean hasPlate(String output, int providerOffset) {
@@ -2351,8 +2400,14 @@ final class StandardAe2Scenario {
                 && edge.positions().contains(fixture.terminal.east(providerOffset)));
     }
 
+    private boolean hasBeam(int providerOffset) {
+        return ProviderHighlightClient.renderBeams().stream()
+                .anyMatch(beam -> beam.position().equals(fixture.terminal.east(providerOffset)));
+    }
+
     private static void validateLayout(UiSnapshot snapshot) {
-        if (!LayoutValidator.validateBadges(snapshot).isEmpty() || snapshot.badges().isEmpty()) {
+        if (!statusBadgesValid(snapshot,
+                com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground())) {
             throw new IllegalStateException("Invalid standard status badge layout");
         }
         var header = snapshot.text().stream().filter(t -> t.key().equals("native-title")
@@ -2362,6 +2417,10 @@ final class StandardAe2Scenario {
         }
     }
 
+    static boolean statusBadgesValid(UiSnapshot snapshot, boolean enabled) {
+        return LayoutValidator.validateBadges(snapshot).isEmpty() && snapshot.badges().isEmpty() != enabled;
+    }
+
     private static boolean delayedTooltip(UiSnapshot snapshot) {
         var key = new com.ctux.ae2craftingtime.core.ProfileKey("minecraft:stone");
         var stall = com.ctux.ae2craftingtime.mc1201.ClientStats.CACHE.stall(key);
@@ -2369,12 +2428,14 @@ final class StandardAe2Scenario {
         var diagnostic = stall.get();
         // Compare rendered numbers to the synchronized diagnostic, not a seeded warning.
         var seconds = (long) Math.ceil(diagnostic.idleTicks() / 20.0);
-        var expected = ", " + net.minecraft.client.resources.language.I18n.get("text.ae2craftingtime.stall.delayed") + ": "
-                + net.minecraft.client.resources.language.I18n.get("text.ae2craftingtime.value.whole_seconds", seconds) + ", "
+        var expected = ", " + com.ctux.ae2craftingtime.mc1201.TtcComponents.text("text.ae2craftingtime.stall.delayed").getString() + ": "
+                + com.ctux.ae2craftingtime.mc1201.TtcComponents.text("text.ae2craftingtime.value.whole_seconds", seconds).getString() + ", "
                 + net.minecraft.client.resources.language.I18n.get("text.ae2craftingtime.stall.typical") + ": "
-                + com.ctux.ae2craftingtime.core.TimeEstimate.formatTicks(diagnostic.typicalDurationTicks());
+                + com.ctux.ae2craftingtime.mc1201.TtcComponents.time(
+                        com.ctux.ae2craftingtime.core.TimeEstimate.formatTicks(diagnostic.typicalDurationTicks())).getString();
         return snapshot.tooltip().stream().anyMatch(text -> text.key().equals("text.ae2craftingtime.stats.ttc")
-                && text.rendered().startsWith(net.minecraft.client.resources.language.I18n.get("text.ae2craftingtime.stats.ttc") + ": ")
+                && text.rendered().startsWith(com.ctux.ae2craftingtime.mc1201.TtcComponents.text(
+                        "text.ae2craftingtime.stats.ttc").getString() + ": ")
                 && text.rendered().endsWith(expected))
                 && snapshot.tooltip().stream().anyMatch(text -> text.key().equals("text.ae2craftingtime.stall.improvements"))
                 && WarningTooltipChecks.hasControls(snapshot.tooltip());

@@ -26,7 +26,8 @@ public final class Ae2CraftingTime implements ModInitializer {
                 ProviderLocateCommand.build((source, id) -> ProviderLocateCommand.locate(source, id,
                         (player, highlight) -> StatsNetwork.sendTo(player, new ProviderHighlightS2C(
                                 highlight.networkId(), highlight.dimensionId(), highlight.positions(),
-                                highlight.outputId(), highlight.durationSeconds(), highlight.plateOnly(), highlight.displayKey()))))));
+                                highlight.outputId(), highlight.durationSeconds(), highlight.plateOnly(),
+                                highlight.displayKey(), highlight.chatLocate()))))));
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             ServerOptionsRuntime.initialize(server, FabricLoader.getInstance().getConfigDir().resolve(COMMON_CONFIG_FILE));
             var data = server.overworld().getDataStorage()

@@ -17,7 +17,6 @@ import com.ctux.ae2craftingtime.core.ProfileStats;
 import com.ctux.ae2craftingtime.core.ProfileUnit;
 import com.ctux.ae2craftingtime.core.StallDiagnostic;
 import com.ctux.ae2craftingtime.core.StatsEntry;
-import com.ctux.ae2craftingtime.core.StatusKind;
 import com.ctux.ae2craftingtime.core.TimeEstimate;
 import com.ctux.ae2craftingtime.core.TtcAccuracyStats;
 import com.ctux.ae2craftingtime.core.TtcAccuracyTracker;
@@ -83,6 +82,7 @@ public final class ProfilerBridge {
         for (var output : pattern.getOutputs()) {
             outputs.merge(key(networkId, output.what()), output.amount(), Long::sum);
         }
+        if (isEnabled()) ProviderStartTracker.noteDispatch(scope, pattern, outputs);
         if (ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_POWER_DETECTION))
             PROFILER.observeDispatchPower(scope, pattern, outputs, required, extracted, tick);
     }
@@ -112,6 +112,18 @@ public final class ProfilerBridge {
             if (reasonEnabled(reason)) merged.putIfAbsent(key, reason);
         });
         return merged;
+    }
+
+    public static java.util.Map<ProfileKey, CraftingBlockReason> liveBlockReasons(Object scope, IGrid grid,
+            long tick) {
+        if (grid == null || scope == null) return java.util.Map.of();
+        var live = PROFILER.blockReasons(scope, tick, missingProviders(scope, grid));
+        live.entrySet().removeIf(entry -> !reasonEnabled(entry.getValue()));
+        return live;
+    }
+
+    public static Set<ProfileKey> liveDelayedKeys(Object scope, long tick) {
+        return PROFILER.liveDelayedKeys(scope, tick);
     }
 
     public static Set<ProfileKey> missingProviders(Object scope, IGrid grid) {
@@ -174,13 +186,14 @@ public final class ProfilerBridge {
         }
         // A reloaded CPU can accept its final output without invoking finishJob.
         // The last completed output must still clear its persistent plate.
-        if (server != null && !PROFILER.hasPending(profileKey)) {
-            ProviderLocateRecords.startFor(profileKey).ifPresent(start -> {
-                clearHighlights(server, start.owner(), Set.of(profileKey));
-                ProviderLocateRecords.removeStarts(Set.of(profileKey));
-                ProviderLocateRecords.removeRecordsForKeys(Set.of(profileKey), start.owner());
-                persistProviderState();
-            });
+        var owner = PROFILER.jobOwner(scope).orElse(null);
+        if (server != null && !PROFILER.hasActiveOutput(profileKey, owner)) {
+            DelayedNotificationServer.clearKey(scope, profileKey, server);
+            if (owner == null) ProviderLocateRecords.removeStarts(Set.of(profileKey));
+            else ProviderLocateRecords.removeStarts(Set.of(profileKey), owner);
+            if (owner == null) ProviderLocateRecords.removeRecordsForKeys(Set.of(profileKey));
+            else ProviderLocateRecords.removeRecordsForKeys(Set.of(profileKey), owner);
+            persistProviderState();
         }
     }
 
@@ -375,6 +388,10 @@ public final class ProfilerBridge {
         }
     }
 
+    public static String dimensionId(net.minecraft.server.level.ServerLevel level) {
+        return level == null ? "" : level.dimension().identifier().toString();
+    }
+
     /**
      * Provider positions for a delayed output: freshly resolved through the
      * live grid first, persisted fallback second, empty when not locatable.
@@ -387,14 +404,17 @@ public final class ProfilerBridge {
         if (!live.isEmpty()) {
             return live;
         }
-        return ProviderLocateRecords.startFor(key)
+        var owner = jobOwner(scope).orElse(null);
+        return (owner == null ? ProviderLocateRecords.startFor(key) : ProviderLocateRecords.startFor(key, owner))
                 .map(ProviderLocateRecords.ProviderStartInfo::positions)
                 .orElse(List.of());
     }
 
     public static AEKey displayKey(Object scope, ProfileKey key) {
         var live = ProviderStartTracker.displayKey(scope, key);
-        return live.orFallback(ProviderLocateRecords.startFor(key)
+        var owner = jobOwner(scope).orElse(null);
+        return live.orFallback((owner == null ? ProviderLocateRecords.startFor(key)
+                : ProviderLocateRecords.startFor(key, owner))
                 .map(ProviderLocateRecords.ProviderStartInfo::displayKey).orElse(null));
     }
 
@@ -445,7 +465,7 @@ public final class ProfilerBridge {
     public static void finishJob(Object scope, boolean success, long tick, long nanoTime,
             net.minecraft.server.MinecraftServer server) {
         var highlightKeys = scope == null ? Set.<ProfileKey>of() : PROFILER.scopedKeys(scope);
-        var highlightOwner = scope == null ? Optional.<UUID>empty() : PROFILER.jobOwner(scope);
+        var owner = PROFILER.jobOwner(scope).orElse(null);
         ACCURACY.finish(scope, success && isEnabled()
                 && ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.ACCURACY_RECORDING), tick, nanoTime);
         PROFILER.clearPending(scope);
@@ -454,149 +474,24 @@ public final class ProfilerBridge {
         BlockReasonNotifier.clear(scope);
         // Identical outputs on another CPU/network still need red: only clear
         // and forget keys with no remaining live tracking.
-        var releasable = highlightKeys.stream().filter(key -> key != null && !PROFILER.hasPending(key)).toList();
-        clearHighlights(server, highlightOwner.orElse(null), Set.copyOf(releasable));
+        var releasable = highlightKeys.stream().filter(key -> key != null && !PROFILER.hasActiveOutput(key, owner)).toList();
+        DelayedNotificationServer.clearScope(scope, server);
         // Finished and cancelled targets must never return after a reload:
         // forget their provider fallback and their click records as well as
         // their statuses, so stale chat links expire instead of highlighting
         // a replacement block or recreating red.
         if (!releasable.isEmpty()) {
-            ProviderLocateRecords.removeStarts(releasable);
-            ProviderLocateRecords.removeRecordsForKeys(releasable, highlightOwner.orElse(null));
+            if (owner == null) ProviderLocateRecords.removeStarts(releasable);
+            else ProviderLocateRecords.removeStarts(releasable, owner);
+            if (owner == null) ProviderLocateRecords.removeRecordsForKeys(releasable);
+            else ProviderLocateRecords.removeRecordsForKeys(releasable, owner);
         }
         persistProviderState();
     }
 
-    /**
-     * Tells the craft owner to drop every highlight plate for the finished
-     * scope. Empty positions with duration zero is the clear signal the
-     * client routes to {@code ProviderHighlightClient.clearFor}, so plates
-     * vanish even with a closed screen and no snapshot. Best-effort: a
-     * missing server or offline owner only skips the send.
-     */
-    private static void clearHighlights(net.minecraft.server.MinecraftServer server, UUID owner,
-            Set<ProfileKey> keys) {
-        if (server == null || owner == null || keys == null || keys.isEmpty()) {
-            return;
-        }
-        var player = server.getPlayerList().getPlayer(owner);
-        if (player == null) {
-            return;
-        }
-        for (var key : keys) {
-            if (key == null) {
-                continue;
-            }
-            try {
-                StatsNetwork.sendTo(player,
-                        new com.ctux.ae2craftingtime.mc1201.net.ProviderHighlightS2C(key.networkId(), "",
-                                List.of(), key.outputId(), 0, false));
-            } catch (Exception ignored) {
-                // One unsendable plate must not hide the rest.
-            }
-        }
-    }
-
-    /**
-     * Re-sends every remembered delayed plate owned by the joining player, so
-     * a craft that became delayed while they were offline still shows red
-     * without opening any window, including after singleplayer reload,
-     * dedicated reconnect, server restart, and full client restart. Chat is
-     * never re-sent here: login syncs plates only, once-per-episode warnings
-     * fire on live transitions while online and honor the chat setting there.
-     * Broken provider targets (air, missing block entity, replacement block
-     * entity, or surviving host without provider service) are skipped and
-     * forgotten so they never return; unloaded chunks stay unknown and keep
-     * their plates. Best-effort: missing positions or dimension simply skip
-     * that output.
-     */
+    /** Replays only live reconciled warning plates; the next CPU tick refreshes them. */
     public static void resyncPlatesForPlayer(net.minecraft.server.level.ServerPlayer player) {
-        if (player == null || !isEnabled()) {
-            return;
-        }
-        var owner = player.getUUID();
-        var broken = new java.util.ArrayList<ProfileKey>();
-        var pruned = false;
-        for (var status : PROFILER.snapshotStatuses()) {
-            if (status == null || status.kind() != StatusKind.DELAYED || status.key() == null) {
-                continue;
-            }
-            var key = status.key();
-            var start = ProviderLocateRecords.startFor(key).orElse(null);
-            if (start == null || !owner.equals(start.owner())) {
-                continue;
-            }
-            var positions = start.positions();
-            if (positions == null || positions.isEmpty()) {
-                continue;
-            }
-            var storedDimension = start.dimensionId() != null ? start.dimensionId() : "";
-            var dimension = !storedDimension.isBlank() ? storedDimension
-                    : dimensionFromNetworkId(key.networkId());
-            if (dimension.isBlank()) {
-                continue;
-            }
-            var kept = filterUnbroken(player, dimension, positions);
-            if (kept.isEmpty()) {
-                broken.add(key);
-                continue;
-            }
-            if (kept.size() != positions.size() || !dimension.equals(storedDimension)) {
-                ProviderLocateRecords.replaceStart(key, owner, dimension, kept, start.outputName(),
-                        start.displayKey());
-                pruned = true;
-            }
-            try {
-                StatsNetwork.sendTo(player,
-                        new com.ctux.ae2craftingtime.mc1201.net.ProviderHighlightS2C(key.networkId(), dimension,
-                                kept, key.outputId(), ProviderLocateCommand.HIGHLIGHT_SECONDS, true,
-                                start.displayKey()));
-            } catch (Exception ignored) {
-                // One unsendable plate must not hide the rest.
-            }
-        }
-        if (!broken.isEmpty()) {
-            ProviderLocateRecords.removeStarts(broken);
-            pruned = true;
-        }
-        if (pruned) {
-            persistProviderState();
-        }
-    }
-
-    private static List<BlockPos> filterUnbroken(net.minecraft.server.level.ServerPlayer player,
-            String dimensionId, List<BlockPos> positions) {
-        try {
-            var server = player.level().getServer();
-            for (var level : server.getAllLevels()) {
-                String levelDimension;
-                try {
-                    levelDimension = level.dimension().identifier().toString();
-                } catch (Exception ignored) {
-                    continue;
-                }
-                if (!dimensionId.equals(levelDimension)) {
-                    continue;
-                }
-                var kept = new java.util.ArrayList<BlockPos>();
-                for (var pos : positions) {
-                    if (pos == null) {
-                        continue;
-                    }
-                    // Shared provider-target check: replacement block entities
-                    // and surviving hosts without provider service drop, while
-                    // unloaded chunks and unreadable grid stay unknown (kept)
-                    // so reload never clears intact red server-side either.
-                    if (ProviderBlockTargets.keepForHighlight(level, pos)) {
-                        kept.add(pos);
-                    }
-                }
-                return List.copyOf(kept);
-            }
-        } catch (Exception ignored) {
-            // Unknown dimension or unloaded world: send as-is, client trim handles it.
-        }
-        return positions;
+        if (player != null && isEnabled()) DelayedNotificationServer.resync(player);
     }
 
     static String dimensionFromNetworkId(String networkId) {
@@ -706,6 +601,7 @@ public final class ProfilerBridge {
         CHANCE.clearAll();
         ProviderLocateRecords.clearAll();
         BlockReasonNotifier.clearAll();
+        DelayedNotificationServer.clearAll();
         ProviderLocateRecords.restoreStarts(data.providerStarts());
         ProviderLocateRecords.restoreRecords(data.providerRecords());
         PROFILER.restoreStatuses(data.statuses());

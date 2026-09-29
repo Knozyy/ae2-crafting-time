@@ -69,9 +69,8 @@ final class NoProviderScenario {
                 return false;
             }
             var warning = snapshot.text().stream().filter(text -> text.key().equals(KEY)).findFirst().orElseThrow();
-            if (!warning.bounds().inside(snapshot.gui()) || snapshot.badges().stream()
-                    .noneMatch(badge -> warning.bounds().inside(badge))) {
-                throw new IllegalStateException("NO PROVIDER has no contained rendered badge");
+            if (!LayoutValidator.warningBadgeValid(snapshot, warning)) {
+                throw new IllegalStateException("NO PROVIDER has invalid warning badge layout");
             }
             checks.put("pattern-removed", true);
             checks.put("tooltip", true);

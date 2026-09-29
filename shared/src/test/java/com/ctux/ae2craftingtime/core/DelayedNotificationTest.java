@@ -5,10 +5,37 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class DelayedNotificationTest {
+    @Test
+    void activeOutputCleanupSeparatesOwnersAndKeepsWaitingJobs() {
+        var profiler = new CraftProfiler(10);
+        var output = key("minecraft:iron_plate");
+        var first = new Object();
+        var second = new Object();
+        var firstOwner = UUID.randomUUID();
+        var secondOwner = UUID.randomUUID();
+        profiler.setJobOwner(first, firstOwner);
+        profiler.setJobOwner(second, secondOwner);
+        profiler.start(output, first, 1, ProfileUnit.ITEM, 100);
+        profiler.startWaiting(second, Set.of(output), 100);
+        assertFalse(profiler.hasActiveOutput(key("minecraft:copper_plate"), firstOwner));
+        assertFalse(profiler.hasActiveOutput(output, UUID.randomUUID()));
+        assertTrue(profiler.hasActiveOutput(output, null));
+        assertTrue(profiler.hasActiveOutput(output, firstOwner));
+        assertTrue(profiler.hasActiveOutput(output, secondOwner));
+        profiler.complete(output, first, 1, 120);
+        assertFalse(profiler.hasActiveOutput(output, firstOwner));
+        assertFalse(profiler.hasActiveOutput(key("minecraft:copper_plate"), secondOwner));
+        assertTrue(profiler.hasActiveOutput(output, null));
+        profiler.clearPending(second);
+        assertFalse(profiler.hasActiveOutput(output, null));
+        assertFalse(profiler.hasActiveOutput(null, firstOwner));
+    }
+
     @Test
     void immediateCompletionRetainsPlateKeyUntilFinishCleanup() {
         var profiler = new CraftProfiler(10);
@@ -93,6 +120,24 @@ class DelayedNotificationTest {
         // Repeated polls do not duplicate.
         assertTrue(profiler.pollNewlyDelayed(cpu, 900).isEmpty());
         assertTrue(profiler.pollNewlyDelayed(cpu, 1_000).isEmpty());
+    }
+
+    @Test
+    void liveDelayedPlateEvidenceDoesNotWaitForOfflineChatPoll() {
+        var profiler = new CraftProfiler(10);
+        var output = key("minecraft:iron_plate");
+        var cpu = new Object();
+        seedTypical(profiler, output, new Object());
+        profiler.start(output, cpu, 1, ProfileUnit.ITEM, 300);
+
+        assertTrue(profiler.liveDelayedKeys(cpu, 400).isEmpty());
+        assertTrue(profiler.liveDelayedKeys(null, 400).isEmpty());
+        assertTrue(profiler.delayedKeys(cpu).isEmpty());
+        assertEquals(Set.of(output), profiler.liveDelayedKeys(cpu, 800));
+        profiler.complete(output, cpu, 1, 801);
+        assertTrue(profiler.liveDelayedKeys(cpu, 802).isEmpty());
+        profiler.setEnabled(false);
+        assertTrue(profiler.liveDelayedKeys(cpu, 802).isEmpty());
     }
 
     @Test
@@ -309,6 +354,8 @@ class DelayedNotificationTest {
 
         assertFalse(profiler.isDelayed(null));
         assertFalse(profiler.isDelayed(key));
+        assertTrue(profiler.delayedKeys(null).isEmpty());
+        assertTrue(profiler.delayedKeys(new Object()).isEmpty());
     }
 
     @Test
@@ -325,6 +372,8 @@ class DelayedNotificationTest {
 
         assertEquals(1, profiler.pollNewlyDelayed(first, 800).size());
         assertEquals(1, profiler.pollNewlyDelayed(second, 800).size());
+        assertEquals(Set.of(key), profiler.delayedKeys(first));
+        assertEquals(Set.of(key), profiler.delayedKeys(second));
         assertTrue(profiler.isDelayed(key));
         assertFalse(profiler.isDelayed(other));
         assertFalse(profiler.isDelayed(null));
@@ -332,6 +381,8 @@ class DelayedNotificationTest {
         profiler.complete(key, first, 1, 860);
         assertTrue(profiler.pollNewlyDelayed(first, 900).isEmpty());
         assertEquals(List.of(key), profiler.pollResolvedDelayed(first));
+        assertTrue(profiler.delayedKeys(first).isEmpty());
+        assertEquals(Set.of(key), profiler.delayedKeys(second));
         assertTrue(profiler.isDelayed(key));
 
         profiler.clearPending(second);

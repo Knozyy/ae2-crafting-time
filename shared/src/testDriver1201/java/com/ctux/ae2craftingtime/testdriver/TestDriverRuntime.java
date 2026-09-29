@@ -188,7 +188,9 @@ public final class TestDriverRuntime implements AutoCloseable {
                     minecraft.setScreen(null);
                     var playerId = minecraft.player.getUUID();
                     reset = server.submit(() -> {
-                        fixture.join().restore(server.getPlayerList().getPlayer(playerId));
+                        var player = server.getPlayerList().getPlayer(playerId);
+                        scenario.cleanup(player);
+                        fixture.join().restore(player);
                         return server.getTickCount();
                     });
                     return;

@@ -445,6 +445,20 @@ public final class CraftProfiler {
         return false;
     }
 
+    public Set<ProfileKey> delayedKeys(Object scope) {
+        return Set.copyOf(delayedNotified.getOrDefault(scope, Set.of()));
+    }
+
+    /** Current stall evidence, independent of whether chat notification was polled. */
+    public Set<ProfileKey> liveDelayedKeys(Object scope, long tick) {
+        if (!enabled || scope == null) return Set.of();
+        var live = new HashSet<ProfileKey>();
+        for (var key : pending.getOrDefault(scope, Map.of()).keySet()) {
+            if (stall(key, scope, tick).isPresent()) live.add(key);
+        }
+        return Set.copyOf(live);
+    }
+
     public void rememberStatus(PersistedOutputStatus status) {
         if (status == null) {
             return;
@@ -538,6 +552,20 @@ public final class CraftProfiler {
 
     public boolean hasPending(ProfileKey key) {
         return key != null && pending.values().stream().anyMatch(scoped -> scoped.containsKey(key));
+    }
+
+    /** Includes jobs waiting for their first dispatch; null owner checks every job. */
+    public boolean hasActiveOutput(ProfileKey key, UUID owner) {
+        if (key == null) return false;
+        for (var scope : pending.keySet()) {
+            if ((owner == null || owner.equals(jobOwners.get(scope))) && pending.get(scope).containsKey(key))
+                return true;
+        }
+        for (var entry : waiting.entrySet()) {
+            if ((owner == null || owner.equals(jobOwners.get(entry.getKey()))) && entry.getValue().keys.contains(key))
+                return true;
+        }
+        return false;
     }
 
     public Optional<ProfileStats> stats(ProfileKey key) {

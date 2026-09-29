@@ -92,11 +92,83 @@ class ProviderLocateLifecycleTest {
         var owner = UUID.randomUUID();
         var record = new LocateRecord(UUID.randomUUID(), owner, "minecraft:overworld",
                 List.of(new BlockPos(1, 2, 3), new BlockPos(-4, 5, -6)), "Iron", "minecraft:iron_ingot",
-                42L);
+                42L, "grid-a");
         var tags = PersistedProviderTag.writeRecords(List.of(record));
         assertEquals(1, tags.size());
         var restored = PersistedProviderTag.readRecords(tags);
         assertEquals(List.of(record), restored);
+    }
+
+    @Test
+    void sameOutputRecordsKeepNetworkIdentityAndInvalidationIsScoped() {
+        var owner = UUID.randomUUID();
+        var output = "minecraft:iron_ingot";
+        var a = new ProfileKey("grid-a", output);
+        var b = new ProfileKey("grid-b", output);
+        ProviderLocateRecords.noteStart(a, owner, "minecraft:overworld", List.of(), "Iron");
+        ProviderLocateRecords.noteStart(b, owner, "minecraft:overworld", List.of(), "Iron");
+        var recordA = ProviderLocateRecords.create(owner, "minecraft:overworld",
+                List.of(new BlockPos(1, 2, 3)), "Iron", output, 1L, a.networkId());
+        var recordB = ProviderLocateRecords.create(owner, "minecraft:overworld",
+                List.of(new BlockPos(4, 5, 6)), "Iron", output, 1L, b.networkId());
+        assertEquals(2, ProviderLocateRecords.snapshotStarts().size());
+        ProviderLocateRecords.replaceStart(a, owner, "minecraft:overworld", List.of(), "Iron");
+        assertTrue(ProviderLocateRecords.ownedBy(owner, recordA.id()).isEmpty());
+        assertEquals(List.of(b), ProviderLocateRecords.snapshotStarts().stream()
+                .map(ProviderLocateRecords.StoredStart::key).toList());
+        assertEquals(b.networkId(), ProviderLocateRecords.ownedBy(owner, recordB.id()).orElseThrow().networkId());
+        ProviderLocateRecords.removeRecordsForKeys(List.of(b), owner);
+        assertTrue(ProviderLocateRecords.ownedBy(owner, recordB.id()).isEmpty());
+    }
+
+    @Test
+    void identicalProfileKeysRetainTwoOwnersAndTheirIndependentChatLinks() {
+        var first = UUID.randomUUID();
+        var second = UUID.randomUUID();
+        var key = new ProfileKey("same-grid", "minecraft:iron_ingot");
+        var firstPos = new BlockPos(1, 2, 3);
+        var secondPos = new BlockPos(4, 5, 6);
+        ProviderLocateRecords.noteStart(key, first, "minecraft:overworld", List.of(firstPos), "Iron");
+        ProviderLocateRecords.noteStart(key, second, "minecraft:overworld", List.of(secondPos), "Iron");
+        var firstLink = ProviderLocateRecords.create(first, "minecraft:overworld", List.of(firstPos),
+                "Iron", key.outputId(), 1L, key.networkId());
+        var secondLink = ProviderLocateRecords.create(second, "minecraft:overworld", List.of(secondPos),
+                "Iron", key.outputId(), 1L, key.networkId());
+
+        assertTrue(ProviderLocateRecords.startFor(key).isEmpty()); // Ambiguous without owner.
+        assertEquals(List.of(firstPos), ProviderLocateRecords.startFor(key, first).orElseThrow().positions());
+        assertEquals(List.of(secondPos), ProviderLocateRecords.startFor(key, second).orElseThrow().positions());
+        assertEquals(2, ProviderLocateRecords.snapshotStarts().size());
+        var savedStarts = ProviderLocateRecords.snapshotStarts();
+        var savedLinks = ProviderLocateRecords.snapshotRecords();
+        ProviderLocateRecords.clearAll();
+        ProviderLocateRecords.restoreStarts(savedStarts);
+        ProviderLocateRecords.restoreRecords(savedLinks);
+        assertEquals(List.of(firstPos), ProviderLocateRecords.startFor(key, first).orElseThrow().positions());
+        assertEquals(List.of(secondPos), ProviderLocateRecords.startFor(key, second).orElseThrow().positions());
+        assertTrue(ProviderLocateRecords.ownedBy(first, firstLink.id()).isPresent());
+        assertTrue(ProviderLocateRecords.ownedBy(second, secondLink.id()).isPresent());
+        ProviderLocateRecords.replaceStart(key, first, "minecraft:overworld", List.of(), "Iron");
+        assertTrue(ProviderLocateRecords.ownedBy(first, firstLink.id()).isEmpty());
+        assertTrue(ProviderLocateRecords.ownedBy(second, secondLink.id()).isPresent());
+        assertEquals(List.of(secondPos), ProviderLocateRecords.startsForOutput(second, key.outputId()).get(0).positions());
+    }
+
+    @Test
+    void oldRecordCannotBorrowSoleUnrelatedNetworkProvider() {
+        var owner = UUID.randomUUID();
+        var output = "minecraft:iron_ingot";
+        var record = new LocateRecord(UUID.randomUUID(), owner, "minecraft:overworld",
+                List.of(new BlockPos(1, 2, 3)), "Iron", output, 1L);
+        var unrelated = new ProviderLocateRecords.StoredStart(new ProfileKey("other-grid", output), owner,
+                "minecraft:overworld", List.of(new BlockPos(4, 5, 6)), "Iron", null);
+        assertTrue(!ProviderLocateRecords.matchesLegacyStart(record, unrelated));
+        var associated = new ProviderLocateRecords.StoredStart(unrelated.key(), owner,
+                "minecraft:overworld", record.positions(), "Iron", null);
+        assertTrue(ProviderLocateRecords.matchesLegacyStart(record, associated));
+        var empty = new ProviderLocateRecords.StoredStart(unrelated.key(), owner,
+                "minecraft:overworld", List.of(), "Iron", null);
+        assertTrue(!ProviderLocateRecords.matchesLegacyStart(record, empty));
     }
 
     @Test

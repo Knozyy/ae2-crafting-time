@@ -312,11 +312,12 @@ class ResourceFixtureControlTest {
     }
 
     @Test void publishesFixedIndependentCheckpointContracts() {
-        assertEquals(List.of("held", "completed", "cancel-held", "cancelled"),
+        assertEquals(List.of("held", "recovery-pair", "completed", "cancel-held", "cancelled"),
                 ResourceFixtureControl.expectedCheckpoints(ResourceFixtureControl.Case.ITEM, false));
         assertEquals(List.of("held", "rejoined", "winner-promoted", "completed", "cancel-held", "cancelled"),
                 ResourceFixtureControl.expectedCheckpoints(ResourceFixtureControl.Case.FLUID_OVERLAP, true));
-        assertEquals(List.of("item-held.png", "item-completed.png", "item-cancel-held.png", "item-cancelled.png"),
+        assertEquals(List.of("item-held.png", "item-recovery-pair.png", "item-completed.png",
+                        "item-cancel-held.png", "item-cancelled.png"),
                 ResourceFixtureControl.expectedScreenshots(ResourceFixtureControl.Case.ITEM, false));
     }
 

@@ -21,7 +21,9 @@ same-named item. Fluids without bucket items are included.
 
 This extends the [provider locate specification](../spec.md). Red plates appear
 automatically, even with chat notifications disabled and no terminal open.
-Manual locates still add only the independent 15-second rainbow outline.
+Crafting-row locates still add only the independent 15-second rainbow outline.
+Successful chat-link locates add the red sky beam for the same rainbow lifetime
+as specified in [#488](../spec.md#planned-red-sky-beam).
 The icon follows the plate through recovery, finish, cancel, provider removal,
 and server-approved reconnect resync. The server remains the authority.
 

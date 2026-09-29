@@ -246,6 +246,16 @@ ordinary runs, as defined in the
 Missing or mismatched evidence fails. Typed-key assertions cannot replace world
 capture review; visual acceptance remains REVIEW_REQUIRED until reviewed.
 
+For #488, the item case places an opaque stone roof over its real provider.
+The row double-click must leave beam state empty. A chat locate with a record
+owned by another player must also leave it empty; the owner's command must
+create a beam over the roof with the rainbow. The integrated case releases the
+output while that pair is live, captures `item-recovery-pair.png` after the
+plate clears, and then observes the pair's shared expiry. The connected case
+captures the live beam before reconnect and
+then confirms neither temporary effect returns. The capture sidecar records
+the live beam positions and each rainbow's chat provenance.
+
 Record resource key/type, authoritative job state, target/profile, dependency
 and production/driver hashes, and unique English PNG/sidecar checkpoints for
 each observed transition. Require all scenario checks, clean client exit and

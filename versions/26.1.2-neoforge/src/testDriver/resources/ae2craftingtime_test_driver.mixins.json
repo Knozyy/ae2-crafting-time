@@ -30,6 +30,7 @@
     "MouseHandlerAccessor",
     "ChatComponentAccessor",
     "CraftingStatusAccessor",
+    "CraftingStatusTableRendererObservationMixin",
     "CPUSelectionListObservationMixin"
   ],
   "injectors": {

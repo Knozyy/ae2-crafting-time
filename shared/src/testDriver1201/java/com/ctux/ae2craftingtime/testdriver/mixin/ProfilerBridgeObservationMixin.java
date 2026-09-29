@@ -40,8 +40,9 @@ public abstract class ProfilerBridgeObservationMixin {
         DispatchObservation.amount(scope, key.getId().toString(), amount, true);
     }
 
-    @Inject(method = "complete(Ljava/lang/String;Ljava/lang/Object;Lappeng/api/stacks/AEKey;JJ)V", at = @At("HEAD"))
-    private static void returned(String network, Object scope, AEKey key, long amount, long tick, CallbackInfo ci) {
+    @Inject(method = "complete(Ljava/lang/String;Ljava/lang/Object;Lappeng/api/stacks/AEKey;JJLnet/minecraft/server/MinecraftServer;)V", at = @At("HEAD"))
+    private static void returned(String network, Object scope, AEKey key, long amount, long tick,
+            net.minecraft.server.MinecraftServer server, CallbackInfo ci) {
         if (key == null) return;
         DispatchObservation.amount(scope, key.getId().toString(), amount, false);
     }

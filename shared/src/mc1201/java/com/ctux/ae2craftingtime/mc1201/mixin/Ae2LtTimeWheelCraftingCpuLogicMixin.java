@@ -91,9 +91,7 @@ public abstract class Ae2LtTimeWheelCraftingCpuLogicMixin {
         ProfilerBridge.updateCapacity(this, Math.min(maxOps, ae2craftingtime$successfulDispatches(cir.getReturnValue())),
                 maxOps, tick);
         IntegrationLog.cpu("ae2lt", "cpu-capacity");
-        DelayedNotificationServer.maybeNotify(this, ae2craftingtime$grid, tick, server);
-        BlockReasonNotifier.maybeNotifyPower(this, ae2craftingtime$grid, tick, server);
-        BlockReasonNotifier.maybeNotifySpace(this, ae2craftingtime$grid, this, server);
+        DelayedNotificationServer.tick(this, ae2craftingtime$grid, this, tick, server);
     }
 
     @Unique

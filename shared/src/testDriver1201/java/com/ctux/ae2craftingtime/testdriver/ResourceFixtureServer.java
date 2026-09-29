@@ -54,6 +54,7 @@ final class ResourceFixtureServer {
     private int unloadPhase;
     private BlockPos unloadProvider;
     private boolean unloadObserved;
+    private UUID foreignRecordId;
     private Map<String, Object> cleanupOutcome = Map.of();
     private String terminalFailure = "";
     private final List<Map<String, Object>> receipts = new ArrayList<>();
@@ -188,6 +189,8 @@ final class ResourceFixtureServer {
             }
             case RESET -> {
                 if (processing == null) throw new IllegalStateException("resource reset has no processing state");
+                com.ctux.ae2craftingtime.mc1201.ProviderLocateRecords.removeRecord(foreignRecordId);
+                foreignRecordId = null;
                 processing.close(player);
                 processing = null;
                 disconnected = false;
@@ -289,6 +292,15 @@ final class ResourceFixtureServer {
             return false;
         }
         if (!processing.delayed(player)) return false;
+        if (resourceCase == ResourceFixtureControl.Case.ITEM && foreignRecordId == null) {
+            var slot = processing.slots().get(0);
+            var network = com.ctux.ae2craftingtime.mc1201.ProfilerBridge.networkId(
+                    grid.cpu(player).getMainNode().getGrid());
+            foreignRecordId = com.ctux.ae2craftingtime.mc1201.ProviderLocateRecords.create(UUID.randomUUID(),
+                    com.ctux.ae2craftingtime.mc1201.ProfilerBridge.dimensionId(
+                            grid.cpu(player).getMainNode().getGrid()), processing.providers(), "Foreign test link",
+                    slot.key().getId().toString(), player.level().getGameTime(), network).id();
+        }
         var facts = new LinkedHashMap<String, Object>(ServerDriverPlatform.resourceFacts(resourceCase));
         facts.put("storageValidated", processing.storageValidated());
         caseFacts.putIfAbsent(resourceCase.name(), Map.copyOf(facts));
@@ -323,6 +335,9 @@ final class ResourceFixtureServer {
     private String jobs(ServerPlayer player) {
         if (processing == null) return "[]";
         var cpus = grid.resourceCpus(player);
+        var network = com.ctux.ae2craftingtime.mc1201.ProfilerBridge.networkId(
+                grid.cpu(player).getMainNode().getGrid());
+        var records = com.ctux.ae2craftingtime.mc1201.ProviderLocateRecords.snapshotRecords();
         return new Gson().toJson(processing.slots().stream().map(slot -> {
             var status = cpus.get(slot.index()).getCluster().getJobStatus();
             var job = status == null ? null : status.crafting();
@@ -343,6 +358,11 @@ final class ResourceFixtureServer {
                     && grid.resourceDelayed(player, slot.key()));
             value.put("cancelled", slot.cancelled());
             value.put("tick", slot.tick());
+            value.put("chatRecord", records.stream().filter(record -> player.getUUID().equals(record.owner())
+                    && network.equals(record.networkId())
+                    && slot.key().getId().toString().equals(record.outputId()))
+                    .map(record -> record.id().toString()).findFirst().orElse(""));
+            value.put("foreignRecord", foreignRecordId == null ? "" : foreignRecordId.toString());
             return value;
         }).toList());
     }

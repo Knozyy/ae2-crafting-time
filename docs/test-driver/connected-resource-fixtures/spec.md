@@ -58,6 +58,11 @@ the surviving shared-provider output. A manual locate before reconnect proves
 rainbow state does not return. Run a fresh cancellation job after completion;
 do not interpret a command acknowledgement as completion or cancellation.
 
+The item case also checks #488 on the connected server: its provider has an
+opaque roof, a row locate yields no beam, a foreign-owner chat record is
+rejected, and the owner's chat locate yields rainbow plus beam. Capture the
+beam before reconnect; neither temporary effect may return after rejoin.
+
 ## Acceptance criteria
 
 - **RF1:** Both scenarios can drive the named real jobs in integrated and

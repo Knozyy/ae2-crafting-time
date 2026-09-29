@@ -61,6 +61,16 @@ public final class ProviderHighlightRender {
         if (hasEdge) {
             consumers.endBatch(RenderTypes.lines());
         }
+        var beamConsumer = consumers.getBuffer(ProviderBeamRenderType.TYPE);
+        for (var beam : ProviderHighlightClient.renderBeams()) {
+            if (!levelDimension.equals(beam.dimensionId())) continue;
+            var pos = beam.position();
+            ProviderHighlightShapes.renderBeam(event.getPoseStack(), beamConsumer,
+                    pos.getX() - camera.x, pos.getY() - camera.y, pos.getZ() - camera.z,
+                    pos.getY(), minecraft.level.getMaxY() + 1,
+                    minecraft.options.renderDistance().get(), redArgb);
+        }
+        consumers.endBatch(ProviderBeamRenderType.TYPE);
         // Plates persist while their output still reports a stall.
         var filled = consumers.getBuffer(RenderTypes.debugFilledBox());
         for (var plate : ProviderHighlightClient.renderPlates()) {

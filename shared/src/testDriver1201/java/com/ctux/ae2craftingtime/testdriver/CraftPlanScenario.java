@@ -19,6 +19,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.ItemStack;
@@ -806,6 +807,10 @@ public final class CraftPlanScenario {
             minecraft.stop();
         }
         advance(ScenarioState.QUIT_REQUESTED);
+    }
+
+    void cleanup(ServerPlayer player) {
+        if (addonFixture != null) addonFixture.cleanup(player);
     }
 
     private void fail(String code, String expected, String observed) {

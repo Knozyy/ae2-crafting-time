@@ -2,6 +2,7 @@ package com.ctux.ae2craftingtime.mc1201;
 
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
+import com.ctux.ae2craftingtime.core.ProviderBeamHeight;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -51,6 +52,22 @@ public final class ProviderHighlightShapes {
         line(pose, consumer, x1, y1, z0, x1, y1, z1, argb, lineWidth);
         line(pose, consumer, x1, y0, z1, x1, y1, z1, argb, lineWidth);
         line(pose, consumer, x0, y1, z1, x1, y1, z1, argb, lineWidth);
+    }
+
+    public static void renderBeam(PoseStack pose, VertexConsumer consumer, double originX, double originY,
+            double originZ, int providerY, int upperBuildBoundary, int renderDistanceChunks, int redArgb) {
+        var top = originY + ProviderBeamHeight.top(providerY, upperBuildBoundary, renderDistanceChunks) - providerY;
+        var x0 = (float) (originX + 0.4);
+        var x1 = (float) (originX + 0.6);
+        var y0 = (float) (originY + 1);
+        var y1 = (float) top;
+        var z0 = (float) (originZ + 0.4);
+        var z1 = (float) (originZ + 0.6);
+        var last = pose.last();
+        quad(last, consumer, x0, y0, z0, x1, y0, z0, x1, y1, z0, x0, y1, z0, redArgb);
+        quad(last, consumer, x1, y0, z1, x0, y0, z1, x0, y1, z1, x1, y1, z1, redArgb);
+        quad(last, consumer, x1, y0, z0, x1, y0, z1, x1, y1, z1, x1, y1, z0, redArgb);
+        quad(last, consumer, x0, y0, z1, x0, y0, z0, x0, y1, z0, x0, y1, z1, redArgb);
     }
 
     /**

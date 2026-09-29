@@ -119,12 +119,31 @@ public final class UiObservationStore {
         }
     }
 
-    public static void nativeTitle(GuiGraphics graphics, String text, int x, int y, int width, int height) {
-        if (active != null && recordStatusText(text, transformed(graphics, x, y, x + width, y + height))) return;
+    public static void nativeTitle(GuiGraphics graphics, String text, int x, int y, int width, int height,
+            Integer color, boolean bold) {
+        if (active != null) {
+            var bounds = transformed(graphics, x, y, x + width, y + height);
+            if (recordStatusText(text, bounds)) return;
+            // Newer AE2 flattens styled row labels into formatted characters.
+            if (active.screen.contains("CraftingStatusScreen") && statusRowText(bounds)) {
+                active.text.add(new UiSnapshot.ObservedText("native-status-text", text, List.of(), bounds,
+                        color, bold));
+                return;
+            }
+        }
         if (active != null && active.screen.contains("CraftingStatusScreen") && text.startsWith("TTC:")) {
             active.text.add(new UiSnapshot.ObservedText("native-title", text, List.of(),
                     transformed(graphics, x, y, x + width, y + height)));
         }
+    }
+
+    private static boolean statusRowText(Rect bounds) {
+        for (int index = 0; index < 18; index++) {
+            var cell = new Rect(active.gui.x() + TABLE_X + index % 3 * PITCH_X,
+                    active.gui.y() + TABLE_Y + index / 3 * PITCH_Y, CELL_WIDTH, CELL_HEIGHT);
+            if (bounds.inside(cell)) return true;
+        }
+        return false;
     }
 
     private static boolean recordStatusText(String rendered, Rect bounds) {

@@ -105,6 +105,14 @@ abstract class AddonCpuFixture<P> {
         startCraft(player, placementFuture.join(), menu);
     }
 
+    final void cleanup(ServerPlayer player) {
+        if (placementFuture != null && placementFuture.isDone()) {
+            cleanup(player, placementFuture.join());
+        }
+    }
+
+    protected void cleanup(ServerPlayer player, P placement) {}
+
     protected void startCraft(ServerPlayer player, P placement, CraftConfirmMenu menu) {
         var selected = cpu(player, placement, com.ctux.ae2craftingtime.mc1201.StatsRequestContext.current(player).grid());
         if (selected == null) throw new IllegalStateException("Selected fixture CPU is no longer available");

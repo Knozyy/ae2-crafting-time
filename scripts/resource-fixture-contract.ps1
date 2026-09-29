@@ -51,7 +51,8 @@ function Get-ResourceFixtureContractCaptures([string[]]$Cases, [bool]$Connected,
         $states = @('held') + $(if ($Production -and $case -ceq 'WATER') {
             @('resource-reloaded','chunk-reloaded') }) +
             $(if ($Connected) { @('rejoined') }) +
-            $(if ($case.EndsWith('OVERLAP')) { @('winner-promoted') }) + @('completed','cancel-held') +
+            $(if ($case.EndsWith('OVERLAP')) { @('winner-promoted') }) +
+            $(if ($case -ceq 'ITEM' -and !$Connected) { @('recovery-pair') }) + @('completed','cancel-held') +
             $(if ($Production -and $case.EndsWith('OVERLAP')) { @('provider-removed') }) + @('cancelled')
         $result += @($states | ForEach-Object { "$prefix-$_.png" })
     }
@@ -128,12 +129,14 @@ function Get-ResourceFixtureReceipt([object[]]$Receipts, [string]$Case, [string]
         elseif ($Checkpoint.EndsWith('-rejoined')) { 'RECONNECT' }
         elseif ($Checkpoint.EndsWith('-provider-removed')) { 'REMOVE_PROVIDER' }
         elseif ($Checkpoint.EndsWith('-chunk-reloaded')) { 'UNLOAD_RELOAD' }
-        elseif ($Checkpoint.EndsWith('-winner-promoted') -or $Checkpoint.EndsWith('-completed')) { 'RELEASE' }
+        elseif ($Checkpoint.EndsWith('-winner-promoted') -or $Checkpoint.EndsWith('-recovery-pair') -or
+                $Checkpoint.EndsWith('-completed')) { 'RELEASE' }
         elseif ($Checkpoint.EndsWith('-cancelled')) { 'CANCEL' }
         else { throw "No authoritative receipt mapping for $Checkpoint" }
     $matches = @($Receipts | Where-Object { $_.case -ceq $Case -and $_.action -ceq $action })
     if ($Checkpoint.EndsWith('-cancel-held')) { return $matches[-1] }
-    if ($Checkpoint.EndsWith('-completed') -or $Checkpoint.EndsWith('-cancelled')) { return $matches[-1] }
+    if ($Checkpoint.EndsWith('-recovery-pair') -or $Checkpoint.EndsWith('-completed') -or
+            $Checkpoint.EndsWith('-cancelled')) { return $matches[-1] }
     return $matches[0]
 }
 
@@ -222,7 +225,8 @@ function Assert-ResourceFixtureContract([object]$Evidence, [string]$Scenario, [s
         foreach ($plate in @($observation.renderPlates)) {
             if ("$($plate.position.x),$($plate.position.y),$($plate.position.z)" -cne $provider) { throw "Rendered plate provider is invalid for $checkpoint" }
         }
-        $settled = $checkpoint.EndsWith('-completed') -or $checkpoint.EndsWith('-cancelled')
+        $settled = $checkpoint.EndsWith('-recovery-pair') -or $checkpoint.EndsWith('-completed') -or
+            $checkpoint.EndsWith('-cancelled')
         $cancelled = $checkpoint.EndsWith('-cancelled')
         $winner = $checkpoint.EndsWith('-winner-promoted')
         foreach ($job in @($observation.serverJobs)) {

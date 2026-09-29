@@ -126,9 +126,11 @@ final class PersistedProviderTag {
                 continue;
             }
             var dimension = record.contains("dimension", Tag.TAG_STRING) ? record.getString("dimension") : "";
+            var networkId = record.contains("networkId", Tag.TAG_STRING) ? record.getString("networkId") : "";
+            if (networkId.length() > PacketLimits.MAX_OUTPUT_ID_LENGTH) continue;
             var tick = record.contains("tick", Tag.TAG_LONG) ? record.getLong("tick") : 0L;
             persisted.add(new LocateRecord(id, owner, dimension, positions,
-                    name.isBlank() ? outputId : name, outputId, tick));
+                    name.isBlank() ? outputId : name, outputId, tick, networkId));
             if (persisted.size() >= 256) {
                 break;
             }
@@ -146,6 +148,7 @@ final class PersistedProviderTag {
             tag.putString("id", record.id().toString());
             tag.putString("owner", record.owner().toString());
             tag.putString("dimension", record.dimensionId() == null ? "" : record.dimensionId());
+            tag.putString("networkId", record.networkId() == null ? "" : record.networkId());
             var posTags = new ListTag();
             if (record.positions() != null) {
                 for (var pos : record.positions()) {

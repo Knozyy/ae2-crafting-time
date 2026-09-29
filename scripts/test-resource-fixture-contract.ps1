@@ -42,7 +42,7 @@ function New-Evidence([bool]$connected, [bool]$expiredLater = $false, [bool]$pro
         $receipts += [pscustomobject]@{case=$case;action='CANCEL';providers=@($(if($production -and $case.EndsWith('OVERLAP')){@()}else{@('1,2,3')}));jobs=$cancelled}
         foreach($name in @($names|Where-Object{$_ -like ($case.ToLowerInvariant().Replace('_','-')+'-*')})){
             $checkpoint=[IO.Path]::GetFileNameWithoutExtension($name);if($checkpoint.EndsWith('-cleanup')){continue}
-            $jobs=if($checkpoint.EndsWith('-winner-promoted')){$winner}elseif($checkpoint.EndsWith('-completed')){$completed}elseif($checkpoint.EndsWith('-cancelled')){$cancelled}elseif($checkpoint.EndsWith('-cancel-held')){$cancelHeld}else{$held}
+            $jobs=if($checkpoint.EndsWith('-winner-promoted')){$winner}elseif($checkpoint.EndsWith('-recovery-pair')-or$checkpoint.EndsWith('-completed')){$completed}elseif($checkpoint.EndsWith('-cancelled')){$cancelled}elseif($checkpoint.EndsWith('-cancel-held')){$cancelHeld}else{$held}
             [object[]]$active=@($(if($checkpoint.EndsWith('-winner-promoted')){$outputs[-1]}elseif($checkpoint.EndsWith('-held')-or$checkpoint.EndsWith('-rejoined')-or$checkpoint.EndsWith('-resource-reloaded')-or$checkpoint.EndsWith('-chunk-reloaded')){$outputs}))
             $observations += [pscustomobject]@{case=$case;checkpoint=$name;frame=10;observedAtMillis=$(if($expiredLater-and
                     ($checkpoint.EndsWith('-completed')-or$checkpoint.EndsWith('-cancel-held')-or$checkpoint.EndsWith('-cancelled'))){3000}else{1000});serverJobs=$jobs;

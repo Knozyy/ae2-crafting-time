@@ -24,6 +24,16 @@ public final class LayoutValidator {
         return List.copyOf(failures);
     }
 
+    public static boolean warningBadgeValid(UiSnapshot snapshot, UiSnapshot.ObservedText warning) {
+        var bounds = warning.bounds();
+        var badgeContainsWarning = snapshot.badges().stream().anyMatch(badge -> bounds.inside(badge));
+        return bounds.inside(snapshot.gui())
+                && snapshot.rows().stream().anyMatch(row -> bounds.inside(row.cell()))
+                && !warning.bold() && warning.color() != null && (warning.color() & 0xffffff) == 0xff5555
+                && badgeContainsWarning == com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground()
+                && validateBadges(snapshot).isEmpty();
+    }
+
     private static void check(String name, Rect candidate, UiSnapshot snapshot, List<String> failures) {
         if (!candidate.inside(snapshot.gui())) {
             failures.add(name + " outside GUI");

@@ -189,15 +189,17 @@ Rules:
 
 ### `ProviderHighlightS2C`
 
-Sent from server to only the clicking or delayed player. Two independent
-visuals share positions but never share lifetimes:
+Sent from server only to the warning owner or clicking player. Plates and
+temporary locates share positions; the beam shares the chat rainbow lifetime:
 
-| Event | Red plate | Rainbow edge |
-| Craft becomes delayed | Appear automatically, blink | Unchanged |
-| Chat link or double-click | Unchanged | Blink 15s, close originating screen |
-| TTC normal / finish / cancel | Disappear | Continue until expiry |
-| Provider breaks | Remove that plate | Remove that outline |
-| Leave and re-enter | Restore if still delayed | Never restore |
+| Event | Red plate | Rainbow edge | Red beam |
+| --- | --- | --- | --- |
+| Any of eight red warnings | Appear automatically for valid targets | Unchanged | Unchanged |
+| Successful chat locate | Unchanged | Blink 15s | Blink with rainbow 15s |
+| Crafting-row double-click | Unchanged | Blink 15s | Absent for that locate |
+| Last warning clears / finish / cancel | Disappear | Continue until expiry | Continue with chat rainbow |
+| Provider breaks | Remove that plate | Remove that outline | Remove that beam |
+| Leave and re-enter | Restore current valid warnings | Never restore | Never restore |
 
 Fields:
 
@@ -207,7 +209,8 @@ dimensionId: string
 positions: list<BlockPos>, at most 16
 outputId: string, at most 128 chars (profile key id, e.g. an item id)
 durationSeconds: nonnegative int (15)
-plateOnly: boolean (true for automatic delayed pings: red plate only, no rainbow edge)
+plateOnly: boolean (true for automatic warning plates: no rainbow edge)
+chatLocate: boolean (true only for a successful owned chat locate; versioned before displayKey)
 displayKey: optional AE2 typed key (bounded to 16 KiB; absent for clears and edge-only locates)
 ```
 
@@ -215,7 +218,7 @@ Rules:
 
 - Positions resolve server-side through live grid nodes at notify time;
   clients never send positions.
-- Automatic delayed pings (`plateOnly=true`) show the plate with no edge and
+- Automatic red warnings (`plateOnly=true`) show the plate with no edge and
   need no open window. Manual locates (`plateOnly=false`) show the edge with
   no plate change. Empty positions with zero duration clears one plate and
   keeps rainbow.
@@ -223,8 +226,9 @@ Rules:
   CPU, the planning screen, or a closed window never remove a plate. Active
   plates and edges are never silently evicted; identity is job + network +
   dimension + output + provider with independent rainbow targets.
-- Session end clears all plates and edges. Plates return only through login
-  resync for still-delayed crafts; rainbow is never serialized or restored.
+- Session end clears all plates and edges. Login replays only the runtime
+  reconciled plates; the next CPU tick refreshes current warnings. Saved
+  statuses alone cannot restore a plate. Rainbow and beams are never restored.
 - Every loader trims broken targets in that dimension only: air, missing
   block entity, replacement non-provider, or surviving host without provider
   service drops. Unloaded chunks and unreadable grid stay unknown and kept.
@@ -233,8 +237,10 @@ Rules:
   still-valid targets. Missing, foreign, finished, cancelled, or broken
   records answer with a private expiry notice and highlight nothing, and
   broken records are forgotten.
-- Blocked (`NO POWER` / `NO SPACE`) warnings never send plates or fallback
-  updates; they keep chat with an edge-only record.
+- All eight red warning statuses contribute to automatic plates when an
+  associated provider is valid. Chat links keep their existing notification
+  policy. A successful chat locate adds a red beam to the same 15-second
+  rainbow entry; a row double-click replaces it with rainbow-only state.
 - The client draws thick (2-3x) rainbow-cycling outline boxes while in the
   same dimension until the duration expires, plus the typed output resource
   centered on a red plate on each camera-facing face. Unknown or unavailable
@@ -250,9 +256,10 @@ Rules:
   The packet layout appends a bounded optional typed key after `networkId`;
   older packets without that field retain a plate without an icon.
 
-Wire versions: Forge channel protocol `21`; Fabric uses `provider_highlight_v5`
-for typed provider icons and keeps its other channels; NeoForge registrars are
-`20`.
+Wire versions: Forge channel protocol `25`; Fabric uses `provider_highlight_v6`
+and keeps its other channels; NeoForge registrars are `24`. The new
+chat provenance field has a marker before the optional typed key so old
+packets decode with no beam.
 
 ### Provider-start persistence
 
@@ -262,11 +269,13 @@ under a `providers` section. Old saves without the section load with empty
 provider state. The stored dimension travels with the fallback so resync
 never re-derives it alone. Rainbow edges are never persisted.
 
-After a reload, resumed crafts warn again with a working link because the
-owner and positions fall back to the persisted copy when live dispatch data
-is absent. Login resync re-sends plates for still-delayed crafts without
-re-sending chat. Finished, cancelled, and fully-broken outputs are forgotten
-so stale links expire instead of recreating red or targeting a replacement.
+Click records also persist their verified network ID. An old record without
+that field works only when one owner-bound start matches its output; it never
+selects another network's provider. An initial empty start can retain a
+captured blocked-warning target for a live click record. Later empty target
+resolution removes that record. Login replays only runtime contributions,
+and the next CPU tick can rebuild current plates; persisted warning text alone
+never creates one. Finished, cancelled, and invalidated links expire.
 
 ### Status persistence
 

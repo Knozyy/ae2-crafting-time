@@ -3,6 +3,9 @@ package com.ctux.ae2craftingtime.mc1201;
 import appeng.api.client.AEKeyRendering;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
+import com.ctux.ae2craftingtime.core.ProviderBeamHeight;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -33,6 +36,30 @@ import net.minecraft.world.phys.AABB;
  * touched on a dedicated server.
  */
 public final class ProviderHighlightShapes {
+    public static RenderType beam() {
+        return BeamState.BEAM;
+    }
+
+    private static final class BeamState extends RenderType {
+        private static final RenderType BEAM = createBeam();
+
+        private BeamState() {
+            super("provider_beam", DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLE_STRIP,
+                    1536, false, true, () -> {}, () -> {});
+        }
+
+        private static RenderType createBeam() {
+            return RenderType.create("ae2craftingtime_provider_beam",
+                    DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLE_STRIP, 1536, false, true,
+                    CompositeState.builder()
+                            .setShaderState(POSITION_COLOR_SHADER)
+                            .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                            .setCullState(NO_CULL)
+                            .setDepthTestState(NO_DEPTH_TEST)
+                            .setWriteMaskState(COLOR_WRITE)
+                            .createCompositeState(false));
+        }
+    }
     private static final double[] SHELL_OFFSETS = {0.002, 0.014, 0.026};
     private static final float PLATE_HALF_SIZE = 0.36f;
     private static final float PLATE_MIN_Z = 0.004f;
@@ -45,6 +72,14 @@ public final class ProviderHighlightShapes {
         for (var shell : SHELL_OFFSETS) {
             LevelRenderer.renderLineBox(pose, consumer, box.inflate(shell), red, green, blue, alpha);
         }
+    }
+
+    public static void renderBeam(PoseStack pose, VertexConsumer consumer, BlockPos pos, int upperBuildBoundary,
+            int renderDistanceChunks, float alpha) {
+        LevelRenderer.addChainedFilledBoxVertices(pose, consumer,
+                pos.getX() + 0.4, pos.getY() + 1, pos.getZ() + 0.4,
+                pos.getX() + 0.6, ProviderBeamHeight.top(pos.getY(), upperBuildBoundary, renderDistanceChunks),
+                pos.getZ() + 0.6, 1.0f, 0.15f, 0.15f, alpha);
     }
 
     /**

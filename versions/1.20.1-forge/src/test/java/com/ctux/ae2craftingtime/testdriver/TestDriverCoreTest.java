@@ -1285,6 +1285,19 @@ class TestDriverCoreTest {
     }
 
     @Test
+    void standardStatusAllowsUnboxedLabelsOnlyWhenBackgroundIsOff() {
+        var text = new UiSnapshot.ObservedText("text.ae2craftingtime.ttc_delayed", "Delayed", List.of(),
+                new Rect(12, 12, 8, 5));
+        var unboxed = snapshot(text, List.of(), List.of(), new Rect(10, 10, 30, 30));
+        var boxed = new UiSnapshot("screen", "menu", unboxed.gui(), 100, 100, 1, 1, 0,
+                List.of(), List.of(text), List.of(new Rect(11, 11, 10, 8)), List.of(), List.of(), List.of());
+        assertTrue(StandardAe2Scenario.statusBadgesValid(unboxed, false));
+        assertFalse(StandardAe2Scenario.statusBadgesValid(unboxed, true));
+        assertTrue(StandardAe2Scenario.statusBadgesValid(boxed, true));
+        assertFalse(StandardAe2Scenario.statusBadgesValid(boxed, false));
+    }
+
+    @Test
     void requesterBadgesRejectTheOriginalItemOverlap() {
         var gui = new Rect(100, 40, 195, 250);
         var item = new Rect(127, 60, 16, 16);

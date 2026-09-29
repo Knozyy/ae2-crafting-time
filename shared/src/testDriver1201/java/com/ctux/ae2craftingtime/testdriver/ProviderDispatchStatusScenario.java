@@ -393,9 +393,8 @@ final class ProviderDispatchStatusScenario {
         moveMouse.accept(warning.bounds().x() + warning.bounds().width() / 2,
                 warning.bounds().y() + warning.bounds().height() / 2);
         if (!tooltipReady(snapshot.tooltip()) || !tooltipFrames.observe(phase)) return false;
-        if (!warning.bounds().inside(snapshot.gui())
-                || snapshot.badges().stream().noneMatch(badge -> warning.bounds().inside(badge))) {
-            throw new IllegalStateException(key + " has no contained rendered badge");
+        if (!LayoutValidator.warningBadgeValid(snapshot, warning)) {
+            throw new IllegalStateException(key + " has invalid warning badge layout");
         }
         checks.put("tooltip", true);
         if (NO_CHANNEL.equals(scenario) && (warning.bold() || warning.color() == null

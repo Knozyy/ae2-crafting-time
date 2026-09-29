@@ -289,6 +289,16 @@ state under the production lifetime rules. Server mutations use the existing
 revision/sequence guards. Review icon appearance separately from semantic
 assertions; missing evidence fails and unreviewed images remain REVIEW_REQUIRED.
 
+The #488 beam checks reuse the item resource fixture and its existing held,
+completed and rejoined checkpoints. `ResourceFixtureServer` exposes the live
+owner-bound chat record ID in its state and one foreign-owner ID for a negative
+command; these are only test data, and the normal command handler still checks
+ownership and provider targets. The client first performs a real row double-click,
+then sends foreign and owned locate commands. It verifies an opaque roof block
+over the selected provider, captures the owned beam with the held job, and
+records beam positions in the current evidence JSON. Integrated completion
+waits for the common rainbow/beam expiry; connected rejoin checks session clear.
+
 ## Badge background standard leaf (#532)
 
 Reuse `StandardAe2Scenario` and its existing standard fixture. At stable Plan

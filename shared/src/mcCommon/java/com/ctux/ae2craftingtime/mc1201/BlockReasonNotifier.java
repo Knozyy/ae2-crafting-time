@@ -19,11 +19,8 @@ import net.minecraft.server.level.ServerPlayer;
  * POWER and NO SPACE rows, with the same private clickable message shape as
  * delayed warnings. Reasons that clear re-arm a later transition.
  *
- * <p>Red plate lifecycle is driven solely by the delayed/TTC transition in
- * {@link DelayedNotificationServer}: blocked warnings never create or clear
- * plates, so clearing one reason (power or space) can never remove red while
- * the craft remains delayed. Warning messages and clickable locate records are
- * preserved; only highlight side effects are decoupled.
+ * <p>This class owns chat episodes only. {@link DelayedNotificationServer}
+ * reconciles red plates from all current warning reasons after the CPU probes.
  */
 public final class BlockReasonNotifier {
     private static final StuckEpisodeTracker NO_POWER = new StuckEpisodeTracker();
@@ -80,9 +77,8 @@ public final class BlockReasonNotifier {
             return;
         }
         // Poll even when nothing is currently stuck: an empty set ends the
-        // episode so a later transition warns again. Resolved blocked episodes
-        // deliberately never touch highlights: red stays until the delayed
-        // lifecycle (recovery, finish, cancel) or provider break removes it.
+        // episode so a later transition warns again. Plate changes are handled
+        // by the shared warning reconciliation after this chat probe.
         var newly = tracker.pollNewlyStuck(scope, keys);
         tracker.pollResolved(scope);
         if (newly.isEmpty()) {
@@ -115,11 +111,9 @@ public final class BlockReasonNotifier {
         UUID recordId = null;
         if (!positions.isEmpty()) {
             recordId = ProviderLocateRecords.create(owner, dimension, positions, name, key.outputId(),
-                    player.level().getGameTime()).id();
+                    player.level().getGameTime(), key.networkId()).id();
         }
-        // Intentionally no replaceProviderStart and no highlight send: the
-        // delayed path owns red plates and provider fallback. Blocked warnings
-        // keep chat (and its clickable record for manual edge locates) only.
+        // Chat records stay separate from the plate reconciliation.
         if (WarningPreferenceServer.canSend(player, chatEnabled)) {
             player.sendSystemMessage(DelayedChatText.blockedMessage(name, recordId, wordKey, detail));
         }

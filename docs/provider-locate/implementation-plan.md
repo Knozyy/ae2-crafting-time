@@ -277,6 +277,34 @@ reuse it. #376 does not block this work.
    preview changed selection, pass one representative focused scenario, then
    run the required selected matrix and connected checks. Bind evidence to the
    exact implementation head and shut down only CodexVM afterward.
+
+   **Post-PR views outside the bounded fixture:** first run
+   `scripts/run-ui-smoke.ps1 -Changed -BaseRef origin/master -PlanOnly` and
+   its selected matrix. On each of the four supported targets, run the
+   existing `delayed-resource-icons` item case and review `item-held.png`
+   (owned chat beam under stone), integrated `item-recovery-pair.png`,
+   `item-completed.png` (both effects expired), and connected
+   `item-rejoined.png` (neither returned). Inspect the sidecar's `beams`,
+   `rainbows.chatLocate`, owner-bound server job, and exact implementation
+   SHA; confirm the foreign-link expiry response in the driver check. Run
+   `delayed-status`, `no-space-status`, `no-provider-status`, `no-power-status`,
+   `no-channel-status`, `no-target-status`, `input-blocked-status` and
+   `locked-status` for the eight warning rows. At each valid associated
+   provider, capture an automatic plate with no beam before any click; for
+   NO PROVIDER without a valid target, capture marker absence. These status
+   leaves do not assert every plate yet, so review the actual client plate
+   state and images rather than treating a row assertion as proof.
+
+   In a marked disposable interactive world for each target, place a held
+   craft's provider below opaque stone, glass and water in separate runs,
+   then in a roofed dimension. Use its real private chat link and capture
+   the beam from below and above each roof. Move until the base leaves the
+   view frustum while the beam remains visible; capture nearby translucent
+   geometry and a provider near the upper build boundary. Capture row-only,
+   expired/foreign-link, wrong-dimension and second-player negatives. For
+   every view record target, world marker, coordinates, beam/border start
+   and end frames, screenshot sidecars, render logs and head SHA. Report
+   every unrun case explicitly; one target cannot stand in for another.
 7. **Close only with evidence.** Match each B1-B7 criterion to passing checks
    and reviewed captures. Update these docs from planned to shipped only after
    that gate passes. Merge the implementation and verify #488 closes; the docs

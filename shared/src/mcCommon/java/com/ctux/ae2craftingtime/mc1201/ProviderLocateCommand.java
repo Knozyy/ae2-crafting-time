@@ -80,37 +80,31 @@ public final class ProviderLocateCommand {
     }
 
     /**
-     * Prefers the owning job's per-output fallback (fresher than the captured
-     * record) across every network, filtered through actual provider targets.
-     * Blocked warnings have no fallback and use the filtered captured
-     * positions. Empty means finished, cancelled, or broken: no highlight,
-     * no red recreation, no replacement-block targeting.
+     * Uses only the record's verified network. An empty initial start can use
+     * captured blocked-warning positions; a later empty replacement removes
+     * its click record, so invalidation cannot revive those positions.
      */
     static java.util.Optional<ProviderHighlightCodec.Highlight> resolveValidTargets(CommandSourceStack source,
             ProviderLocateRecords.LocateRecord record) {
         if (source == null || record == null) {
             return java.util.Optional.empty();
         }
-        var fallbacks = ProviderLocateRecords.startsForOutput(record.owner(), record.outputId());
-        for (var fallback : fallbacks) {
-            var dimension = fallback.dimensionId() != null && !fallback.dimensionId().isBlank()
-                    ? fallback.dimensionId()
-                    : record.dimensionId();
-            var kept = filterValid(source, dimension, fallback.positions());
-            if (!kept.isEmpty()) {
-                return java.util.Optional.of(new ProviderHighlightCodec.Highlight(fallback.key().networkId(),
-                        dimension, kept, record.outputId(), HIGHLIGHT_SECONDS, false));
-            }
-        }
-        if (!fallbacks.isEmpty()) {
+        var fallbacks = ProviderLocateRecords.startsForOutput(record.owner(), record.outputId()).stream()
+                .filter(start -> record.networkId().isBlank()
+                        || record.networkId().equals(start.key().networkId())).toList();
+        // Old saved records have no network identity. Only an unambiguous
+        // owner-bound start can authenticate them; never choose another grid.
+        if (fallbacks.size() != 1) return java.util.Optional.empty();
+        var fallback = fallbacks.get(0);
+        if (record.networkId().isBlank() && !ProviderLocateRecords.matchesLegacyStart(record, fallback))
             return java.util.Optional.empty();
-        }
-        var keptRecord = filterValid(source, record.dimensionId(), record.positions());
-        if (keptRecord.isEmpty()) {
-            return java.util.Optional.empty();
-        }
-        return java.util.Optional.of(new ProviderHighlightCodec.Highlight("", record.dimensionId(), keptRecord,
-                record.outputId(), HIGHLIGHT_SECONDS, false));
+        var dimension = fallback.dimensionId() != null && !fallback.dimensionId().isBlank()
+                ? fallback.dimensionId() : record.dimensionId();
+        var positions = fallback.positions().isEmpty() ? record.positions() : fallback.positions();
+        var kept = filterValid(source, dimension, positions);
+        if (kept.isEmpty()) return java.util.Optional.empty();
+        return java.util.Optional.of(new ProviderHighlightCodec.Highlight(fallback.key().networkId(),
+                dimension, kept, record.outputId(), HIGHLIGHT_SECONDS, false, null, true));
     }
 
     private static List<BlockPos> filterValid(CommandSourceStack source, String dimensionId,
@@ -123,7 +117,7 @@ public final class ProviderLocateCommand {
             var server = serverLevel.getServer();
             if (server != null && dimensionId != null && !dimensionId.isBlank()) {
                 for (var level : server.getAllLevels()) {
-                    if (!dimensionId.equals(dimensionIdOf(level))) {
+                    if (!dimensionId.equals(ProfilerBridge.dimensionId(level))) {
                         continue;
                     }
                     var kept = new java.util.ArrayList<BlockPos>();
@@ -134,6 +128,7 @@ public final class ProviderLocateCommand {
                     }
                     return List.copyOf(kept);
                 }
+                return List.of();
             }
             var kept = new java.util.ArrayList<BlockPos>();
             for (var pos : positions) {
@@ -143,7 +138,7 @@ public final class ProviderLocateCommand {
             }
             return List.copyOf(kept);
         } catch (Exception ignored) {
-            return List.copyOf(positions);
+            return List.of();
         }
     }
 
@@ -153,7 +148,7 @@ public final class ProviderLocateCommand {
             var server = serverLevel.getServer();
             if (server != null && dimensionId != null && !dimensionId.isBlank()) {
                 for (var level : server.getAllLevels()) {
-                    if (dimensionId.equals(dimensionIdOf(level))) {
+                    if (dimensionId.equals(ProfilerBridge.dimensionId(level))) {
                         return level;
                     }
                 }
@@ -161,27 +156,6 @@ public final class ProviderLocateCommand {
             return serverLevel;
         } catch (Exception ignored) {
             return null;
-        }
-    }
-
-    /**
-     * Version-agnostic dimension id: 1.20.1/1.21.1 expose
-     * {@code dimension().location()}, 26.1 exposes
-     * {@code dimension().identifier()}. Reflection keeps this shared file
-     * compiling on both.
-     */
-    private static String dimensionIdOf(net.minecraft.server.level.ServerLevel level) {
-        try {
-            var key = level.dimension();
-            try {
-                var location = key.getClass().getMethod("location").invoke(key);
-                return String.valueOf(location);
-            } catch (NoSuchMethodException missing) {
-                var identifier = key.getClass().getMethod("identifier").invoke(key);
-                return String.valueOf(identifier);
-            }
-        } catch (Exception ignored) {
-            return "";
         }
     }
 
