@@ -9,7 +9,8 @@ Verification: that PR records 12 passing graphs, 846 reviewed captures, and
 manual book QA. Automatic visual classification remains REVIEW_REQUIRED.
 
 Planned change: [#488](../../provider-locate/spec.md#planned-red-sky-beam)
-includes NO CHANNEL in automatic red plates with output icons and sky beams.
+includes NO CHANNEL in automatic red plates with output icons. Sky beams require
+a successful chat-link locate and share its rainbow borders' 15-second lifetime.
 This supersedes NC-06's no-highlight/no-plate boundary only; detection,
 freshness, runtime-only evidence and chat policy remain unchanged.
 

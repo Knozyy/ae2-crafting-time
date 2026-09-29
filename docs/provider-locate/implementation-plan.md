@@ -215,11 +215,16 @@ reuse it. #376 does not block this work.
    `BlockReasonNotifier`; never gate highlights on chat or menu requests. Validate
    first-dispatch targets and handle NO PROVIDER with no target as no marker.
    Keep transient reasons runtime-only and refresh them after restart.
-2. **Draw from existing client state (B1, B3-B6).** Own the four loader render hooks
-   and the two `ProviderHighlightShapes` source-set copies named in the design.
-   Add one beam per current-dimension selected plate, after target trimming,
-   independent of icon resolution. Reuse the frame pulse and existing lifecycle.
-   Do not add a client beam timer or change the packet format.
+2. **Carry chat provenance and reuse edge lifetime (B1, B3-B6).** Add the
+   chat-locate flag to the shared DTO/codec, four loader adapters and client edge
+   record. Set it only after the owned chat command resolves valid targets;
+   row locates and automatic sends keep false. Preserve it during trimming.
+   Repeated chat refreshes the pair; a row request replaces that identity with
+   edge-only state. Select live chat-edge positions with the existing display
+   selection helper. Add no beam timer, cache or persistence. Bump Forge 24 to
+   25, NeoForge 23 to 24 and Fabric highlight v5 to v6 together; verify channel
+   guards and legacy decoding. Own the four render hooks and two shape helpers
+   named in the design, reusing frame pulse and dimension/target filtering.
 3. **Isolate rendering (B2, B6).** Implement the specified column dimensions,
    height and red color through dedicated no-depth-test/no-depth-write render
    types/pipelines. Keep vertex API differences at the existing version/loader
@@ -234,7 +239,9 @@ reuse it. #376 does not block this work.
    Add server tests for all eight warnings, no-menu/chat-disabled operation,
    red-to-red transitions, overlapping reasons, two jobs sharing an output,
    different owners, transient expiry, reconnect/restart and invalid/replaced
-   targets. Assert exact packet updates and no premature clear.
+   targets. Assert exact packet updates and no premature clear. Cover packet
+   provenance round-trips/bounds, automatic/resync/row beam absence, chat refresh,
+   row replacement, exact common expiry and plate recovery without edge loss.
 5. **Commit, then verify (B7).** Use one conventional feature commit and let
    the hook create its PR before running local tests. Run focused tests and
    compile all four release-matrix targets; run required coverage checks and
@@ -243,22 +250,38 @@ reuse it. #376 does not block this work.
    -PlanOnly`; run its required selection without weakening it.
 6. **Capture the actual effect (B1-B7).** Extend the existing `delayed-status`
    scenario in `StandardAe2Scenario` with an opaque roof over the provider in
-   its disposable fixture. Capture the automatic beam, shared-provider winner
-   recovery and last-output cleanup. Add glass/fluid and roofed-dimension
-   observations, manual-only locate, chat-disabled activation, re-entry and
-   wrong-dimension/other-player absence checks. Use the same server-owned path
+   its disposable fixture. Capture automatic plate-only state, a successful chat
+   locate with rainbow/beam, overlapping locates, recovery while the pair survives
+   and simultaneous expiry. Add glass/fluid and roofed-dimension
+   observations, row-only locate, chat-disabled plate activation without beam,
+   re-entry and wrong-dimension/other-player absence checks. Use the same server-owned path
    in singleplayer and a dedicated-server ownership check. Never mutate the
    tracked source world. Run and review the visual cases on Forge 1.20.1,
    Fabric 1.20.1, NeoForge 1.21.1 and NeoForge 26.1.2, including high providers,
    off-screen bases and nearby translucent geometry. Bind captures and logs to
    the implementation commit and report unrun cases honestly.
-   Extend existing warning-status scenarios to verify plates and beams for all
+   Extend existing warning-status scenarios to verify plates without beams for all
    eight statuses on valid targets, including failures before first successful
    dispatch. For NO PROVIDER additionally prove no-target absence. Exercise a
-   blocked-only warning and DELAYED-to-blocked transition without marker loss.
+   blocked-only warning and DELAYED-to-blocked transition without plate loss.
+   Extend an existing connected resource fixture narrowly for chat provenance
+   and owner-bound packet/lifecycle checks; do not create another server runner.
+
+   Before approving or launching runtime checks, verify guest native
+   `prepared/<target>/launch.json`, matching loaders, Java 17/17/21/25, SSH access,
+   disposable fixture markers and the existing connected fixture entry point.
+   Host runtimes, tracked source worlds and launch scripts were inspected;
+   CodexVM was off and guest manifests were not inspected during planning.
+   Missing native installations are prerequisites; do not substitute another
+   target or silently add substantial test infrastructure. After PR creation,
+   preview changed selection, pass one representative focused scenario, then
+   run the required selected matrix and connected checks. Bind evidence to the
+   exact implementation head and shut down only CodexVM afterward.
 7. **Close only with evidence.** Match each B1-B7 criterion to passing checks
    and reviewed captures. Update these docs from planned to shipped only after
    that gate passes. Merge the implementation and verify #488 closes; the docs
    merge alone does not deliver the feature.
    Update English/Ukrainian player guidance and the protocol behavior docs to
-   describe all-warning eligibility without claiming a packet format change.
+   describe automatic all-warning plates, chat-only temporary beams, row-only
+   rainbow locates and the coordinated packet version change. Reconcile the
+   historical manual-outline wording in resource-icon docs with this extension.

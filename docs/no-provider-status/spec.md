@@ -8,9 +8,10 @@ Implementation: [PR #206](https://github.com/cTux/ae2-crafting-time/pull/206).
 Verification: [four-target prepared-client results](../automated-ui-testing/prepared-clients-2026-09-08.md).
 
 Planned change: [#488](../provider-locate/spec.md#planned-red-sky-beam) includes
-NO PROVIDER in automatic red plates with output icons and sky beams when a
-validated associated provider target exists. No target means no marker, not
-invented coordinates. Existing status detection and priority remain unchanged.
+NO PROVIDER in automatic red plates with output icons when a validated associated
+provider target exists. Sky beams require a successful chat-link locate and share
+its rainbow borders' 15-second lifetime. No target means no world marker. Existing
+status detection and priority remain unchanged.
 
 Issue: [#120](https://github.com/cTux/ae2-crafting-time/issues/120)
 

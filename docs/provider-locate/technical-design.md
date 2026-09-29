@@ -453,7 +453,7 @@ completion and cleanup coverage.
 ## Red sky beam design
 
 Planned for [issue #488](https://github.com/cTux/ae2-crafting-time/issues/488).
-Source baseline: `5778c552e0c5cec2a7d914a2c2f3f18a5fb1767b`.
+Source baseline: `13176744d3edb08638b7e824e326e77b99bd1f9b`.
 The earlier #443 investigation above is historical: this baseline already has
 `ProviderDisplaySelection.firstByPosition` and `renderPlates()` on all targets.
 
@@ -469,8 +469,10 @@ derive eligibility by inspecting RGB values or client UI caches.
 Extend the shared server highlight reconciliation at the existing CPU tick
 boundary. Combine current delayed evidence, `ProfilerBridge.blockReasons` with
 its current freshness/pending rules, and `NoSpaceProbe.stuckKeys` using the same
-stored-only predicate as the row. Reuse these predicates rather than inventing
-another delay threshold. Call reconciliation even when the result is empty,
+stored-only predicate as the row. The current `blockReasons` merges live and
+persisted remembered reasons: expose its live calculation for plate eligibility
+without restoring transient plate causes from that merge. Reuse these predicates
+rather than inventing another delay threshold. Call reconciliation even when the result is empty,
 offline or chat-disabled, and without requiring `StatsRequestHandler` traffic.
 
 Keep runtime contributions by job/scope, owner, network, dimension and output,
@@ -505,24 +507,47 @@ dispatch evidence; no new persisted reason or stale remembered-status fallback
 is allowed. Existing saved delayed/provider data may retain its existing role
 only for a still-valid active job. Re-evaluate NO SPACE from live CPU contents.
 
-Use `ProviderHighlightClient.renderPlates()` as the only beam input, after the
-existing `trimPositions` call and current-dimension filter. It already selects
-one plate per physical provider without deleting other warning identities.
-Draw one beam per selected position, independently of item resolution or
-camera-facing plate-face selection. Do not introduce a beam cache or timer.
-Winner changes therefore keep the beam, while removing the last plate removes
-it on the next render. Use the existing frame's `pulseAlpha()` for both.
+### Chat locate provenance and lifetime
 
-Server authority, owner-only sends, clear packet format and unknown unloaded
-target handling stay intact; eligibility, cleanup and login resync expand as
-above. `liveEdges()` never supplies beam positions. Blocked-only warnings now
-create both red effects; manual-only locates still create neither.
+`ProviderLocateCommand.locate` handles the owned chat record and validates its
+provider targets. `ProviderLocateServer.locate` handles the crafting-row request.
+Both currently produce the same manual highlight payload; the client cannot
+infer its source from positions or plate state.
+
+Add one chat-locate boolean to `ProviderHighlightCodec.Highlight`, every loader's
+`ProviderHighlightS2C`, and the client `Highlight` record. Only the successful
+`ProviderLocateCommand` path sets it. Automatic sends, clears, row locates and
+compatibility constructors default to false. Keep ownership and target validation
+on the server. Typed execution of the same owned locate command follows chat-link
+semantics; do not add a client click detector or trust client UI provenance.
+
+Store the flag in the existing edge entry with its positions and expiry. A chat
+locate replaces one entry with the flag set; a row locate replaces it with the
+flag clear, so it cannot extend an earlier beam. Preserve the flag when trimming
+positions. Existing expiry and session cleanup remove both transient effects;
+plate clears never modify the pair. Add no separate beam map or timer.
+
+Select beam positions from live chat edges after target trimming and dimension
+filtering. Reuse `ProviderDisplaySelection.firstByPosition` to draw once per
+physical position without deleting overlapping locate identities. A surviving
+chat edge keeps the beam when another expires. Use the same frame pulse for
+rainbow and beam. `renderPlates()` stays independent: neither plate presence nor
+icon resolution gates the beam.
+
+The codec currently rejects trailing bytes. Coordinate the new layout by bumping
+Forge protocol 24 to 25, both NeoForge registrars 23 to 24, and Fabric's highlight
+channel from `provider_highlight_v5` to `provider_highlight_v6`. Retain existing
+optional-channel guards; never send new bytes under the old identifier. Update
+protocol tests and docs together. Preserve legacy decoder cases with chat
+provenance defaulting to false and keep malformed/trailing-data rejection.
+No save migration is needed; edge provenance and timers are never persisted.
 
 ### Geometry and render boundaries
 
 Render a vertical translucent, full-bright red column, centered at
 `(x + 0.5, z + 0.5)`, starting at `y + 1`, with a 0.2-block square cross-section.
-Use the plate red `(1.0, 0.15, 0.15)` and its pulse opacity. End it at
+Use the plate red `(1.0, 0.15, 0.15)` and the rainbow highlight's pulse opacity.
+End it at
 `max(dimension upper build boundary, provider top + client render distance in
 blocks)`. This keeps a positive column above high providers and reaches above
 dimension roofs without scanning blocks or hard-coding Overworld height.
@@ -544,22 +569,22 @@ state. Restore the pose stack and let pipeline setup/teardown own render state.
 | --- | --- |
 | `shared/src/mc1201/java/com/ctux/ae2craftingtime/mc1201/ProviderHighlightShapes.java` | Add the beam draw entry point using the older filled-shape API. Keep API differences in loader adapters where necessary. |
 | `shared/src/mc2612/java/com/ctux/ae2craftingtime/mc1201/ProviderHighlightShapes.java` | Equivalent camera-relative geometry for the newer render API. |
-| Forge 1.20.1 and NeoForge 1.21.1 `ProviderHighlightRender` | Submit beams from selected plates in their existing world stage, with a beam-specific render type. |
+| Forge 1.20.1 and NeoForge 1.21.1 `ProviderHighlightRender` | Submit beams from selected live chat edges in their existing world stage, with a beam-specific render type. |
 | Fabric 1.20.1 `Ae2CraftingTimeClient` | Same selection and geometry in `AFTER_TRANSLUCENT`; keep its dedicated immediate buffer and flush before return. |
 | NeoForge 26.1.2 `ProviderHighlightRender` | Draw beams once in `onRenderLevelStage` using a dedicated pipeline. Do not submit them again in the separate item-only `onSubmitGeometry` pass. |
 
-Do not change the shared plate store unless a minimal test seam is required.
-No codec fields, persisted transient reasons or migration are required. Update
-English and Ukrainian player guide descriptions together when implementing.
-The existing wire format carries the broader plate eligibility; older clients
-can display those plates but lack the beam. Dedicated servers must never load the
-new rendering classes. All four release-matrix rows require implementation.
+Keep the plate store independent from locate provenance. The new packet field
+and network versions distinguish chat from row locates; no persisted transient
+reasons or world migration are required. Update English/Ukrainian GuideME text,
+the GitHub wiki and protocol documentation when implementing. Dedicated servers
+must never load rendering classes. All four release targets need implementation.
 
 ### Validation and failure boundaries
 
 Reuse `ProviderPlatesTest` and `ProviderHighlightTriggerTest` for automatic
 plates versus manual edges, recovery/finish/cancel and session cleanup. Extend
-focused checks for beam inputs: shared-provider survivor, empty selection,
+focused checks for chat versus row provenance, failed/foreign requests, common
+expiry and refresh, row replacement, shared-provider survivor, empty selection,
 dimension filtering and unresolved icon. Check positive geometry height at
 both build limits. Do not duplicate the delayed-state machine in tests.
 

@@ -10,9 +10,10 @@ Verification: [prepared-client results](../automated-ui-testing/prepared-clients
 [red-warning highlights](../provider-locate/spec.md#planned-red-sky-beam) have separate scopes.
 
 Planned change: [#488](../provider-locate/spec.md#planned-red-sky-beam) adds
-automatic red plates with output icons and sky beams to every red warning,
-including these dispatch reasons. It supersedes this document's existing
-no-red-plates boundary, while preserving detection, priority and chat policy.
+automatic red plates with output icons to every red warning, including these
+dispatch reasons. Sky beams appear only after a successful chat-link locate,
+alongside rainbow borders for the same 15 seconds. This supersedes the existing
+no-red-plates boundary while preserving detection, priority and chat policy.
 
 Issue: [#216](https://github.com/cTux/ae2-crafting-time/issues/216).
 
