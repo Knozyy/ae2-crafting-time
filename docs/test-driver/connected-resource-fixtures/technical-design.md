@@ -37,6 +37,16 @@ Chunk retention, a blocked server callback, and grid/job/delayed recovery remain
 hypotheses. Do not replace the acknowledgment contract or rebind estimates
 merely because those changes look plausible.
 
+The #630 diagnostic resolved the first gate. Sequence 8 was accepted and polled
+more than 2700 times in unload phase 1 while the player was 32 chunks away;
+the provider chunk stayed loaded after the adjacent terminal chunk unloaded.
+A second run at 64 chunks gave the same result. `DelayedNotificationServer.reconcile`
+checks the highlighted provider each crafting tick. Its
+`ProviderBlockTargets.keepForHighlight` call uses `Level.getBlockState` and
+`getBlockEntity`, whose server chunk lookup adds a one-tick `UNKNOWN` ticket.
+That repeated read keeps the provider loaded. Use an existing chunk handle for
+the provider check, preserving the rule that unloaded chunks are unknown.
+
 First add a small bounded snapshot to the existing retained fixture evidence:
 pending sequence/action/case, accepted tick and poll count, unload phase and
 observed-unload flag, player/provider positions, and safe loaded/grid/job/delayed

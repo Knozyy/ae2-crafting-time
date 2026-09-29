@@ -37,6 +37,10 @@ The older qualification sections below do not define this repair's campaign.
    and all callers, and add the smallest regression that fails on the original
    behavior. Do not relax deadlines, skip real unload, seed delayed state or
    weaken ITEM assertions. Review all corrections before the next commit.
+   The #630 Forge diagnostics proved the provider remains loaded in phase 1
+   even with the player 64 chunks away. The per-tick highlight check renews a
+   server chunk ticket through loading block reads. Correct that shared provider
+   check with a non-loading chunk read and retain the original unload distance.
 4. **Run focused checks (UR2/UR4).** Run
    `./gradlew.bat :mc_1_20_1_forge:test --tests '*ResourceFixtureControlTest'`
    for the driver boundary. If production pure logic changes, also run

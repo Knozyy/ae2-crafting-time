@@ -6,6 +6,7 @@ param(
     [string]$ExpectedAdapters
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'resource-fixture-contract.ps1')
 
 function Test-UiSnapshotBounds($snapshot) {
     if ($null -eq $snapshot.guiScale -or $snapshot.guiScale -is [bool] -or $snapshot.guiScale -is [string]) { return $false }
@@ -55,17 +56,15 @@ foreach ($scenario in $Scenarios) {
                 }
             }
             if ($contracts.$scenario) {
-                $contractChecks = if ($data.checks.'advanced-cpu' -is [bool] -and $contracts.$scenario.advancedChecks) {
-                    @($contracts.$scenario.advancedChecks)
-                } else { @($contracts.$scenario.checks) }
-                if ($scenario -in @('delayed-resource-icons','appmek-resource-icons') -and
-                        $data.checks.'typed-keys' -is [bool]) {
-                    $contractChecks = @($contractChecks | ForEach-Object {
-                        if ($_ -eq 'fixture-only') { 'typed-keys' } else { $_ }
-                    })
+                if ($scenario -in @('delayed-resource-icons','appmek-resource-icons')) {
+                    Assert-ResourceFixtureChecks $data.checks $scenario $false ($data.checks.'fixture-only' -is [bool])
+                } else {
+                    $contractChecks = if ($data.checks.'advanced-cpu' -is [bool] -and $contracts.$scenario.advancedChecks) {
+                        @($contracts.$scenario.advancedChecks)
+                    } else { @($contracts.$scenario.checks) }
+                    if (Compare-Object $contractChecks @($data.checks.psobject.Properties.Name) -CaseSensitive) { throw 'Incomplete check set' }
+                    foreach ($check in $contractChecks) { if ($data.checks.$check -isnot [bool] -or !$data.checks.$check) { throw "Failed check: $check" } }
                 }
-                if (Compare-Object $contractChecks @($data.checks.psobject.Properties.Name) -CaseSensitive) { throw 'Incomplete check set' }
-                foreach ($check in $contractChecks) { if ($data.checks.$check -isnot [bool] -or !$data.checks.$check) { throw "Failed check: $check" } }
                 $contractScreenshots = if ($data.checks.'advanced-cpu' -is [bool] -and $contracts.$scenario.advancedScreenshots) {
                     @($contracts.$scenario.advancedScreenshots)
                 } else { @($contracts.$scenario.screenshots) }

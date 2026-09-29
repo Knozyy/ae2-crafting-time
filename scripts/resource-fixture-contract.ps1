@@ -3,6 +3,19 @@ function Get-ResourceFixtureContractCases([string]$Scenario, [string]$Target) {
     return @('ITEM','WATER','LAVA') + $(if ($Target -ceq '1.20.1-forge') { @('BUCKETLESS') }) + @('FLUID_OVERLAP')
 }
 
+function Assert-ResourceFixtureChecks([object]$Checks, [string]$Scenario, [bool]$Connected, [bool]$FixtureOnly) {
+    $expected = @('server-identity','real-dispatch','delayed-plates','native-locate','lifecycle',
+        'capture-integrity','cleanup',$(if ($FixtureOnly) { 'fixture-only' } else { 'typed-keys' }))
+    if ($Scenario -ceq 'delayed-resource-icons') {
+        $expected += @('roof','foreign-owner','chat-beam')
+        $expected += $(if ($Connected) { @('reconnect-clears-beam') } else { @('beam-recovery','beam-expiry') })
+    }
+    if ((Compare-Object $expected @($Checks.psobject.Properties.Name) -CaseSensitive) -or
+            @($Checks.psobject.Properties | Where-Object { $_.Value -isnot [bool] -or !$_.Value }).Count) {
+        throw 'Resource fixture client checks are missing, unexpected, or false'
+    }
+}
+
 function Assert-ResourceIconEvidence([object]$Icon, [object]$Fixture, [string]$HeadSha, [string]$Graph) {
     if ($Icon.schema -ne 1 -or $Icon.semanticResult -cne 'PASS' -or
             $Icon.visualAcceptance -cne 'REVIEW_REQUIRED' -or

@@ -15,7 +15,7 @@ completion record above. This does not qualify production resource icons.
 
 ## WATER unload/reload repair (#628)
 
-Status: ready-to-implement
+Status: in progress; final runtime qualification pending
 
 Scope: Diagnose and repair the production-mode resource fixture's WATER
 unload/reload acknowledgment on all four supported targets.
@@ -27,6 +27,13 @@ Planning: [Design](technical-design.md#water-unloadreload-repair-628) and
 The retained runs stop after WATER command sequence 8. Their last acknowledged
 sequence is 7, with `revision=3` and `ackRevision=3`; cleanup passes. They do
 not record the pending unload phase, so the exact cause remains unproved.
+The #630 diagnostic accepted WATER sequence 8 and stayed in unload phase 1:
+the player left, the terminal chunk unloaded, and the provider chunk stayed
+loaded. Moving the player 64 chunks away did not change that result. The
+per-tick delayed highlight check reads the provider through `Level.getBlockState`,
+which renews a short-lived server chunk ticket. The correction must inspect
+the already loaded chunk without creating a ticket; final runtime checks remain
+pending.
 This repair is separate from the finished RF1-RF8 fixture qualification above
 and does not complete [#376's icon acceptance](../../provider-locate/resource-icons/spec.md).
 

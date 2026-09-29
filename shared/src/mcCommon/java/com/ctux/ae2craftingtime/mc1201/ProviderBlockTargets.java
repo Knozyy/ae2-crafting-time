@@ -35,10 +35,15 @@ public final class ProviderBlockTargets {
             if (!level.isLoaded(pos)) {
                 return true;
             }
-            if (level.getBlockState(pos).isAir()) {
+            // Level block reads add a short-lived server chunk ticket on every poll.
+            var chunk = level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+            if (chunk == null) {
+                return true;
+            }
+            if (chunk.getBlockState(pos).isAir()) {
                 return false;
             }
-            var blockEntity = level.getBlockEntity(pos);
+            var blockEntity = chunk.getBlockEntity(pos, net.minecraft.world.level.chunk.LevelChunk.EntityCreationType.IMMEDIATE);
             if (blockEntity == null) {
                 return false;
             }

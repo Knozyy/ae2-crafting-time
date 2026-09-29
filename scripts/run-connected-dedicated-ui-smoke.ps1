@@ -482,12 +482,7 @@ try {
                 !$fixtureEvidence.screenshots.Count -or !$fixtureEvidence.clientObservations.Count) {
             throw 'Resource fixture evidence contract failed validation'
         }
-        $expectedChecks = @('server-identity','real-dispatch','delayed-plates','native-locate','lifecycle',
-            'capture-integrity','cleanup',$(if ($ResourceFixtureOnly) { 'fixture-only' } else { 'typed-keys' }))
-        if ((Compare-Object $expectedChecks @($fixtureEvidence.checks.psobject.Properties.Name) -CaseSensitive) -or
-                @($fixtureEvidence.checks.psobject.Properties | Where-Object { $_.Value -ne $true }).Count) {
-            throw 'Resource fixture client checks are missing, unexpected, or false'
-        }
+        Assert-ResourceFixtureChecks $fixtureEvidence.checks $Scenario $true ([bool]$ResourceFixtureOnly)
         $expectedCases = if ($Scenario -eq 'appmek-resource-icons') {
             @('OXYGEN','HYDROGEN','CHEMICAL_OVERLAP')
         } else {

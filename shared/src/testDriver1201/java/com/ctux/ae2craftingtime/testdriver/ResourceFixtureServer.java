@@ -56,6 +56,7 @@ final class ResourceFixtureServer {
     private boolean unloadObserved;
     private UUID foreignRecordId;
     private Map<String, Object> cleanupOutcome = Map.of();
+    private Map<String, Object> failureSnapshot = Map.of();
     private String terminalFailure = "";
     private final List<Map<String, Object>> receipts = new ArrayList<>();
     private final Map<String, Map<String, Object>> caseFacts = new LinkedHashMap<>();
@@ -470,14 +471,69 @@ final class ResourceFixtureServer {
                 Map.entry("scenario", scenario), Map.entry("target", target), Map.entry("terminal", position()),
                 Map.entry("receipts", List.copyOf(receipts)), Map.entry("state", state),
                 Map.entry("caseFacts", Map.copyOf(caseFacts)),
+                Map.entry("failureSnapshot", failureSnapshot),
                 Map.entry("clientEvidence", state.phase() == ResourceFixtureControl.Phase.COMPLETE
                         ? ResourceFixtureControl.readClientEvidence(control) : Map.of()),
                 Map.entry("teardownComplete", teardownComplete),
                 Map.entry("fixtureResult", state.phase() == ResourceFixtureControl.Phase.COMPLETE ? "PASS" : "FAIL"),
                 Map.entry("productionIconAcceptance", "NOT_RUN"));
     }
+
+    private Map<String, Object> failureSnapshot() {
+        var readiness = new LinkedHashMap<String, Object>();
+        if (operationInFlight != null && operationInFlight.action() == ResourceFixtureControl.Action.UNLOAD_RELOAD
+                && fixturePlayer != null) {
+            try {
+                var level = (ServerLevel) fixturePlayer.level();
+                readiness.put("playerPosition", fixturePlayer.blockPosition().toShortString());
+                readiness.put("providerPosition", unloadProvider == null ? "" : unloadProvider.toShortString());
+                boolean providerLoaded = unloadProvider != null && level.hasChunkAt(unloadProvider);
+                boolean terminalLoaded = grid.terminal != null && level.hasChunkAt(grid.terminal);
+                boolean cpuLoaded = grid.terminal != null && level.hasChunkAt(grid.terminal.west(2))
+                        && level.hasChunkAt(grid.terminal.west(4));
+                readiness.put("providerLoaded", providerLoaded);
+                readiness.put("terminalLoaded", terminalLoaded);
+                readiness.put("cpuLoaded", cpuLoaded);
+                boolean gridReady = false;
+                boolean jobReady = false;
+                boolean delayedReady = false;
+                if (terminalLoaded && cpuLoaded) {
+                    var cpu = grid.cpu(fixturePlayer);
+                    gridReady = cpu != null && cpu.getMainNode().getGrid() != null;
+                    if (gridReady && providerLoaded && processing != null) {
+                        var cpus = grid.resourceCpus(fixturePlayer);
+                        jobReady = processing.slots().stream().map(slot -> cpus.get(slot.index())).allMatch(candidate ->
+                                candidate != null && candidate.getCluster() != null
+                                        && candidate.getCluster().getJobStatus() != null
+                                        && candidate.getCluster().getJobStatus().crafting() != null);
+                        delayedReady = processing.delayed(fixturePlayer);
+                    }
+                }
+                readiness.put("gridReady", gridReady);
+                readiness.put("jobReady", jobReady);
+                readiness.put("delayedReady", delayedReady);
+            } catch (RuntimeException error) {
+                readiness.put("observationError", error.getClass().getSimpleName());
+            }
+        }
+        return operationSnapshot(operationInFlight, lastAccepted, operationAcceptedTick,
+                operationPolls, unloadPhase, unloadObserved, readiness);
+    }
+
+    static Map<String, Object> operationSnapshot(ResourceFixtureControl.Command pending,
+            ResourceFixtureControl.Command completed, long acceptedTick, int polls, int phase,
+            boolean observedUnload, Map<String, Object> readiness) {
+        if (pending == null) return Map.of("status", completed == null ? "absent" : "completed");
+        return Map.ofEntries(Map.entry("status", "pending"), Map.entry("sequence", pending.sequence()),
+                Map.entry("action", pending.action().name()), Map.entry("case", pending.resourceCase().name()),
+                Map.entry("acceptedTick", acceptedTick), Map.entry("pollCount", polls),
+                Map.entry("unloadPhase", phase), Map.entry("unloadObserved", observedUnload),
+                Map.entry("readiness", Map.copyOf(readiness)));
+    }
+
     Map<String, Object> cleanup(String originalFailure) {
         if (!cleanupOutcome.isEmpty()) return cleanupOutcome;
+        if (!originalFailure.isEmpty()) failureSnapshot = failureSnapshot();
         var cleanupFailures = new ArrayList<String>();
         try {
             if (processing != null) {

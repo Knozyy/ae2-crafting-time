@@ -404,6 +404,30 @@ class ResourceFixtureControlTest {
         assertEquals("cleanup", result.get("cleanupFailure"));
     }
 
+    @Test void failureSnapshotKeepsTheAcceptedUnloadGateBeforeCleanup() {
+        var epoch = UUID.randomUUID();
+        var player = UUID.randomUUID();
+        var fixture = UUID.randomUUID();
+        var unload = command(epoch, player, fixture, 3, 8, ResourceFixtureControl.Action.UNLOAD_RELOAD,
+                ResourceFixtureControl.Case.WATER, 0);
+        assertEquals("absent", ResourceFixtureServer.operationSnapshot(null, null, 0, 0, 0, false,
+                Map.of()).get("status"));
+        var readiness = Map.<String, Object>of("providerLoaded", true, "gridReady", false);
+        var pending = ResourceFixtureServer.operationSnapshot(unload, null, 120, 45, 1, false, readiness);
+        assertEquals("pending", pending.get("status"));
+        assertEquals(8L, pending.get("sequence"));
+        assertEquals("UNLOAD_RELOAD", pending.get("action"));
+        assertEquals("WATER", pending.get("case"));
+        assertEquals(120L, pending.get("acceptedTick"));
+        assertEquals(45, pending.get("pollCount"));
+        assertEquals(1, pending.get("unloadPhase"));
+        assertEquals(false, pending.get("unloadObserved"));
+        assertEquals(readiness, pending.get("readiness"));
+        assertEquals("completed", ResourceFixtureServer.operationSnapshot(null, unload, 120, 46, 0, true,
+                Map.of()).get("status"));
+        assertEquals("original", ResourceFixtureServer.cleanupEvidence("original", "").get("originalFailure"));
+    }
+
     @Test void connectedAbortBindsOriginalFailureAndTerminalRevision() {
         var epoch = UUID.randomUUID();
         var player = UUID.randomUUID();

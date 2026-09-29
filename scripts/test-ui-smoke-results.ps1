@@ -146,11 +146,14 @@ try {
     foreach ($check in $catalogue.cases.'delayed-resource-icons'.checks) {
         $resourceChecks[$check] = $true
     }
+    foreach ($check in @('roof','foreign-owner','chat-beam','beam-recovery','beam-expiry')) {
+        $resourceChecks[$check] = $true
+    }
     $resourceResult = @{schema=1;complete=$true;target='1.20.1-forge';profile='compatible';
         scenario='delayed-resource-icons';language='en_us';result='PASS';checks=$resourceChecks;
         screenshots=@('water-held.png')}
     function Read-Resource { & "$PSScriptRoot/get-ui-smoke-results.ps1" -Target 1.20.1-forge -Profile compatible `
-        -Scenarios delayed-resource-icons -Evidence $resource }
+        -Scenarios $resourceResult.scenario -Evidence $resource }
     $resourceResult | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $resource 'result.json')
     Assert ((Read-Resource).result -eq 'PASS') 'Fixture-only resource check set must pass'
     $resourceChecks.Remove('fixture-only')
@@ -160,6 +163,31 @@ try {
     $resourceChecks['fixture-only'] = $true
     $resourceResult | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $resource 'result.json')
     Assert ((Read-Resource).result -eq 'FAIL') 'Mixed resource modes must fail'
+    $resourceChecks.Remove('fixture-only')
+    foreach ($invalid in @($false,'true',1,$null)) {
+        $resourceChecks['beam-expiry'] = $invalid
+        $resourceResult | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $resource 'result.json')
+        Assert ((Read-Resource).result -eq 'FAIL') 'False or non-boolean ITEM check must fail independent leaf validation'
+    }
+    $resourceChecks['beam-expiry'] = $true
+    $resourceResult.scenario = 'appmek-resource-icons'
+    $resourceChecks.Remove('roof')
+    $resourceChecks.Remove('foreign-owner')
+    $resourceChecks.Remove('chat-beam')
+    $resourceChecks.Remove('beam-recovery')
+    $resourceChecks.Remove('beam-expiry')
+    $resourceResult.screenshots = @('oxygen-held.png')
+    Copy-Item -LiteralPath (Join-Path $resource 'water-held.png') -Destination (Join-Path $resource 'oxygen-held.png')
+    Copy-Item -LiteralPath (Join-Path $resource 'water-held.json') -Destination (Join-Path $resource 'oxygen-held.json')
+    $resourceResult | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $resource 'result.json')
+    Assert ((Read-Resource).result -eq 'PASS') 'Chemical production resource check set must pass without ITEM flags'
+    $resourceChecks.Remove('typed-keys')
+    $resourceChecks['fixture-only'] = $true
+    $resourceResult | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $resource 'result.json')
+    Assert ((Read-Resource).result -eq 'PASS') 'Chemical fixture-only resource check set must pass without ITEM flags'
+    $resourceChecks['roof'] = $true
+    $resourceResult | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $resource 'result.json')
+    Assert ((Read-Resource).result -eq 'FAIL') 'Chemical resource check set must reject ITEM flags'
     Write-Host 'PASS: independent evidence, missing/unrun leaves and stale identity rejection'
 } finally {
     $resolved = [IO.Path]::GetFullPath($temp)

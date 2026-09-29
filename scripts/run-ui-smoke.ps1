@@ -613,8 +613,7 @@ try {
         $driverName = "ae2-crafting-time-$modVersion-$loader-$game-test-driver.jar"
         $standardContracts = (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'ui-smoke-groups.json') -Raw | ConvertFrom-Json).cases
         $requiredChecks = if ($caseScenario -in @('delayed-resource-icons','appmek-resource-icons')) {
-            @('server-identity','real-dispatch','delayed-plates','native-locate','lifecycle',
-                'capture-integrity','cleanup',$(if ($ResourceFixtureOnly) { 'fixture-only' } else { 'typed-keys' }))
+            @()
         } elseif ($standardContracts.$caseScenario) {
             if ($DedicatedAddress -and $standardContracts.$caseScenario.connectedChecks) {
                 @($standardContracts.$caseScenario.checks) + @($standardContracts.$caseScenario.connectedChecks)
@@ -667,9 +666,13 @@ try {
                 }
             }
         }
-        $actualChecks = @($result.checks.psobject.Properties.Name)
-        if (Compare-Object $requiredChecks $actualChecks -CaseSensitive) { throw "Invalid UI-smoke check set: $caseScenario" }
-        foreach ($check in $requiredChecks) { if (-not $result.checks.$check) { throw "Failed UI-smoke check: $check" } }
+        if ($caseScenario -in @('delayed-resource-icons','appmek-resource-icons')) {
+            Assert-ResourceFixtureChecks $result.checks $caseScenario ([bool]$DedicatedAddress) ([bool]$ResourceFixtureOnly)
+        } else {
+            $actualChecks = @($result.checks.psobject.Properties.Name)
+            if (Compare-Object $requiredChecks $actualChecks -CaseSensitive) { throw "Invalid UI-smoke check set: $caseScenario" }
+            foreach ($check in $requiredChecks) { if (-not $result.checks.$check) { throw "Failed UI-smoke check: $check" } }
+        }
         $requiredScreenshots = if ($caseScenario -in @('delayed-resource-icons','appmek-resource-icons')) {
             Get-ResourceFixtureScreenshots (Get-ResourceFixtureCases $caseScenario $Target) `
                 ([bool]$DedicatedAddress) (!$ResourceFixtureOnly)
