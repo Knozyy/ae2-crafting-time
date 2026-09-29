@@ -10,6 +10,51 @@ inputs; the specification links the later merged RF1-RF8 qualification.
 The [specification](spec.md) defines the boundary; this design defines the new
 driver-only control contract. Nothing below changes a production protocol.
 
+## WATER unload/reload repair (#628)
+
+See the [repair scope and criteria](spec.md#water-unloadreload-repair-628).
+The investigation baseline is `3702b556496b4a1fc6e84270ef46599fc748b084`.
+
+`ResourceFixtureClient.tick` schedules integrated server work before polling
+the pending acknowledgment. Connected `DedicatedCpuScenario` calls the same
+`ResourceFixtureServer.tick`. The server retains `operationInFlight`, runs
+`apply`, and writes the state and receipt only after the operation returns true.
+An unchanged acknowledgment therefore does not prove a missed command.
+
+`ResourceFixtureServer.unloadReload` releases owned connected chunk tickets,
+teleports away, polls `!hasChunkAt(provider)`, clears cached CPU identities,
+teleports back, then waits for the provider, `grid.prepare` and
+`processing.delayed`. The latter checks production delayed state for the
+reconstructed grid's network identity. Shared server/client/processing classes
+serve all four targets; 26.1.2 has its own `StandardCraftFixture` and native
+platform adapters. Both fixture variants already move production grids 1024
+blocks from the source origin. Integrated runs do not force resource chunks;
+connected runs release only tickets they own, preserving preexisting tickets.
+
+The four archived manifests match the hashes in #628, and all report timeout
+with successful cleanup. None records the pending operation or unload phase.
+Chunk retention, a blocked server callback, and grid/job/delayed recovery remain
+hypotheses. Do not replace the acknowledgment contract or rebind estimates
+merely because those changes look plausible.
+
+First add a small bounded snapshot to the existing retained fixture evidence:
+pending sequence/action/case, accepted tick and poll count, unload phase and
+observed-unload flag, player/provider positions, and safe loaded/grid/job/delayed
+readiness facts. Read native readiness only when the relevant chunks and nodes
+exist; diagnostics must not load the chunk they observe. Retain this snapshot
+before cleanup, alongside the original failure, using the current control and
+evidence path. Record phase changes or the terminal snapshot instead of writing
+unchanged state every poll. No second transport or early acknowledgment.
+
+Use a focused Forge run to identify the first gate that stops progressing and
+whether sequence 8 was accepted. Then make the smallest correction at that
+shared cause and add its executable regression. If evidence points into a
+production lifecycle boundary, document that proved boundary before changing
+it and apply its existing compatibility checks; do not silently expand scope.
+Keep the existing receipt and capture contracts, reset behavior, owned-ticket
+cleanup and ITEM checks. Diagnostics must survive failed or partial operations
+without masking their original error.
+
 ## Existing seams and ownership
 
 `scripts/run-connected-dedicated-ui-smoke.ps1` validates source/launch/dependency

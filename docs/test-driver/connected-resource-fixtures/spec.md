@@ -13,6 +13,46 @@ the test-driver prerequisite for [#376](https://github.com/cTux/ae2-crafting-tim
 The provisioning/prewarm expansion and fixture matrix are qualified by the
 completion record above. This does not qualify production resource icons.
 
+## WATER unload/reload repair (#628)
+
+Status: ready-to-implement
+
+Scope: Diagnose and repair the production-mode resource fixture's WATER
+unload/reload acknowledgment on all four supported targets.
+
+Issue: [#628](https://github.com/cTux/ae2-crafting-time/issues/628).
+Planning: [Design](technical-design.md#water-unloadreload-repair-628) and
+[plan](implementation-plan.md#water-unloadreload-repair-628).
+
+The retained runs stop after WATER command sequence 8. Their last acknowledged
+sequence is 7, with `revision=3` and `ackRevision=3`; cleanup passes. They do
+not record the pending unload phase, so the exact cause remains unproved.
+This repair is separate from the finished RF1-RF8 fixture qualification above
+and does not complete [#376's icon acceptance](../../provider-locate/resource-icons/spec.md).
+
+- **UR1:** Retained diagnostic evidence distinguishes command acceptance,
+  waiting for actual chunk unload, waiting for reload, and grid/job/delayed
+  readiness. Capture the pending operation before cleanup can erase it.
+- **UR2:** WATER really unloads and reloads its provider chunk, recovers its
+  native held job and delayed state, then acknowledges the matching command
+  once. Keep the existing sequence/revision contract and observation deadlines;
+  a request or teleport alone cannot count as completion.
+- **UR3:** Preserve all ITEM dispatch, ownership, chat locate, roof, rainbow,
+  beam, recovery and expiry assertions. Complete WATER, LAVA and FLUID_OVERLAP
+  on every target and BUCKETLESS on Forge 1.20.1, including existing completion,
+  cancellation, provider-removal and cleanup checks.
+- **UR4:** Fix the demonstrated cause in the shared path, keep native API
+  differences in existing adapters, and retain bounded replay/identity checks
+  and original-failure-preserving cleanup. Cover changed decisions with a
+  regression that fails before the correction. Validate connected lifecycle
+  behavior when the shared operation or its chunk/grid handling changes.
+- **UR5:** Bind final checks, reviewed captures and cleanup to the committed
+  implementation head. Missing guest prerequisites block execution; they do
+  not justify another runner, a different graph or weaker evidence.
+
+No new player behavior, dependency upgrade, fixture-only acceptance substitute,
+timeout increase or general provisioning infrastructure is in this repair.
+
 ## Goal and boundary
 
 Provide repeatable real AE2 item, fluid and chemical processing jobs that can

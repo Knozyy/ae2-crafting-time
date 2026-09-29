@@ -10,6 +10,76 @@ The original slices, RF7/RF8 expansion and paused handoff below are historical.
 The [final scope evidence](spec.md) records qualification at `c0321e80` and the
 merged prerequisite. Do not resume the superseded handoff or reimplement these slices.
 
+## WATER unload/reload repair (#628)
+
+Follow the [repair criteria](spec.md#water-unloadreload-repair-628) and
+[current-code design](technical-design.md#water-unloadreload-repair-628).
+The older qualification sections below do not define this repair's campaign.
+
+1. **Retain diagnostic state (UR1/UR4).** Extend the shared fixture's existing
+   failure evidence with the bounded pending-operation snapshot described in
+   the design, captured before cleanup. Cover absent, pending and completed
+   operations and preservation of the original failure in the nearest existing
+   `ResourceFixtureControlTest` boundary. Keep native observation side-effect
+   free. Review and commit through the repository hook before running tests.
+2. **Verify prerequisites (UR5).** Host Java 17/21/25, VMware CLI, VMX,
+   localhost VNC configuration and SSH key existence were verified during
+   investigation; the VM was stopped. Before runtime, start/reuse that VM via
+   `use-codex-vm`, verify SSH and its own Java 17/21/25, the four exact prepared
+   native `launch.json` manifests and dependencies, the marked disposable
+   fixture, guest-local runtime and exact-worktree share. Follow `dev-client.md`
+   and the prepared-smoke skill. Stop on missing/mismatched prerequisites; reuse
+   the existing provisioning path and do not add infrastructure under #628.
+3. **Diagnose, then correct (UR1/UR2/UR4).** After the implementation PR exists,
+   run the focused Forge native leaf below with diagnostics. Preserve the failed
+   archive and identify command acceptance and the first blocked phase. Correct
+   the demonstrated shared cause, inspect both `StandardCraftFixture` variants
+   and all callers, and add the smallest regression that fails on the original
+   behavior. Do not relax deadlines, skip real unload, seed delayed state or
+   weaken ITEM assertions. Review all corrections before the next commit.
+4. **Run focused checks (UR2/UR4).** Run
+   `./gradlew.bat :mc_1_20_1_forge:test --tests '*ResourceFixtureControlTest'`
+   for the driver boundary. If production pure logic changes, also run
+   `./gradlew.bat :shared:test :shared:jacocoTestReport`. Run
+   `./scripts/test-resource-fixture-contract.ps1` for retained evidence and its
+   integrated/connected validators, extending it if the evidence contract changes.
+   Build `distMod` and `testDriverJar` for `mc_1_20_1_forge`, `fabric_1_20_1`,
+   `mc_1_21_1_neoforge` and `mc_26_1_2_neoforge`; run each target's
+   `checkTestDriverArtifacts` where registered. Preserve all coverage gates and
+   cover every changed decision; report Minecraft-facing coverage limits.
+5. **Qualify the final head (UR2/UR3/UR5).** Review the changed-smoke selection
+   with `./scripts/run-ui-smoke.ps1 -Changed -BaseRef origin/master -PlanOnly`.
+   Run `./scripts/run-ui-smoke-matrix.ps1 -Target <target> -BaseOnly
+   -Scenario delayed-resource-icons` sequentially for the four rows below,
+   without `-ResourceFixtureOnly` or `-Latest`. Start with Forge and diagnose
+   failures before expanding. A diagnostic run is not a final qualification run.
+6. **Check the connected boundary (UR4/UR5).** If the shared unload operation,
+   chunk retention or grid/job recovery changes, run the same production leaf
+   on the existing connected Forge native graph through
+   `run-connected-dedicated-ui-smoke.ps1`, supplying its validated sealed
+   `ServerDirectory`, exact `PreparedLaunch`, current-head `BundleDirectory`
+   and new `ReportDirectory`, with existing prewarm/dispatch setup. Validate
+   source markers and dependencies first. Broaden connected targets only when
+   the proved fix changes a separate native implementation. No new cold/cache
+   provisioning campaign or chemical campaign is required by this repair.
+7. **Finish (UR1-UR5).** Review every required capture and semantic result,
+   preserve raw automatic gates and archive hashes, confirm cleanup and exact
+   tested SHA, and record timestamp/duration for diagnostics and final runs.
+   Report local results separately from current-head GitHub CI. Link the proved
+   cause, implementation and verification before marking this scope finished;
+   retain the separate #376 production-icon acceptance boundary.
+
+| Target | Guest Java | Final integrated cases |
+| --- | --- | --- |
+| 1.20.1-forge | 17 | ITEM, WATER, LAVA, BUCKETLESS, FLUID_OVERLAP |
+| 1.20.1-fabric | 17 | ITEM, WATER, LAVA, FLUID_OVERLAP |
+| 1.21.1-neoforge | 21 | ITEM, WATER, LAVA, FLUID_OVERLAP |
+| 26.1.2-neoforge | 25 | ITEM, WATER, LAVA, FLUID_OVERLAP |
+
+WATER must include the real chunk-reloaded checkpoint and matching server
+receipt. Preserve all existing captures, later cancellation/removal checks and
+ITEM ownership/beam/expiry checks; do not count reaching WATER as a pass.
+
 ## Provisioning and readiness extension
 
 1. **Source preparation (RF7/RF4/RF5).** Add
