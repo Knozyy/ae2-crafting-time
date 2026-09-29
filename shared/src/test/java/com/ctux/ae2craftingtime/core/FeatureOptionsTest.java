@@ -11,8 +11,10 @@ import org.junit.jupiter.api.Test;
 
 class FeatureOptionsTest {
     private static final Set<OptionFeature> DEFAULT_OFF = Set.of(OptionFeature.COMPACT_STATUS_AMOUNTS,
-            OptionFeature.TTC_COLORS, OptionFeature.TEXT_SHADOW, OptionFeature.BADGE_BACKGROUND);
-    private static final Set<OptionFeature> SERVER_DEFAULT_OFF = Set.of(OptionFeature.RECURRENT_DETECTION);
+            OptionFeature.TTC_COLORS, OptionFeature.TEXT_SHADOW, OptionFeature.BADGE_BACKGROUND,
+            OptionFeature.CHANCE_OUTPUT_STATUS);
+    private static final Set<OptionFeature> SERVER_DEFAULT_OFF = Set.of(OptionFeature.RECURRENT_DETECTION,
+            OptionFeature.CHANCE_OUTPUT_DETECTION);
 
     @Test
     void blockedReasonSwitchesAreIndependent() {

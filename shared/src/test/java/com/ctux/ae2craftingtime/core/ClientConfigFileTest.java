@@ -24,6 +24,7 @@ class ClientConfigFileTest {
         assertFalse(ClientConfigFile.load(path, legacy).features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS));
         assertFalse(ClientConfigFile.load(path, legacy).features().enabled(OptionFeature.TEXT_SHADOW));
         assertFalse(ClientConfigFile.load(path, legacy).features().enabled(OptionFeature.TTC_COLORS));
+        assertFalse(ClientConfigFile.load(path, legacy).features().enabled(OptionFeature.CHANCE_OUTPUT_STATUS));
         assertTrue(ClientConfigFile.load(path, legacy).features().enabled(OptionFeature.SHOW_EMOJI));
         assertFalse(ClientConfigFile.load(path, legacy).badgeBackground());
         Files.write(legacy, List.of("enabled = false", "showInTree = false"));
@@ -114,7 +115,8 @@ class ClientConfigFileTest {
         for (var feature : OptionFeature.values()) {
             if (feature.owner() == OptionFeature.Owner.CLIENT) {
                 var off = java.util.Set.of(OptionFeature.COMPACT_STATUS_AMOUNTS, OptionFeature.TTC_COLORS,
-                        OptionFeature.TEXT_SHADOW, OptionFeature.BADGE_BACKGROUND).contains(feature);
+                        OptionFeature.TEXT_SHADOW, OptionFeature.BADGE_BACKGROUND,
+                        OptionFeature.CHANCE_OUTPUT_STATUS).contains(feature);
                 assertTrue(lines.contains(feature.key() + " = " + !off), feature.key());
             }
         }

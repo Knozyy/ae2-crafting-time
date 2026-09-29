@@ -29,8 +29,10 @@ public final class FeatureOptions {
         disabled.clear();
         if (owner == OptionFeature.Owner.CLIENT) disabled.addAll(Set.of(
                 OptionFeature.COMPACT_STATUS_AMOUNTS, OptionFeature.TTC_COLORS,
-                OptionFeature.TEXT_SHADOW, OptionFeature.BADGE_BACKGROUND));
-        else disabled.add(OptionFeature.RECURRENT_DETECTION);
+                OptionFeature.TEXT_SHADOW, OptionFeature.BADGE_BACKGROUND,
+                OptionFeature.CHANCE_OUTPUT_STATUS));
+        else disabled.addAll(Set.of(OptionFeature.RECURRENT_DETECTION,
+                OptionFeature.CHANCE_OUTPUT_DETECTION));
     }
 
     public Set<OptionFeature> disabled() {

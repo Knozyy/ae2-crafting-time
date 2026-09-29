@@ -8,9 +8,11 @@ sending Crafting Time packets and shows native AE2 until it joins a supported
 server. In singleplayer, the installed client and integrated server provide the
 full feature set. Minecraft, loader, AE2 and other mod requirements still apply.
 
-Chance output detection optionally reads Mekanism Precision Sawmill recipes on
-Minecraft 1.20.1 Forge. Mekanism is not required to load Crafting Time. The
-detector needs one direct Pattern Provider target, one matching live recipe,
+Chance output detection is experimental. It currently supports only one machine:
+the Mekanism Precision Sawmill on Minecraft 1.20.1 Forge. Support may expand to
+other machines later once their live recipe chances can be verified. Mekanism is
+not required to load Crafting Time. The detector needs one direct Pattern
+Provider target, one matching live recipe,
 and an encoded secondary output with a verified probability. Other machines,
 loaders, ambiguous recipes, and mixed producers keep the normal delayed
 diagnostic; Crafting Time does not infer chance from missing output alone.

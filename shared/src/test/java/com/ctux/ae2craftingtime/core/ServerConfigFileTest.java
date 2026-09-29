@@ -27,7 +27,8 @@ class ServerConfigFileTest {
         for (var feature : OptionFeature.values()) {
             if (feature.owner() == OptionFeature.Owner.SERVER) {
                 assertTrue(lines.contains(feature.key() + " = "
-                        + (feature != OptionFeature.RECURRENT_DETECTION)), feature.key());
+                        + (feature != OptionFeature.RECURRENT_DETECTION
+                        && feature != OptionFeature.CHANCE_OUTPUT_DETECTION)), feature.key());
             }
         }
         assertTrue(lines.contains("maxSamples = 10"));

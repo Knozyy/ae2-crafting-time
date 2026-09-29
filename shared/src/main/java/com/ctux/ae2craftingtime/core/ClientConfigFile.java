@@ -28,7 +28,7 @@ public final class ClientConfigFile {
             Map.entry(OptionFeature.WAITING_STATUS, "Show Waiting status when server tracking supplies it. False hides the label locally."),
             Map.entry(OptionFeature.COLLECTING_STATUS, "Show Collecting status when available. False hides the label locally."),
             Map.entry(OptionFeature.DELAYED_STATUS, "Show Delayed status when server detection supplies it. False hides the label locally."),
-            Map.entry(OptionFeature.CHANCE_OUTPUT_STATUS, "Show Chance output status when a supported machine recipe proves its output is not guaranteed. False hides the label locally."),
+            Map.entry(OptionFeature.CHANCE_OUTPUT_STATUS, "Experimental. Shows Chance output only for verified Mekanism Precision Sawmill secondary outputs on Minecraft 1.20.1 Forge. Other machines are not detected yet; support may expand later. Also enable server chanceOutputDetection. False hides the label locally."),
             Map.entry(OptionFeature.RECURRENT_STATUS, "Show Recurrent status when server detection supplies it. False hides the label locally."),
             Map.entry(OptionFeature.NO_PROVIDER_STATUS, "Show No Provider status when server detection supplies it. False hides the label locally."),
             Map.entry(OptionFeature.NO_POWER_STATUS, "Show No Power status when server detection supplies it. False hides the label locally."),

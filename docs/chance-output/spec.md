@@ -1,6 +1,6 @@
 # Chance-based output diagnostics
 
-Status: implemented and runtime-qualified for the initial 1.20.1 Forge Mekanism integration
+Status: experimental; implemented and runtime-qualified only for the 1.20.1 Forge Mekanism Precision Sawmill. Other machine support may be added after its live recipe chance can be verified.
 
 Scope: Diagnose non-guaranteed processing outputs when a supported server integration proves the recipe chance.
 

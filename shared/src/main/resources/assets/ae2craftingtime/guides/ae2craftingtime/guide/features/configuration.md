@@ -41,6 +41,14 @@ to mark proven recipe loops as Recurrent in Crafting Plan, or set
 `recurrentDetection = true` in the server file. Existing files that explicitly
 enable it keep that choice; Reset returns it to off.
 
+**Chance output status** in Client → Warnings and **Detect chance outputs** in
+Server → Diagnostics are experimental and off by default. Turn on both to use
+the diagnosis. It currently supports only the Mekanism Precision Sawmill on
+Minecraft 1.20.1 Forge, with a direct Pattern Provider and a matching live
+recipe. Other machines still show Delayed. Support may expand as more machine
+recipes can be verified. Existing saved choices stay as set; Reset turns both
+options off. See [Chance output](../statuses/chance-output.md) for details.
+
 **Show emoji** in Client → Appearance starts on (`showEmoji = true`). It adds
 colored symbols to TTC times, statuses, and local chat. Turn it off for text-only
 labels and times. Saving with Done updates visible chat too; reset restores On.
