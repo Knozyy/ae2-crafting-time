@@ -1,0 +1,15 @@
+{
+  "sourceCommit": "223381103b76e5bdd9766b2d6533f2bcdad134e5",
+  "target": "1.20.1-forge",
+  "archive": "20260929T221243395Z-43702b8d",
+  "source": "delayed-resource-icons/evidence/item-held.png",
+  "sourceSha256": "c7aba483e3a27349eedae8fd98e0f0172a527c2a63cc84837e340d4ff1b365c0",
+  "crop": [
+    1080,
+    100,
+    620,
+    760
+  ],
+  "image": "provider-chat-locate-beam.png",
+  "review": "All 26 original Forge captures received scoped manual review; ITEM beam and recovery pair were visible. Automatic gate remains REVIEW_REQUIRED."
+}
