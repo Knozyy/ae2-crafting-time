@@ -68,7 +68,9 @@ foreach ($rule in @($rules.ownership) + @($rules.noRuntime) + @($rules.behavior)
     $null = [regex]::new($rule.pattern, [Text.RegularExpressions.RegexOptions]::CultureInvariant, [TimeSpan]::FromSeconds(1))
     foreach ($id in $rule.targets) { if ($id -cnotin $ids) { throw "Invalid ownership target: $id" } }
     foreach ($case in $rule.cases) {
-        foreach ($id in $ids) { $null = & "$PSScriptRoot/expand-ui-smoke-groups.ps1" -Target $id -Scenarios $case -MatrixDirectory $MatrixDirectory }
+        foreach ($id in $(if ($rule.targets) { $rule.targets } else { $ids })) {
+            $null = & "$PSScriptRoot/expand-ui-smoke-groups.ps1" -Target $id -Scenarios $case -MatrixDirectory $MatrixDirectory
+        }
     }
 }
 $head = (Read-Git @('rev-parse','--verify','--end-of-options','HEAD^{commit}')).Trim()
@@ -126,6 +128,7 @@ foreach ($change in $changes) {
     $behavior = @($rules.behavior | Where-Object { $path -cmatch $_.pattern })
     if ($ignored.Count -and $behavior.Count) { throw "Contradictory runtime classification: $path" }
     $cases = @()
+    $targetedBehavior = $false
     $reason = ''
     $fallback = $false
     if ($ignored.Count) { $reason = $ignored.reason -join '; ' }
@@ -145,7 +148,7 @@ foreach ($change in $changes) {
             $cases = @('standard-status-controls'); $reason = 'English compact-status amount labels changed'
         } elseif (@($keys | Where-Object { $_ -cne 'text.ae2craftingtime.ttc_delayed' }).Count) { $cases = @('suite'); $reason = 'English keys affect general UI' }
         else { $cases = @('delayed-status'); $reason = 'English delayed label changed' }
-    } elseif ($behavior.Count) { $cases = @($behavior.cases | Select-Object -Unique); $reason = $behavior.reason -join '; ' }
+    } elseif ($behavior.Count) { $cases = @($behavior.cases | Select-Object -Unique); $reason = $behavior.reason -join '; '; $targetedBehavior = $true }
     else {
         if ($path -cmatch '/resources/assets/ae2craftingtime/lang/en_us\.json$' -and [IO.File]::Exists((Join-Path $Repository $path))) {
             $null = Read-Language (Get-Content -LiteralPath (Join-Path $Repository $path) -Raw -Encoding UTF8)
@@ -154,7 +157,8 @@ foreach ($change in $changes) {
     }
     $reasons.Add([pscustomobject]@{ path=$path; layer=$change.layer; status=$change.status; targets=@($targets); cases=@($cases); reason=$reason; fallback=$fallback })
     foreach ($id in $targets) {
-        if ($cases.Count) { if (!$selection.ContainsKey($id)) { $selection[$id] = @() }; $selection[$id] += $cases }
+        $targetCases = if ($targetedBehavior) { @($behavior | Where-Object { !$_.targets -or $id -cin $_.targets } | ForEach-Object { $_.cases } | Select-Object -Unique) } else { $cases }
+        if ($targetCases.Count) { if (!$selection.ContainsKey($id)) { $selection[$id] = @() }; $selection[$id] += $targetCases }
     }
 }
 if (!$Changed) {
@@ -162,6 +166,7 @@ if (!$Changed) {
         if ($Target -and $id -cne $Target) { continue }
         if ($Scenario -ceq 'appmek-resource-icons' -and $id -notin @('1.20.1-forge','1.21.1-neoforge')) { continue }
         if ($Scenario -ceq 'chance-output-status' -and $id -cne '1.20.1-forge') { continue }
+        if ($Scenario -ceq 'crafting-suspension' -and $id -cne '1.20.1-forge') { continue }
         $selection[$id] = @($Scenario)
     }
 }

@@ -88,6 +88,13 @@ public final class DedicatedCpuScenario {
     private boolean variantReplanDiagnosed;
     private appeng.menu.me.crafting.CraftingPlanSummary variantOriginalSummary;
     private long started = System.nanoTime();
+    private final boolean suspensionReload = Boolean.getBoolean("ae2craftingtime.test.suspensionReload");
+    private final long[] suspensionAck = new long[2];
+    private final String[] suspensionActions = new String[] {"", ""};
+    private String suspensionJob = "";
+    private long suspensionUndispatched = -1;
+    private int suspensionStaleTicks;
+    private Map<String, Object> suspensionEvidence = Map.of();
 
     public void tick(MinecraftServer server) {
         if (done) return;
@@ -117,6 +124,10 @@ public final class DedicatedCpuScenario {
         }
         if (scenario.equals("cpu-list-total-ttc-connected")) {
             stepConnected(server, level);
+            return;
+        }
+        if (scenario.equals("crafting-suspension-connected")) {
+            stepSuspension(server, level);
             return;
         }
         if (scenario.equals("recurrent-plan-connected")) {
@@ -546,6 +557,112 @@ public final class DedicatedCpuScenario {
         fixture.refreshCpuIdentities();
     }
 
+    private void stepSuspension(MinecraftServer server, ServerLevel level) {
+        if (!"1.20.1-forge".equals(target))
+            throw new IllegalStateException("Crafting suspension connected proof requires Forge 1.20.1");
+        CpuListTtcControl.validateDisposableServer(Path.of(""), target);
+        var players = server.getPlayerList().getPlayers();
+        if (!suspensionEvidence.isEmpty() && players.isEmpty()) {
+            finish(server, "PASS", "");
+            return;
+        }
+        if (players.size() != 2) return;
+        var alpha = players.stream().filter(candidate -> candidate.getName().getString().equals("Ae2ctAlpha"))
+                .findFirst().orElse(null);
+        var beta = players.stream().filter(candidate -> candidate.getName().getString().equals("Ae2ctBeta"))
+                .findFirst().orElse(null);
+        if (alpha == null || beta == null) throw new IllegalStateException("Distinct Alpha/Beta players required");
+        if (!connectedPrepared) {
+            gridFixture.configureSuspension();
+            if (suspensionReload) {
+                gridFixture.bindTerminal(new net.minecraft.core.BlockPos(origin.terminal().x() + 60,
+                        origin.terminal().y(), origin.terminal().z() + 1024));
+                level.setChunkForced(gridFixture.terminal.getX() >> 4, gridFixture.terminal.getZ() >> 4, true);
+                level.setChunkForced(gridFixture.terminal.east(12).getX() >> 4,
+                        gridFixture.terminal.getZ() >> 4, true);
+                if (level.getBlockEntity(gridFixture.terminal) == null
+                        || !gridFixture.suspensionRestoredReady(alpha)) return;
+                var loaded = gridFixture.suspensionState(alpha, 0);
+                var expected = System.getProperty("ae2craftingtime.test.suspensionJob", "");
+                if (!loaded.busy() || !loaded.suspended() || !loaded.jobId().equals(expected))
+                    throw new IllegalStateException("Loaded suspension job does not match continuation: " + loaded);
+                suspensionJob = loaded.jobId();
+                suspensionUndispatched = loaded.undispatched();
+            } else {
+                if (!gridFixture.prepare(alpha, origin) || !gridFixture.submitSuspensionLarge(alpha)) return;
+                var active = gridFixture.suspensionState(alpha, 0);
+                if (active.undispatched() >= 64 || active.furnaceInput() == 0) return;
+                suspensionJob = active.jobId();
+            }
+            if (suspensionJob.isEmpty()) throw new IllegalStateException("Suspension job has no native UUID");
+            for (var connected : players) connected.connection.teleport(gridFixture.terminal.getX() + 0.5,
+                    gridFixture.terminal.getY() - 1, gridFixture.terminal.getZ() - 2.5, -53.13f, 2f);
+            connectedPrepared = true;
+        }
+        gridFixture.pumpSuspension(alpha);
+        var current = gridFixture.suspensionState(alpha, 0);
+        if (current.busy() && !current.jobId().equals(suspensionJob))
+            throw new IllegalStateException("Suspension job UUID changed during connected execution");
+        if (current.suspended() && suspensionUndispatched < 0)
+            suspensionUndispatched = current.undispatched();
+        if (current.suspended() && current.undispatched() != suspensionUndispatched)
+            throw new IllegalStateException("Paused job dispatched additional patterns");
+        var root = CpuListTtcControl.directory();
+        var phase = suspensionReload ? "loaded" : "running";
+        for (int i = 0; i < 2; i++) {
+            var role = i == 0 ? "alpha" : "beta";
+            var path = root.resolve(role);
+            var command = CpuListTtcControl.command(path);
+            if (command.epoch().equals(CpuListTtcControl.epoch()) && command.sequence() > suspensionAck[i]) {
+                var expected = suspensionReload ? switch (suspensionActions[i]) {
+                    case "" -> "loaded";
+                    case "loaded" -> i == 1 ? "stale-sent" : "resumed";
+                    case "stale-sent" -> "resumed";
+                    case "resumed" -> "complete-observed";
+                    default -> "";
+                } : suspensionActions[i].isEmpty() ? "running-observed" : "pause-observed";
+                if (command.action().equals(expected)) {
+                    boolean valid = switch (expected) {
+                        case "running-observed" -> current.busy() && !current.suspended();
+                        case "pause-observed", "loaded" -> current.busy() && current.suspended();
+                        case "stale-sent" -> current.busy() && current.suspended() && ++suspensionStaleTicks >= 3;
+                        case "resumed" -> current.busy() && !current.suspended();
+                        case "complete-observed" -> !current.busy() && current.networkOutput() == 64;
+                        default -> false;
+                    };
+                    if (valid && (expected.equals("pause-observed") || expected.equals("complete-observed"))) {
+                        var peer = CpuListTtcControl.command(root.resolve(i == 0 ? "beta" : "alpha"));
+                        valid = peer.epoch().equals(CpuListTtcControl.epoch()) && peer.action().equals(expected);
+                    }
+                    if (valid) { suspensionAck[i] = command.sequence(); suspensionActions[i] = expected; }
+                }
+            }
+            if (!suspensionReload && suspensionActions[0].equals("running-observed")
+                    && suspensionActions[1].equals("running-observed")) phase = "pause-ready";
+            if (suspensionReload && suspensionActions[0].equals("loaded") && suspensionActions[1].equals("stale-sent"))
+                phase = "resume-ready";
+            if (suspensionReload && !current.busy()
+                    && java.util.Set.of("resumed", "complete-observed").contains(suspensionActions[0])
+                    && java.util.Set.of("resumed", "complete-observed").contains(suspensionActions[1]))
+                phase = "completed";
+            CpuListTtcControl.publish(path, suspensionAck[i], suspensionActions[i], phase,
+                    gridFixture.terminal, "", new GsonBuilder().create().toJson(current));
+        }
+        if (!suspensionReload && suspensionActions[0].equals("pause-observed")
+                && suspensionActions[1].equals("pause-observed")) {
+            suspensionEvidence = Map.of("phase", 1, "jobId", suspensionJob,
+                    "undispatched", current.undispatched(), "remaining", current.remaining(),
+                    "networkOutput", current.networkOutput(), "suspended", current.suspended());
+        }
+        if (suspensionReload && suspensionActions[0].equals("complete-observed")
+                && suspensionActions[1].equals("complete-observed")) {
+            if (current.networkOutput() != 64) throw new IllegalStateException("Wrong native output count: " + current);
+            suspensionEvidence = Map.of("phase", 2, "jobId", suspensionJob,
+                    "networkOutput", current.networkOutput(), "suspended", current.suspended(),
+                    "undispatched", current.undispatched());
+        }
+    }
+
     private void finish(MinecraftServer server, String result, String error) {
         done = true;
         try {
@@ -558,6 +675,7 @@ public final class DedicatedCpuScenario {
                                     "quantumCpu", cpu != null)),
                     Map.entry("resourceCleanup", resourceCleanup), Map.entry("resourceEvidence",
                             resourceFixture == null ? Map.of() : resourceFixture.evidence()),
+                    Map.entry("suspensionEvidence", suspensionEvidence),
                     Map.entry("finishedAt", java.time.Instant.now().toString())));
             var temporary = output.resolveSibling(output.getFileName() + "." + UUID.randomUUID() + ".tmp");
             try {

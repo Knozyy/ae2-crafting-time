@@ -21,15 +21,26 @@ for ($ancestor = $clientInvocation.Parent; $ancestor; $ancestor = $ancestor.Pare
     }
 }
 $clientRunner = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'run-ui-smoke.ps1') -Raw
-if ($clientRunner -notmatch 'GetTempPath\(\)\) "ae2-crafting-time-smoke-client.lock"' -or
+if ($clientRunner -notmatch "else \{ 'ae2-crafting-time-smoke-client.lock' \}" -or
+        $clientRunner -notmatch "Scenario -eq 'crafting-suspension' -and \`$DedicatedAddress -and \`$Role" -or
         $clientRunner -notmatch '"OpenOrCreate", "ReadWrite", "None"') {
-    throw 'Every target and profile must share one exclusive smoke-client lock'
+    throw 'Only the two-client suspension scenario may use per-role smoke-client locks'
 }
-if ($runnerText -notmatch "ValidateSet\('cpu-list-total-ttc','recurrent-plan','stored-variant-plan','delayed-resource-icons','appmek-resource-icons'\)" -or
-        $runnerText -notmatch "Ae2ctAlpha" -or $runnerText -match "Ae2ctBeta" -or
-        $runnerText -match 'Start-Job' -or $runnerText -match 'recurrent-role-processes.json' -or
+if ($runnerText -notmatch "ValidateSet\('cpu-list-total-ttc','recurrent-plan','stored-variant-plan','delayed-resource-icons','appmek-resource-icons','crafting-suspension'\)" -or
+        $runnerText -notmatch "Ae2ctAlpha" -or $runnerText -notmatch "Ae2ctBeta" -or
+        $runnerText -notmatch 'Start-Job' -or $runnerText -match 'recurrent-role-processes.json' -or
         $runnerText -match '22 \* 1024 \* 1024') {
-    throw 'Connected runner must use one bounded Alpha client without concurrent-client orchestration'
+    throw 'Connected runner must retain bounded Alpha execution and isolate two-client suspension orchestration'
+}
+if ($runnerText -notmatch 'if \(\$Scenario -eq ''crafting-suspension''\)' -or
+        $runnerText -notmatch 'Invoke-SuspensionClients \$connectionEpoch 1' -or
+        $runnerText -notmatch 'Invoke-SuspensionClients \$phase2Epoch 2' -or
+        $runnerText -notmatch 'suspension-continuation.json' -or
+        $runnerText -notmatch 'phase1\.suspensionEvidence\.jobId' -or
+        $runnerText -notmatch 'phase2\.suspensionEvidence\.jobId' -or
+        $runnerText -notmatch 'Stop-OwnedSuspensionClients' -or
+        $runnerText -notmatch 'StartTime\.ToUniversalTime\(\)\.Ticks') {
+    throw 'Suspension connected branch lost same-world restart, identity, or owned-client cleanup'
 }
 if ($runnerText.Contains('(& $java -version 2>&1)') -or
         $runnerText -notmatch 'RedirectStandardOutput.+RedirectStandardError') {
@@ -55,7 +66,9 @@ if ($runnerText -notmatch "\`$clientParameters\.RuntimeDirectory = Join-Path \`$
     throw 'Connected client runtime must stay on the report-owned guest-local filesystem'
 }
 if ($runnerText.IndexOf("-SimpleMatch ']: Done ('", [StringComparison]::Ordinal) -lt 0 -or
-        $runnerText.IndexOf("'run-ui-smoke.ps1'", [StringComparison]::Ordinal) -lt
+        $runnerText.IndexOf('Invoke-SuspensionClients $connectionEpoch 1', [StringComparison]::Ordinal) -lt
+            $runnerText.IndexOf("-SimpleMatch ']: Done ('", [StringComparison]::Ordinal) -or
+        $runnerText.LastIndexOf("'run-ui-smoke.ps1'", [StringComparison]::Ordinal) -lt
             $runnerText.IndexOf("-SimpleMatch ']: Done ('", [StringComparison]::Ordinal)) {
     throw 'Connected client must wait for the dedicated server startup-complete marker'
 }

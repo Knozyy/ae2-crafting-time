@@ -52,6 +52,10 @@ public record DriverResult(
     }
 
     static List<String> requiredChecks(String scenario, boolean connected) {
+        if (connected && scenario.equals("crafting-suspension"))
+            return Boolean.getBoolean("ae2craftingtime.test.suspensionReload")
+                    ? List.of("same-loaded-job", "paused-visible", "stale-rejected", "same-job-resumed", "resumed-visible")
+                    : List.of("same-live-job", "native-menu", "paused-visible", "paused-saved");
         if (connected && scenario.equals("stored-variant-plan")) {
             var checks = new java.util.ArrayList<>(StandardAe2Scenario.CHECKS.get(scenario));
             checks.addAll(List.of("menu-cancel", "network-switch", "native-replan", "reconnected-fresh"));

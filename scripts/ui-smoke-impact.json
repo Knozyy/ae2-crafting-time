@@ -1,6 +1,7 @@
 {
   "schema": 1,
   "ownership": [
+    {"id":"crafting-suspension-core", "pattern":"^shared/src/main/java/com/ctux/ae2craftingtime/core/CraftingSuspension\\.java$", "targets":["1.20.1-forge"]},
     {"id":"replaced-standard-fixtures", "pattern":"^shared/src/testDriver1201/java/com/ctux/ae2craftingtime/testdriver/(StandardCraftFixture|NoSpaceScenario|NoProviderScenario|NoPowerScenario|ProviderDispatchStatusScenario)\\.java$", "targets":["1.20.1-forge","1.20.1-fabric","1.21.1-neoforge"]},
     {"id":"forge", "pattern":"^versions/1\\.20\\.1-forge/", "targets":["1.20.1-forge"]},
     {"id":"fabric", "pattern":"^versions/1\\.20\\.1-fabric/", "targets":["1.20.1-fabric"]},
@@ -19,6 +20,7 @@
     {"id":"guide-prose", "pattern":"/resources/assets/ae2craftingtime/guides/.*\\.md$", "reason":"Guide prose; locale and resource checks still required"}
   ],
   "behavior": [
+    {"id":"crafting-suspension", "pattern":"^(shared/src/main/java/com/ctux/ae2craftingtime/core/CraftingSuspension\\.java|shared/src/testDriver1201/java/com/ctux/ae2craftingtime/testdriver/(StandardAe2Scenario|StandardCraftFixture|DedicatedCpuScenario|CraftPlanScenario|DriverProgress|CpuListTtcControl)\\.java|versions/1\\.20\\.1-forge/src/main/(java/com/ctux/ae2craftingtime/mc1201/(CraftingSuspension[^/]*|net/CraftingSuspension[^/]*|mixin/CraftingSuspension[^/]*)\\.java|resources/ae2craftingtime-suspension\\.mixins\\.json)|scripts/(run-connected-dedicated-ui-smoke|run-ui-smoke|prepare-ui-smoke-launch)\\.ps1)$", "targets":["1.20.1-forge"], "cases":["crafting-suspension"], "reason":"Forge native suspension state, menu action, packet, presentation, and native scenario fixtures"},
     {"id":"badge-background", "pattern":"^shared/src/(main/java/com/ctux/ae2craftingtime/core/(ClientConfig|OptionFeature)\\.java|mc(1201|2612)/java/com/ctux/ae2craftingtime/mc1201/TtcBadge\\.java|testDriver1201/java/com/ctux/ae2craftingtime/testdriver/StandardAe2Scenario\\.java)$", "cases":["badge-background"], "reason":"Client badge preference, both rounded-fill renderers, and native options checkpoints"},
     {"id":"recurrent-plan", "pattern":"^(?!(shared|versions/[^/]+)/src/(test|mc1201Test)/).*(Recurrent|PlanRecurrence|CraftingCalculationMixin|CraftingTreeNodeMixin|CraftingPlan(Summary|SummaryEntry)?Mixin|CraftConfirm(Menu|TableRenderer)Mixin|TtcText|ServerDriverPlatform)", "cases":["recurrent-plan","standard-plan-controls"], "reason":"Native recurrence diagnosis, lifecycle, transport, rendering, and connected fixture boundaries"},
     {"id":"stored-variant-plan", "pattern":"^(?!(shared|versions/[^/]+)/src/(test|mc1201Test)/).*(StoredVariant|StoredVariants|PlanSummaryRevision|CraftConfirm(Menu|TableRenderer)Mixin|CraftingPlanSummaryEntryMixin|StatsNetwork|StorageServiceAccessor|en_us\\.json)", "cases":["stored-variant-plan","standard-plan-controls","recurrent-plan"], "reason":"Stored variant diagnosis, live synchronization, and coexistence"},

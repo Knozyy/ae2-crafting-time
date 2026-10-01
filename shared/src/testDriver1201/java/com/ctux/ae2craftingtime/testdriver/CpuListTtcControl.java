@@ -11,7 +11,7 @@ public final class CpuListTtcControl {
     private static long clientSequence;
     private static long pendingSequence;
     private static String pending;
-    private static String lastPublished;
+    private static final java.util.Map<Path, String> lastPublished = new java.util.HashMap<>();
 
     public static boolean enabled() { return !System.getProperty("ae2craftingtime.test.control", "").isBlank(); }
 
@@ -36,7 +36,11 @@ public final class CpuListTtcControl {
     }
 
     public static State state() {
-        var values = read(directory().resolve("state.properties"));
+        return state(directory());
+    }
+
+    public static State state(Path root) {
+        var values = read(root.resolve("state.properties"));
         return new State(Boolean.parseBoolean(values.getProperty("ready", "false")),
                 values.getProperty("epoch", ""), Long.parseLong(values.getProperty("ack", "0")),
                 values.getProperty("action", ""), values.getProperty("phase", ""),
@@ -79,13 +83,22 @@ public final class CpuListTtcControl {
     }
 
     public static Command command() {
-        var values = read(directory().resolve("command.properties"));
+        return command(directory());
+    }
+
+    public static Command command(Path root) {
+        var values = read(root.resolve("command.properties"));
         return new Command(values.getProperty("epoch", ""),
                 Long.parseLong(values.getProperty("sequence", "0")), values.getProperty("action", ""));
     }
 
     public static void publish(long ack, String action, String phase, net.minecraft.core.BlockPos terminal, String estimates,
             String serverState) {
+        publish(directory(), ack, action, phase, terminal, estimates, serverState);
+    }
+
+    public static void publish(Path root, long ack, String action, String phase, net.minecraft.core.BlockPos terminal,
+            String estimates, String serverState) {
         var state = new Properties();
         state.setProperty("ready", "true");
         state.setProperty("epoch", epoch());
@@ -97,13 +110,13 @@ public final class CpuListTtcControl {
         state.setProperty("z", Integer.toString(terminal.getZ()));
         state.setProperty("serverEstimates", estimates);
         state.setProperty("serverState", serverState);
-        write(directory().resolve("state.properties"), state);
+        write(root.resolve("state.properties"), state);
         var fingerprint = epoch() + "|" + ack + "|" + action + "|" + phase + "|" + serverState;
-        if (!fingerprint.equals(lastPublished)) {
-            lastPublished = fingerprint;
+        if (!fingerprint.equals(lastPublished.get(root))) {
+            lastPublished.put(root, fingerprint);
             try {
                 var encoded = java.util.Base64.getEncoder().encodeToString(serverState.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                Files.writeString(directory().resolve("server-checkpoints.log"), epoch() + "\t" + ack + "\t"
+                Files.writeString(root.resolve("server-checkpoints.log"), epoch() + "\t" + ack + "\t"
                         + action + "\t" + phase + "\t" + encoded + "\n",
                         java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
             } catch (IOException error) { throw new IllegalStateException("Cannot retain server checkpoint", error); }

@@ -79,6 +79,13 @@ final class StandardCraftFixture {
     boolean recurrentPlan;
     boolean resourceFixture;
     boolean storedVariantPlan;
+    boolean suspensionScenario;
+    private java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> suspensionLargePlan;
+    private java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> suspensionSmallPlan;
+    private boolean suspensionLargeSubmitted;
+    private boolean suspensionSmallSubmitted;
+    private int suspensionLargeAmount = 64;
+    private long suspensionArchivedOutput;
     private java.util.List<java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan>> cpuListPlans;
     private boolean cpuListSubmitted;
     private java.util.concurrent.Future<appeng.api.networking.crafting.ICraftingPlan> replacementPlan;
@@ -105,6 +112,14 @@ final class StandardCraftFixture {
         cpuListScenario = true;
         cpuCount = 2;
         busyCpuCount = 2;
+    }
+    void configureSuspension() {
+        suspensionScenario = true;
+        cpuListScenario = true;
+        cpuCount = 2;
+        busyCpuCount = 2;
+        unprofiledPlan = true;
+        originShift = 1024;
     }
     void refreshCpuIdentities() { cpuListIdentities = null; }
     void refreshCpuIdentities(ServerPlayer player) {
@@ -226,7 +241,8 @@ final class StandardCraftFixture {
             drive.getInternalInventory().setItemDirect(0, appeng.core.definitions.AEItems.ITEM_CELL_1K.stack());
             if (resourceFixture) ServerDriverPlatform.installResourceStorage(drive, false);
             if (!missingPlanInput) {
-                drive.getCellInventory(0).insert(AEItemKey.of(Items.COBBLESTONE), cpuListScenario ? 4096 : 2, Actionable.MODULATE,
+                drive.getCellInventory(0).insert(AEItemKey.of(suspensionScenario ? Items.RAW_IRON : Items.COBBLESTONE),
+                        suspensionScenario ? 66 : cpuListScenario ? 4096 : 2, Actionable.MODULATE,
                         IActionSource.empty());
                 if (cpuListScenario) drive.getCellInventory(0).insert(AEItemKey.of(Items.SAND), 256,
                         Actionable.MODULATE, IActionSource.empty());
@@ -234,6 +250,15 @@ final class StandardCraftFixture {
                         Actionable.MODULATE, IActionSource.empty());
             }
             if (!resourceFixture) {
+                if (suspensionScenario) {
+                    pattern(player, 4, Items.RAW_IRON, Items.IRON_INGOT);
+                    pattern(player, 8, Items.RAW_IRON, Items.IRON_INGOT);
+                    for (int offset : new int[] {4, 8}) {
+                        var provider = (PatternProviderBlockEntity) level.getBlockEntity(terminal.east(offset));
+                        provider.getLogic().getConfigManager().putSetting(
+                                appeng.api.config.Settings.BLOCKING_MODE, appeng.api.config.YesNo.YES);
+                    }
+                } else {
                 pattern(player, 4, 0, recurrentPlan ? Items.SMOOTH_STONE : Items.COBBLESTONE, Items.STONE);
                 if (holdFinalOutput) {
                     pattern(player, 4, 1, Items.SAND, Items.GLASS);
@@ -243,12 +268,14 @@ final class StandardCraftFixture {
                     else pattern(player, 8, Items.STONE, Items.SMOOTH_STONE);
                 }
                 if (cpuListScenario) pattern(player, 12, Items.SAND, Items.GLASS);
+                }
             }
             if (!unprofiledPlan && !resourceFixture) seed(player);
             initialized = true;
         }
         checkpoint = "craftable";
-        return resourceFixture
+        return suspensionScenario ? node.getGrid().getCraftingService().isCraftable(AEItemKey.of(Items.IRON_INGOT))
+                : resourceFixture
                 ? resourceCpus(player).size() == 2 && resourceCpus(player).stream().allMatch(candidate -> candidate.getCluster().isActive())
                 : node.getGrid().getCraftingService().isCraftable(AEItemKey.of(Items.SMOOTH_STONE));
     }
@@ -291,6 +318,158 @@ final class StandardCraftFixture {
 
     private void pattern(ServerPlayer player, int offset, net.minecraft.world.item.Item input, net.minecraft.world.item.Item output) {
         pattern(player, offset, 0, input, output);
+    }
+
+    boolean submitSuspensionLarge(ServerPlayer player) {
+        var cpus = cpuListCpus(player);
+        if (cpus.size() != 2 || cpus.stream().anyMatch(cpu -> !cpu.getCluster().isActive())) return false;
+        for (int offset : new int[] {4, 8}) {
+            var provider = (PatternProviderBlockEntity) player.serverLevel().getBlockEntity(terminal.east(offset));
+            if (provider == null || !provider.getLogic().isBlocking()
+                    || !(player.serverLevel().getBlockEntity(terminal.east(offset).below()) instanceof FurnaceBlockEntity))
+                throw new IllegalStateException("Suspension needs two blocking native furnace providers");
+        }
+        var service = cpus.get(0).getMainNode().getGrid().getCraftingService();
+        if (suspensionLargePlan == null) {
+            suspensionLargePlan = service.beginCraftingCalculation(player.serverLevel(),
+                    () -> IActionSource.ofMachine(cpus.get(0)), AEItemKey.of(Items.IRON_INGOT), suspensionLargeAmount,
+                    appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+            return false;
+        }
+        if (!suspensionLargePlan.isDone()) return false;
+        if (!suspensionLargeSubmitted) {
+            try {
+                var plan = suspensionLargePlan.get();
+                var result = service.submitJob(plan, null, cpus.get(0).getCluster(), false,
+                        IActionSource.ofPlayer(player));
+                if (!result.successful()) {
+                    var raw = AEItemKey.of(Items.RAW_IRON);
+                    var drive = (DriveBlockEntity) player.serverLevel().getBlockEntity(terminal.east(2));
+                    throw new IllegalStateException("Large suspension job rejected: " + result
+                            + " simulation=" + plan.simulation() + " missing="
+                            + plan.missingItems().keySet().stream()
+                                    .map(key -> key + "=" + plan.missingItems().get(key)).toList()
+                            + " patternCount=" + plan.patternTimes().size()
+                            + " rawCell=" + drive.getCellInventory(0).getAvailableStacks().get(raw)
+                            + " rawGrid=" + cpus.get(0).getMainNode().getGrid().getStorageService().getInventory()
+                                    .getAvailableStacks().get(raw));
+                }
+            } catch (Exception failure) { throw new IllegalStateException("Large suspension plan failed", failure); }
+            suspensionLargeSubmitted = true;
+        }
+        return cpus.get(0).getCluster().isBusy();
+    }
+
+    void beginSuspensionCase(ServerPlayer player, int amount) {
+        if (amount < 1 || suspensionCpu(player, 0).isBusy())
+            throw new IllegalStateException("Suspension case needs an idle standard CPU");
+        var storage = suspensionCpu(player, 0).getGrid().getStorageService().getInventory();
+        suspensionArchivedOutput += storage.extract(AEItemKey.of(Items.IRON_INGOT), Long.MAX_VALUE,
+                Actionable.MODULATE, IActionSource.empty());
+        var raw = AEItemKey.of(Items.RAW_IRON);
+        long available = storage.extract(raw, Long.MAX_VALUE, Actionable.SIMULATE, IActionSource.empty());
+        if (available < amount) {
+            var drive = (DriveBlockEntity) player.serverLevel().getBlockEntity(terminal.east(2));
+            if (drive.getCellInventory(0).insert(raw, amount - available, Actionable.MODULATE,
+                    IActionSource.empty()) != amount - available)
+                throw new IllegalStateException("Could not stock next native suspension case");
+        }
+        suspensionLargeAmount = amount;
+        suspensionLargePlan = null;
+        suspensionLargeSubmitted = false;
+    }
+
+    long suspensionArchivedOutput() { return suspensionArchivedOutput; }
+
+    boolean submitSuspensionSmall(ServerPlayer player) {
+        var cpus = cpuListCpus(player);
+        var service = cpus.get(1).getMainNode().getGrid().getCraftingService();
+        if (suspensionSmallPlan == null) {
+            suspensionSmallPlan = service.beginCraftingCalculation(player.serverLevel(),
+                    () -> IActionSource.ofMachine(cpus.get(1)), AEItemKey.of(Items.IRON_INGOT), 2,
+                    appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+            return false;
+        }
+        if (!suspensionSmallPlan.isDone()) return false;
+        if (!suspensionSmallSubmitted) {
+            try {
+                var result = service.submitJob(suspensionSmallPlan.get(), null, cpus.get(1).getCluster(), false,
+                        IActionSource.ofPlayer(player));
+                if (!result.successful()) throw new IllegalStateException("Small suspension job rejected: " + result);
+            } catch (Exception failure) { throw new IllegalStateException("Small suspension plan failed", failure); }
+            suspensionSmallSubmitted = true;
+        }
+        return cpus.get(1).getCluster().isBusy();
+    }
+
+    appeng.me.cluster.implementations.CraftingCPUCluster suspensionCpu(ServerPlayer player, int index) {
+        return cpuListCpus(player).get(index).getCluster();
+    }
+
+    boolean suspensionRestoredReady(ServerPlayer player) {
+        var cpus = cpuListCpus(player);
+        if (cpus.size() != 2 || cpus.stream().anyMatch(cpu -> cpu.getCluster() == null
+                || !cpu.getCluster().isActive() || cpu.getCluster().getGrid() == null)) return false;
+        for (int offset : new int[] {4, 8}) {
+            if (!(player.serverLevel().getBlockEntity(terminal.east(offset)) instanceof PatternProviderBlockEntity)
+                    || !(player.serverLevel().getBlockEntity(terminal.east(offset).below()) instanceof FurnaceBlockEntity))
+                return false;
+        }
+        return true;
+    }
+
+    long pumpSuspension(ServerPlayer player) {
+        var storage = suspensionCpu(player, 0).getGrid().getStorageService().getInventory();
+        for (int offset : new int[] {4, 8}) {
+            var furnace = (FurnaceBlockEntity) player.serverLevel().getBlockEntity(terminal.east(offset).below());
+            if (furnace.getItem(1).isEmpty()) furnace.setItem(1, new ItemStack(Items.COAL, 8));
+            var output = furnace.getItem(2);
+            if (output.is(Items.IRON_INGOT)) {
+                var provider = (PatternProviderBlockEntity) player.serverLevel().getBlockEntity(terminal.east(offset));
+                long inserted = storage.insert(AEItemKey.of(Items.IRON_INGOT), output.getCount(), Actionable.MODULATE,
+                        IActionSource.ofMachine(provider));
+                furnace.removeItem(2, (int) inserted);
+                furnace.setChanged();
+            }
+        }
+        return storage.extract(AEItemKey.of(Items.IRON_INGOT), Long.MAX_VALUE,
+                Actionable.SIMULATE, IActionSource.empty());
+    }
+
+    record SuspensionState(String jobId, boolean busy, boolean suspended, boolean profilerSuspended, long undispatched,
+            long waiting, long remaining, long networkOutput, long networkRaw,
+            int furnaceInput, int furnaceOutput) { }
+
+    SuspensionState suspensionState(ServerPlayer player, int index) {
+        var cluster = suspensionCpu(player, index);
+        var logic = cluster.craftingLogic;
+        var tag = new net.minecraft.nbt.CompoundTag();
+        try {
+            // The Forge-only suspension case uses AE2 15's one-argument serializer.
+            logic.getClass().getMethod("writeToNBT", net.minecraft.nbt.CompoundTag.class).invoke(logic, tag);
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalStateException("Cannot inspect the Forge crafting job", error);
+        }
+        var job = tag.getCompound("job");
+        long undispatched = 0;
+        var tasks = job.getList("tasks", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int i = 0; i < tasks.size(); i++) undispatched += tasks.getCompound(i).getLong("#craftingProgress");
+        int input = 0, output = 0;
+        for (int offset : new int[] {4, 8}) {
+            var furnace = (FurnaceBlockEntity) player.serverLevel().getBlockEntity(terminal.east(offset).below());
+            input += furnace.getItem(0).getCount();
+            output += furnace.getItem(2).getCount();
+        }
+        var storage = cluster.getGrid().getStorageService().getInventory();
+        var key = AEItemKey.of(Items.IRON_INGOT);
+        var state = new SuspensionState(logic.getLastLink() == null ? "" : logic.getLastLink().getCraftingID().toString(),
+                cluster.isBusy(), job.getBoolean("ae2craftingtime:suspended"), ProfilerBridge.isSuspended(cluster),
+                undispatched, logic.getWaitingFor(key), job.getLong("remainingAmount"),
+                storage.extract(key, Long.MAX_VALUE, Actionable.SIMULATE, IActionSource.empty()),
+                storage.extract(AEItemKey.of(Items.RAW_IRON), Long.MAX_VALUE,
+                        Actionable.SIMULATE, IActionSource.empty()), input, output);
+        checkpoint = "suspension=" + state;
+        return state;
     }
 
     private void pattern(ServerPlayer player, int offset, int slot, net.minecraft.world.item.Item input,

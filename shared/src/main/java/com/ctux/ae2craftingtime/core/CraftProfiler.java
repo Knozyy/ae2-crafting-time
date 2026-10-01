@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +30,8 @@ public final class CraftProfiler {
     private final Map<Object, CraftingJobEstimate> jobEstimates = new IdentityHashMap<>();
     private final Map<Object, Set<ProfileKey>> delayedNotified = new IdentityHashMap<>();
     private final Map<Object, Set<ProfileKey>> delayedResolved = new IdentityHashMap<>();
+    private final Set<Object> suspended = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<Object> ignoreRemembered = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Map<ProfileKey, CompletionInterval> completionIntervals = new HashMap<>();
     private final Set<ProfileKey> dirtySampleKeys = new HashSet<>();
     private final Map<ProfileKey, Long> retainedTailTicks = new HashMap<>();
@@ -105,6 +108,7 @@ public final class CraftProfiler {
     }
 
     public Map<ProfileKey, CraftingBlockReason> blockReasons(Object scope, long tick, Set<ProfileKey> missing) {
+        if (suspended.contains(scope)) return Map.of();
         var reasons = new HashMap<>(providerDispatch.reasons(scope, tick));
         reasons.putAll(dispatchPower.reasons(scope, tick, missing));
         return reasons;
@@ -116,6 +120,8 @@ public final class CraftProfiler {
         }
 
         missingProviders.clear(scope);
+        suspended.remove(scope);
+        ignoreRemembered.remove(scope);
         dispatchPower.clear(scope);
         providerDispatch.clear(scope);
         // A new job starts a fresh delayed-notification episode.
@@ -135,6 +141,7 @@ public final class CraftProfiler {
     }
 
     public OptionalLong waitingTicks(ProfileKey key, Object scope, long tick) {
+        if (suspended.contains(scope)) return OptionalLong.empty();
         var state = waiting.get(scope);
         return key != null && state != null && state.keys.contains(key)
                 ? OptionalLong.of(Math.max(0, tick - state.acceptedAtTick))
@@ -266,7 +273,35 @@ public final class CraftProfiler {
         return Set.copyOf(keys);
     }
 
+    /** Keep outstanding work while removing only this job's deliberate-pause diagnostics. */
+    public boolean setSuspended(Object scope, boolean pause, long tick) {
+        if (scope == null || suspended.contains(scope) == pause) return false;
+        if (pause) {
+            suspended.add(scope);
+        } else {
+            suspended.remove(scope);
+            var progress = lastProgressTicks.get(scope);
+            if (progress != null) progress.replaceAll((key, old) -> tick);
+            var waitingState = waiting.get(scope);
+            if (waitingState != null) waiting.put(scope, new WaitingState(tick, waitingState.keys));
+        }
+        ignoreRemembered.add(scope);
+        missingProviders.clear(scope);
+        dispatchPower.clear(scope);
+        providerDispatch.clear(scope);
+        capacities.remove(scope);
+        delayedNotified.remove(scope);
+        delayedResolved.remove(scope);
+        return true;
+    }
+
+    public boolean isSuspended(Object scope) { return suspended.contains(scope); }
+
+    public boolean ignoreRemembered(Object scope) { return ignoreRemembered.contains(scope); }
+
     public void clearPending(Object scope) {
+        suspended.remove(scope);
+        ignoreRemembered.remove(scope);
         missingProviders.clear(scope);
         dispatchPower.clear(scope);
         providerDispatch.clear(scope);
@@ -293,7 +328,7 @@ public final class CraftProfiler {
     }
 
     public void updateCapacity(Object scope, int usedParallelSlots, int totalParallelSlots, long tick) {
-        if (!enabled || scope == null || totalParallelSlots <= 0) {
+        if (!enabled || scope == null || totalParallelSlots <= 0 || suspended.contains(scope)) {
             return;
         }
         capacities.put(scope, new CapacityState(
@@ -301,7 +336,7 @@ public final class CraftProfiler {
     }
 
     public Optional<StallDiagnostic> stall(ProfileKey key, Object scope, long tick) {
-        if (!delayedEnabled) return Optional.empty();
+        if (!delayedEnabled || suspended.contains(scope)) return Optional.empty();
         var scopedPending = pending.get(scope);
         var queue = scopedPending == null ? null : scopedPending.get(key);
         var stats = stats(key);
@@ -354,6 +389,7 @@ public final class CraftProfiler {
 
     public OptionalLong remainingJobSeconds(Object scope,
             BiFunction<ProfileKey, Long, OptionalLong> estimate) {
+        if (suspended.contains(scope)) return OptionalLong.empty();
         var jobEstimate = jobEstimates.get(scope);
         return jobEstimate == null ? OptionalLong.empty() : jobEstimate.remainingSeconds(estimate);
     }
@@ -375,7 +411,7 @@ public final class CraftProfiler {
      * the server can explicitly clear their highlight while the craft runs.
      */
     public List<DelayedEvent> pollNewlyDelayed(Object scope, long tick) {
-        if (!enabled || scope == null) {
+        if (!enabled || scope == null || suspended.contains(scope)) {
             return List.of();
         }
         var scopedPending = pending.getOrDefault(scope, Map.of());
@@ -451,7 +487,7 @@ public final class CraftProfiler {
 
     /** Current stall evidence, independent of whether chat notification was polled. */
     public Set<ProfileKey> liveDelayedKeys(Object scope, long tick) {
-        if (!enabled || scope == null) return Set.of();
+        if (!enabled || scope == null || suspended.contains(scope)) return Set.of();
         var live = new HashSet<ProfileKey>();
         for (var key : pending.getOrDefault(scope, Map.of()).keySet()) {
             if (stall(key, scope, tick).isPresent()) live.add(key);
@@ -535,6 +571,7 @@ public final class CraftProfiler {
     }
 
     public Map<ProfileKey, CraftingBlockReason> rememberedReasons(Object liveScope) {
+        if (suspended.contains(liveScope) || ignoreRemembered.contains(liveScope)) return Map.of();
         var reasons = new HashMap<ProfileKey, CraftingBlockReason>();
         var livePending = liveScope == null ? null : pending.get(liveScope);
         for (var status : rememberedStatuses.values()) {
@@ -675,6 +712,8 @@ public final class CraftProfiler {
     }
 
     public void loadSamples(List<PersistedOutputSamples> persisted) {
+        suspended.clear();
+        ignoreRemembered.clear();
         samples.clear();
         rememberedStatuses.clear();
         missingProviders.clear();

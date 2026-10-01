@@ -170,10 +170,10 @@ class TestDriverCoreTest {
         var transientOutput = temporary.resolve("transient-progress");
         var transientAttempts = new AtomicInteger();
         new DriverProgress(transientOutput, "phase=ACTIVE", (source, target) -> {
-            if (transientAttempts.incrementAndGet() == 1) throw new AccessDeniedException(target.toString());
+            if (transientAttempts.incrementAndGet() <= 5) throw new AccessDeniedException(target.toString());
             Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
         });
-        assertEquals(2, transientAttempts.get());
+        assertEquals(6, transientAttempts.get());
         assertEquals("phase=ACTIVE", com.google.gson.JsonParser.parseString(
                 Files.readString(transientOutput.resolve("driver-progress.json")))
                 .getAsJsonObject().get("checkpoint").getAsString());
@@ -199,10 +199,10 @@ class TestDriverCoreTest {
         var transientState = temporary.resolve("transient-control/state.properties");
         var transientAttempts = new AtomicInteger();
         CpuListTtcControl.write(transientState, values, (source, target) -> {
-            if (transientAttempts.incrementAndGet() == 1) throw new AccessDeniedException(target.toString());
+            if (transientAttempts.incrementAndGet() <= 5) throw new AccessDeniedException(target.toString());
             Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
         });
-        assertEquals(2, transientAttempts.get());
+        assertEquals(6, transientAttempts.get());
         var written = new Properties();
         try (var input = Files.newInputStream(transientState)) { written.load(input); }
         assertEquals("first-grid", written.getProperty("phase"));
@@ -348,7 +348,7 @@ class TestDriverCoreTest {
     @Test
     void standardResultCannotOmitAnyRequiredPlanStatusOrOutputCheck() {
         assertFalse(AddonCpuFixture.supports("standard-ae2"));
-        assertEquals(10, StandardAe2Scenario.CHECKS.size());
+        assertEquals(11, StandardAe2Scenario.CHECKS.size());
         assertEquals(List.of("plan-on", "plan-off", "plan-restored", "status-on", "status-off", "status-restored"),
                 StandardAe2Scenario.CHECKS.get("badge-background"));
         for (var entry : StandardAe2Scenario.CHECKS.entrySet()) {

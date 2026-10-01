@@ -32,7 +32,7 @@ public final class BlockReasonNotifier {
 
     public static void maybeNotifyPower(Object scope, IGrid grid, long tick, MinecraftServer server,
             BiConsumer<ServerPlayer, ProviderHighlightCodec.Highlight> highlightSender) {
-        if (!armed(server) || !ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_POWER_DETECTION)) {
+        if (ProfilerBridge.isSuspended(scope) || !armed(server) || !ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_POWER_DETECTION)) {
             return;
         }
         var reasons = ProfilerBridge.blockReasons(scope, grid, tick);
@@ -52,7 +52,7 @@ public final class BlockReasonNotifier {
 
     public static void maybeNotifySpace(Object scope, IGrid grid, Object logic, MinecraftServer server,
             BiConsumer<ServerPlayer, ProviderHighlightCodec.Highlight> highlightSender) {
-        if (!armed(server) || !ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_SPACE_DETECTION)
+        if (ProfilerBridge.isSuspended(scope) || !armed(server) || !ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_SPACE_DETECTION)
                 || scope == null || grid == null) {
             return;
         }

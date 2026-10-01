@@ -15,6 +15,59 @@ import org.junit.jupiter.api.Test;
 
 class CraftProfilerTest {
     @Test
+    void suspensionKeepsPendingAndOtherCpuWhileRebasingDelay() {
+        var profiler = new CraftProfiler(10);
+        var paused = new Object();
+        var other = new Object();
+        var output = new ProfileKey("test:shared-output");
+        var waiting = new ProfileKey("test:waiting");
+        var options = new ServerConfig();
+        options.setMinimumNoProgressSeconds(1);
+        profiler.configure(options);
+        profiler.start(output, paused, 1, ProfileUnit.ITEM, 0);
+        profiler.complete(output, paused, 1, 20);
+        profiler.flushCompletedSamples();
+        profiler.start(output, paused, 2, ProfileUnit.ITEM, 30);
+        profiler.start(output, other, 2, ProfileUnit.ITEM, 30);
+        profiler.startWaiting(paused, List.of(waiting), 30);
+        profiler.setJobEstimate(paused, new CraftingJobEstimate(output, Map.of(output, 2L), Map.of()));
+        assertTrue(profiler.setSuspended(paused, true, 40));
+        assertFalse(profiler.setSuspended(paused, true, 41));
+        assertTrue(profiler.isSuspended(paused));
+        assertTrue(profiler.ignoreRemembered(paused));
+        profiler.updateCapacity(paused, 1, 2, 40);
+        assertTrue(profiler.rememberedReasons(paused).isEmpty());
+        assertEquals(Set.of(output, waiting), profiler.scopedKeys(paused));
+        assertTrue(profiler.waitingTicks(waiting, paused, 100).isEmpty());
+        assertTrue(profiler.stall(output, paused, 100).isEmpty());
+        assertTrue(profiler.liveDelayedKeys(paused, 100).isEmpty());
+        assertTrue(profiler.pollNewlyDelayed(paused, 100).isEmpty());
+        assertTrue(profiler.blockReasons(paused, 100, Set.of(output)).isEmpty());
+        assertTrue(profiler.remainingJobSeconds(paused, (key, amount) -> OptionalLong.of(1)).isEmpty());
+        assertTrue(profiler.hasActiveOutput(output, null));
+        assertTrue(profiler.stall(output, other, 100).isPresent());
+        assertTrue(profiler.setSuspended(paused, false, 100));
+        assertFalse(profiler.setSuspended(paused, false, 101));
+        assertTrue(profiler.rememberedReasons(paused).isEmpty());
+        assertEquals(1, profiler.waitingTicks(waiting, paused, 101).orElseThrow());
+        assertTrue(profiler.stall(output, paused, 101).isEmpty());
+        assertEquals(1, profiler.remainingJobSeconds(paused, (key, amount) -> OptionalLong.of(1)).orElseThrow());
+        assertEquals(1, profiler.stats(output).orElseThrow().sampleCount());
+        profiler.clearPending(paused);
+        assertFalse(profiler.ignoreRemembered(paused));
+        assertFalse(profiler.isSuspended(paused));
+        assertTrue(profiler.hasActiveOutput(output, null));
+        assertFalse(profiler.setSuspended(null, true, 0));
+        var emptyScope = new Object();
+        assertTrue(profiler.setSuspended(emptyScope, true, 0));
+        assertTrue(profiler.setSuspended(emptyScope, false, 1));
+        assertTrue(profiler.setSuspended(emptyScope, true, 2));
+        profiler.loadSamples(List.of());
+        assertFalse(profiler.isSuspended(emptyScope));
+        assertFalse(profiler.ignoreRemembered(emptyScope));
+        assertFalse(profiler.isSuspended(paused));
+    }
+    @Test
     void serverOptionsReconfigureRetainedSamplesAndDelayDetection() {
         var profiler = new CraftProfiler(10);
         var key = new ProfileKey("test:option-output");

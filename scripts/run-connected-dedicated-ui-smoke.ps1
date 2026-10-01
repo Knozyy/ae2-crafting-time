@@ -10,7 +10,7 @@ param(
     [ValidateRange(1, 1800)][int]$ServerStartupTimeoutSeconds = 300,
     [switch]$ScheduledJava,
     [string]$InteractiveUser = 'Codex',
-    [ValidateSet('cpu-list-total-ttc','recurrent-plan','stored-variant-plan','delayed-resource-icons','appmek-resource-icons')][string]$Scenario = 'cpu-list-total-ttc',
+    [ValidateSet('cpu-list-total-ttc','recurrent-plan','stored-variant-plan','delayed-resource-icons','appmek-resource-icons','crafting-suspension')][string]$Scenario = 'cpu-list-total-ttc',
     [switch]$ResourceFixtureOnly,
     [switch]$Prewarm,
     [switch]$AcceptMinecraftEula,
@@ -45,6 +45,10 @@ function Stop-RetainedObservationClient {
 . (Join-Path $PSScriptRoot 'dedicated-source-contract.ps1')
 if (!$PlanOnly -and !$AcceptMinecraftEula) { throw 'Connected execution requires explicit -AcceptMinecraftEula consent' }
 $resourceScenario = $Scenario -in @('delayed-resource-icons','appmek-resource-icons')
+if ($Scenario -eq 'crafting-suspension' -and ($Target -ne '1.20.1-forge' -or $HeadSha -cnotmatch '^[a-f0-9]{40}$' -or
+        $ObservationMode -or $ResourceFixtureOnly -or $Prewarm)) {
+    throw 'Crafting suspension connected proof requires Forge 1.20.1, exact head and normal two-client execution'
+}
 if ($Prewarm -and (!$resourceScenario -or $HeadSha -cnotmatch '^[a-f0-9]{40}$')) {
     throw 'Prewarm requires resource fixture mode and the complete tested head'
 }
@@ -258,6 +262,10 @@ $serverArgs = @("-Dae2ct.testDriver.serverScenario=$Scenario-connected",
     "-Dae2ct.testDriver.serverTarget=$Target", "-Dae2ct.testDriver.serverResult=$serverResult",
     "-Dae2ct.testDriver.serverControl=$control", "-Dae2ct.testDriver.serverCampaign=$connectionEpoch",
     "-Dae2craftingtime.test.resourceFixture=$connectionFixture", '-Xmx4G')
+if ($Scenario -eq 'crafting-suspension') {
+    $serverArgs = @('-Dae2craftingtime.test.persistentFixture=true') +
+        @($serverArgs | Where-Object { $_ -cne '-Xmx4G' }) + @('-Xmx2G')
+}
 if ($ObservationMode) {
     $serverArgs = @('-Xmx4G')
     if ($serverInstalled) {
@@ -302,6 +310,74 @@ $runnerPlan = [ordered]@{ target=$Target; headSha=$HeadSha; campaignId=$campaign
 $runnerPlan |
     ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $planPath -Encoding UTF8
 if ($PlanOnly) { Write-Host "Connected runner plan validated: $planPath"; return }
+function Invoke-SuspensionClients([string]$epoch, [int]$phase) {
+    $jobs = @()
+    try {
+        foreach ($role in @('alpha','beta')) {
+            $roleReport = Join-Path $report "phase-$phase-$role"
+            $parameters = @{
+                Target=$Target; Scenario='crafting-suspension'; ReportDirectory=$roleReport
+                RuntimeDirectory=(Join-Path $roleReport 'runtime'); BundleDirectory=$bundle
+                PreparedLaunch=$prepared; DedicatedAddress=$Address
+                ControlDirectory=(Join-Path $control $role); CampaignId=$epoch
+                ResourceFixtureId=$connectionFixture; HeadSha=$HeadSha; Role=$role
+                OfflineName=$(if($role -eq 'alpha'){'Ae2ctAlpha'}else{'Ae2ctBeta'})
+                OfflineUuid=$(if($role -eq 'alpha'){'446b6d0ccadd3e57baf699d70f01a628'}else{'fb410ed6b38c4d06b76d47ec97aaaadd'})
+                FailOnInitialDisconnect=$true; StartupTimeoutSeconds=$ServerStartupTimeoutSeconds
+                SuspensionReload=($phase -eq 2)
+            }
+            if ($ScheduledJava) { $parameters.ScheduledJava=$true; $parameters.InteractiveUser=$InteractiveUser }
+            $jobs += Start-Job -Name "suspension-$phase-$role" -ScriptBlock {
+                param($runner, $arguments)
+                & $runner @arguments
+                if ($LASTEXITCODE) { throw "Suspension client failed with exit $LASTEXITCODE" }
+            } -ArgumentList (Join-Path $PSScriptRoot 'run-ui-smoke.ps1'), $parameters
+        }
+        $completed = @(Wait-Job -Job $jobs -Timeout 1200)
+        if ($completed.Count -ne 2) { throw "Suspension phase $phase clients timed out" }
+        foreach ($job in $jobs) {
+            Receive-Job -Job $job -ErrorAction Stop | Out-Host
+            if ($job.State -ne 'Completed') { throw "Suspension client job failed: $($job.Name) $($job.State)" }
+        }
+    } finally {
+        foreach ($job in $jobs) { if ($job.State -eq 'Running') { Stop-Job -Job $job }; Remove-Job -Job $job -Force }
+    }
+}
+function Read-SuspensionClientEvidence([int]$phase) {
+    $records = @()
+    foreach ($role in @('alpha','beta')) {
+        $root = Join-Path $report "phase-$phase-$role"
+        $resultPath = Join-Path $root 'evidence/result.json'
+        $statusPath = Join-Path $root 'status.json'
+        if (!(Test-Path -LiteralPath $resultPath -PathType Leaf) -or !(Test-Path -LiteralPath $statusPath -PathType Leaf))
+            { throw "Suspension $phase $role lacks client evidence" }
+        $result = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+        $status = Get-Content -LiteralPath $statusPath -Raw | ConvertFrom-Json
+        if ($result.result -cne 'PASS' -or !$result.complete -or $status.phase -cne 'passed' -or
+                @($status.processes).Count -ne 1 -or !$status.processes[0].pid -or
+                $status.processes[0].exitCode -ne 0) {
+            throw "Suspension $phase $role client evidence did not pass cleanly"
+        }
+        $records += [ordered]@{ role=$role; result=$resultPath; status=$statusPath
+            process=$status.processes[0]; checks=$result.checks; screenshots=$result.screenshots }
+    }
+    return ,$records
+}
+function Stop-OwnedSuspensionClients {
+    foreach ($phase in 1,2) { foreach ($role in @('alpha','beta')) {
+        $statusPath = Join-Path $report "phase-$phase-$role/status.json"
+        if (!(Test-Path -LiteralPath $statusPath -PathType Leaf)) { continue }
+        $status = Get-Content -LiteralPath $statusPath -Raw | ConvertFrom-Json
+        foreach ($entry in @($status.processes)) {
+            if (!$entry.pid -or !$entry.startedAt -or !$entry.executable) { continue }
+            $owned = Get-Process -Id $entry.pid -ErrorAction SilentlyContinue
+            if ($owned -and $owned.Path -ieq $entry.executable -and
+                    $owned.StartTime.ToUniversalTime().Ticks -eq ([datetime]$entry.startedAt).ToUniversalTime().Ticks) {
+                $owned.Kill(); $owned.WaitForExit(); $owned.Dispose()
+            }
+        }
+    }}
+}
 $javaVersionOut = Join-Path $report 'java-version.stdout.log'
 $javaVersionErr = Join-Path $report 'java-version.stderr.log'
 $javaVersionProcess = Start-Process -FilePath $java -ArgumentList '-version' -Wait -PassThru -WindowStyle Hidden `
@@ -328,6 +404,7 @@ if ($ObservationMode) {
 
 $serverProcess = Start-Process -FilePath $java -ArgumentList $launchCommandLine -WorkingDirectory $resolvedServer `
     -PassThru -WindowStyle Hidden -RedirectStandardOutput $serverOut -RedirectStandardError $serverErr
+$null = $serverProcess.Handle
 $serverStartedAt = $serverProcess.StartTime.ToUniversalTime()
 try {
     $deadline = if ($Prewarm) { [DateTimeOffset]::FromUnixTimeMilliseconds($prewarmDeadline).UtcDateTime }
@@ -352,6 +429,93 @@ try {
         if (!$ready) { Start-Sleep -Milliseconds 250 }
     }
     if (!$ready) { throw 'Dedicated server did not finish startup' }
+    if ($Scenario -eq 'crafting-suspension') {
+        Invoke-SuspensionClients $connectionEpoch 1
+        if (!$serverProcess.WaitForExit(60000)) { throw 'Suspension phase 1 server did not halt cleanly' }
+        if ($serverProcess.ExitCode -ne 0 -or !(Test-Path -LiteralPath $serverResult -PathType Leaf))
+            { throw 'Suspension phase 1 server result missing or abnormal exit' }
+        $phase1 = Get-Content -LiteralPath $serverResult -Raw | ConvertFrom-Json
+        if ($phase1.result -cne 'PASS' -or $phase1.suspensionEvidence.phase -ne 1 -or
+                $phase1.suspensionEvidence.suspended -ne $true -or
+                $phase1.suspensionEvidence.jobId -cnotmatch '^[a-f0-9-]{36}$') {
+            throw 'Suspension phase 1 did not save a real paused job'
+        }
+        $firstClients = Read-SuspensionClientEvidence 1
+        Copy-Item -LiteralPath (Join-Path $resolvedServer 'logs/latest.log') -Destination (Join-Path $report 'server-phase-1.log')
+        $phase1Process = [ordered]@{ pid=$serverProcess.Id; startedAt=$serverStartedAt.ToString('o')
+            exitedAt=[DateTime]::UtcNow.ToString('o'); exitCode=$serverProcess.ExitCode }
+        $phase2Epoch = [guid]::NewGuid().ToString('N')
+        $phase2Result = Join-Path $report 'server-phase-2-result.json'
+        $continuation = [ordered]@{ schema=1; target=$Target; headSha=$HeadSha; campaignId=$campaignId
+            firstEpoch=$connectionEpoch; secondEpoch=$phase2Epoch; jobId=$phase1.suspensionEvidence.jobId
+            firstState=$phase1.suspensionEvidence; artifactHashes=@($artifacts | ForEach-Object sha256)
+            world=(Join-Path $resolvedServer 'ae2ct-cpu-list-connected'); phase1Server=$phase1Process }
+        $continuationPath = Join-Path $report 'suspension-continuation.json'
+        $continuation | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $continuationPath -Encoding UTF8
+        if (!(Test-Path -LiteralPath (Join-Path $continuation.world 'level.dat') -PathType Leaf))
+            { throw 'Suspension continuation has no saved same-world level.dat' }
+        foreach ($artifact in $artifacts) {
+            if ((Get-FileHash -LiteralPath (Join-Path $mods $artifact.name) -Algorithm SHA256).Hash -ine $artifact.sha256)
+                { throw "Suspension artifact changed before reload: $($artifact.name)" }
+        }
+        $phase2Args = @('-Dae2craftingtime.test.suspensionReload=true',
+            "-Dae2craftingtime.test.suspensionJob=$($continuation.jobId)") + @($serverArgs | ForEach-Object {
+            if ($_ -ceq "-Dae2ct.testDriver.serverResult=$serverResult") { "-Dae2ct.testDriver.serverResult=$phase2Result" }
+            elseif ($_ -ceq "-Dae2ct.testDriver.serverCampaign=$connectionEpoch") { "-Dae2ct.testDriver.serverCampaign=$phase2Epoch" }
+            else { $_ }
+        })
+        $phase2ArgsFile = Join-Path $report 'dedicated-phase-2-java.args'
+        [IO.File]::WriteAllLines($phase2ArgsFile,
+            @($phase2Args | ForEach-Object { '"' + $_.Replace('\', '\\').Replace('"', '\"') + '"' }),
+            [Text.UTF8Encoding]::new($false))
+        $phase2Launch = @("@$phase2ArgsFile") + @($launchArguments | Select-Object -Skip 1)
+        $phase2Line = ($phase2Launch | ForEach-Object {
+            '"' + ($_ -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"'
+        }) -join ' '
+        $serverProcess.Dispose()
+        $serverProcess = Start-Process -FilePath $java -ArgumentList $phase2Line -WorkingDirectory $resolvedServer `
+            -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $report 'server-phase-2.stdout.log') `
+            -RedirectStandardError (Join-Path $report 'server-phase-2.stderr.log')
+        $null = $serverProcess.Handle
+        $serverStartedAt = $serverProcess.StartTime.ToUniversalTime()
+        $deadline = [DateTime]::UtcNow.AddSeconds($ServerStartupTimeoutSeconds)
+        $ready = $false
+        while ([DateTime]::UtcNow -lt $deadline -and !$ready) {
+            if ($serverProcess.HasExited) { throw 'Suspension phase 2 server exited before startup' }
+            $probe = [Net.Sockets.TcpClient]::new()
+            try { $ready = $probe.ConnectAsync($serverHost, $serverPort).Wait(250) -and $probe.Connected }
+            catch { $ready = $false } finally { $probe.Dispose() }
+        }
+        if (!$ready) { throw 'Suspension phase 2 server did not bind its port' }
+        $ready = $false
+        while ([DateTime]::UtcNow -lt $deadline -and !$ready) {
+            if ($serverProcess.HasExited) { throw 'Suspension phase 2 server exited during startup' }
+            $ready = [bool](Select-String -LiteralPath (Join-Path $resolvedServer 'logs/latest.log') `
+                -SimpleMatch ']: Done (' -Quiet -ErrorAction SilentlyContinue)
+            if (!$ready) { Start-Sleep -Milliseconds 250 }
+        }
+        if (!$ready) { throw 'Suspension phase 2 server did not finish startup' }
+        Invoke-SuspensionClients $phase2Epoch 2
+        if (!$serverProcess.WaitForExit(600000)) { throw 'Suspension phase 2 server did not complete native craft' }
+        if ($serverProcess.ExitCode -ne 0 -or !(Test-Path -LiteralPath $phase2Result -PathType Leaf))
+            { throw 'Suspension phase 2 server result missing or abnormal exit' }
+        $phase2 = Get-Content -LiteralPath $phase2Result -Raw | ConvertFrom-Json
+        if ($phase2.result -cne 'PASS' -or $phase2.suspensionEvidence.phase -ne 2 -or
+                $phase2.suspensionEvidence.jobId -cne $continuation.jobId -or
+                $phase2.suspensionEvidence.networkOutput -ne 64) {
+            throw 'Suspension reload changed job identity or final native output count'
+        }
+        $secondClients = Read-SuspensionClientEvidence 2
+        Copy-Item -LiteralPath (Join-Path $resolvedServer 'logs/latest.log') -Destination (Join-Path $report 'server-phase-2.log')
+        [ordered]@{ schema=1; target=$Target; headSha=$HeadSha; campaignId=$campaignId
+            artifacts=$artifacts; continuation=$continuationPath; phase1=$phase1.suspensionEvidence
+            phase2=$phase2.suspensionEvidence; firstServer=$phase1Process
+            secondServer=[ordered]@{pid=$serverProcess.Id;startedAt=$serverStartedAt.ToString('o')
+                exitedAt=[DateTime]::UtcNow.ToString('o');exitCode=$serverProcess.ExitCode}
+            firstClients=$firstClients; secondClients=$secondClients } |
+            ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $report 'suspension-evidence.json') -Encoding UTF8
+        return
+    }
     if ($ObservationMode) {
         & (Join-Path $PSScriptRoot 'run-connection-observation-cell.ps1') -Target $Target `
             -InstallationMode $InstallationMode -ReportDirectory $report -BundleDirectory $bundle `
@@ -591,6 +755,7 @@ try {
     Stop-RetainedObservationClient
     throw
 } finally {
+    if ($Scenario -eq 'crafting-suspension') { Stop-OwnedSuspensionClients }
     if ($ObservationMode -and !$serverProcess.HasExited) {
         try {
             & (Join-Path $PSScriptRoot 'stop-observation-server.ps1') -Port ($serverPort + 1) -Password $rconPassword

@@ -764,4 +764,24 @@ final class StandardCraftFixture {
         }
         throw new IllegalStateException("Delayed processor has no output slot");
     }
+
+    // Shared driver sources compile on this target, but suspension is Forge 1.20.1 only.
+    record SuspensionState(String jobId, boolean busy, boolean suspended, boolean profilerSuspended, long undispatched,
+            long waiting, long remaining, long networkOutput, long networkRaw,
+            int furnaceInput, int furnaceOutput) { }
+
+    void configureSuspension() { throw new UnsupportedOperationException("Forge-only suspension fixture"); }
+    void beginSuspensionCase(ServerPlayer player, int amount) { throw new UnsupportedOperationException("Forge-only suspension fixture"); }
+    boolean submitSuspensionLarge(ServerPlayer player) { throw new UnsupportedOperationException("Forge-only suspension fixture"); }
+    boolean submitSuspensionSmall(ServerPlayer player) { throw new UnsupportedOperationException("Forge-only suspension fixture"); }
+    appeng.me.cluster.implementations.CraftingCPUCluster suspensionCpu(ServerPlayer player, int index) {
+        throw new UnsupportedOperationException("Forge-only suspension fixture");
+    }
+    boolean suspensionRestoredReady(ServerPlayer player) {
+        throw new UnsupportedOperationException("Forge-only suspension fixture");
+    }
+    long pumpSuspension(ServerPlayer player) { throw new UnsupportedOperationException("Forge-only suspension fixture"); }
+    SuspensionState suspensionState(ServerPlayer player, int index) {
+        throw new UnsupportedOperationException("Forge-only suspension fixture");
+    }
 }

@@ -20,12 +20,14 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 public final class StatsNetwork {
+    public static boolean supportsCraftingSuspension() { return false; }
+    public static boolean selectedSuspended() { return false; }
     public static void register(RegisterPayloadHandlersEvent event) {
         IntegrationLog.required("network-registration", () -> registerPayloads(event));
     }
 
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("24").optional();
+        var registrar = event.registrar("25").optional();
         registrar.playToServer(StatsRequestC2S.TYPE, StatsRequestC2S.STREAM_CODEC, StatsRequestC2S::handle);
         registrar.playToServer(StatsChatC2S.TYPE, StatsChatC2S.STREAM_CODEC, StatsChatC2S::handle);
         registrar.playToClient(StatsSnapshotS2C.TYPE, StatsSnapshotS2C.STREAM_CODEC, StatsSnapshotS2C::handle);

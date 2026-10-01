@@ -6,7 +6,7 @@ param(
     [string]$CasesBase64,
     [switch]$Latest,
     [switch]$Interactive,
-    [ValidatePattern("^(suite|standard-ae2|provider-dispatch-statuses|recurrent-plan|stored-variant-plan|delayed-resource-icons|appmek-resource-icons|chance-output-status|standard-plan-controls|badge-background|standard-status-controls|waiting-status|running-status|delayed-status|craft-lifecycle|cpu-list-total-ttc|craft-plan|no-space-status|no-provider-status|no-power-status|no-channel-status|no-target-status|input-blocked-status|locked-status|crafting-tree-screen|merequester-screen|crafting-tree-read-recovery|merequester-read-recovery|ae2networkanalyser-screen|aeinfinitybooster-terminal|ae2importexportcard-terminal|ae2(?:wcwt|wtlib)-terminal|[a-z0-9]+(?:-[a-z0-9]+)*-cpu)$")][string]$Scenario = "craft-plan",
+    [ValidatePattern("^(suite|standard-ae2|provider-dispatch-statuses|recurrent-plan|stored-variant-plan|delayed-resource-icons|appmek-resource-icons|chance-output-status|standard-plan-controls|badge-background|standard-status-controls|waiting-status|running-status|delayed-status|craft-lifecycle|cpu-list-total-ttc|crafting-suspension|craft-plan|no-space-status|no-provider-status|no-power-status|no-channel-status|no-target-status|input-blocked-status|locked-status|crafting-tree-screen|merequester-screen|crafting-tree-read-recovery|merequester-read-recovery|ae2networkanalyser-screen|aeinfinitybooster-terminal|ae2importexportcard-terminal|ae2(?:wcwt|wtlib)-terminal|[a-z0-9]+(?:-[a-z0-9]+)*-cpu)$")][string]$Scenario = "craft-plan",
     [string[]]$ProjectId,
     [string]$ArchiveRoot,
     [string]$ReportDirectory,
@@ -17,7 +17,7 @@ param(
     [string]$ControlDirectory,
     [string]$CampaignId,
     [string]$ResourceFixtureId,
-    [ValidateSet('alpha')][string]$Role,
+    [ValidateSet('alpha','beta')][string]$Role,
     [string]$OfflineName,
     [ValidatePattern('^[a-f0-9]{32}$')][string]$OfflineUuid,
     [string]$HeadSha,
@@ -30,6 +30,7 @@ param(
     [int]$CheckpointTimeoutSeconds = 60,
     [int]$StartupTimeoutSeconds = 300,
     [switch]$FailOnInitialDisconnect,
+    [switch]$SuspensionReload,
     [switch]$ResourceFixtureOnly,
     [switch]$Prewarm,
     [long]$PrewarmDeadline,
@@ -83,6 +84,9 @@ function Get-ResourceFixtureScreenshots([string[]]$FixtureCases, [bool]$Connecte
 }
 if ($Scenario -eq 'appmek-resource-icons' -and $Target -notin @('1.20.1-forge','1.21.1-neoforge')) {
     throw 'AppMek resource fixtures are supported only on Forge 1.20.1 and NeoForge 1.21.1'
+}
+if ($Scenario -eq 'crafting-suspension' -and $Target -ne '1.20.1-forge') {
+    throw 'Crafting suspension UI smoke is Forge 1.20.1 only'
 }
 if (-not $PreparedLaunch -and -not $ReportDirectory) {
     if ($CasesBase64) { throw 'Case-list transport is internal to native execution' }
@@ -218,7 +222,10 @@ if (-not $resolvedBase.StartsWith($buildRoot, [StringComparison]::OrdinalIgnoreC
 Write-Status 'preparing' 'creating isolated runtime directories'
 New-Item -ItemType Directory -Path $base, $report, (Split-Path -Parent $worldCopy) -Force | Out-Null
 try {
-    $runtimeLock = [IO.File]::Open((Join-Path ([IO.Path]::GetTempPath()) "ae2-crafting-time-smoke-client.lock"), "OpenOrCreate", "ReadWrite", "None")
+    $lockName = if ($Scenario -eq 'crafting-suspension' -and $DedicatedAddress -and $Role) {
+        "ae2-crafting-time-smoke-client-$Role.lock"
+    } else { 'ae2-crafting-time-smoke-client.lock' }
+    $runtimeLock = [IO.File]::Open((Join-Path ([IO.Path]::GetTempPath()) $lockName), "OpenOrCreate", "ReadWrite", "None")
 } catch {
     throw "Another Minecraft UI-smoke client is already running; wait for its exit before launching another target or scenario"
 }
@@ -354,6 +361,7 @@ try {
                 RuntimeDirectory=$runtime; Target=$Target; Profile=$profile; Scenario=$Scenario; World=$world
                 Evidence=$evidence; ProjectId=$ProjectId; Interactive=$Interactive; DedicatedAddress=$DedicatedAddress
                 ControlDirectory=$ControlDirectory; CampaignId=$campaignId; ResourceFixtureId=$resourceFixtureId; HeadSha=$headSha
+                SuspensionReload=$SuspensionReload
                 GraphIdentity=$(if ($dependencyIdentity) { $dependencyIdentity.catalogueSha256 } else { "" }) }
             if ($Role) { $launchParameters.Role=$Role; $launchParameters.OfflineName=$OfflineName; $launchParameters.OfflineUuid=$OfflineUuid }
             if ($RuntimeDirectory) { $launchParameters.AllowedRuntimeRoot=$report }
@@ -377,6 +385,7 @@ try {
                     RuntimeDirectory=$runtime; Target=$Target; Profile=$profile; Scenario=$Scenario; World=$world
                     Evidence=$evidence; ProjectId=$ProjectId; Interactive=$Interactive; DedicatedAddress=$DedicatedAddress
                     ControlDirectory=$ControlDirectory; CampaignId=$campaignId; ResourceFixtureId=$resourceFixtureId; HeadSha=$headSha
+                    SuspensionReload=$SuspensionReload
                 GraphIdentity=$(if ($dependencyIdentity) { $dependencyIdentity.catalogueSha256 } else { "" }) }
                 if ($Role) { $launchParameters.Role=$Role; $launchParameters.OfflineName=$OfflineName; $launchParameters.OfflineUuid=$OfflineUuid }
                 if ($RuntimeDirectory) { $launchParameters.AllowedRuntimeRoot=$report }
@@ -417,6 +426,7 @@ try {
             $processes += $identity
             Write-Status "running" "client phase $phase"
             $timeout = if ($Interactive) { [TimeSpan]::FromMinutes(30) }
+                elseif ($Scenario -eq 'crafting-suspension') { [TimeSpan]::FromMinutes(15) }
                 elseif ($Scenario -in @("suite", "cpu-list-total-ttc", "standard-status-controls", "delayed-resource-icons", "appmek-resource-icons")) { [TimeSpan]::FromMinutes(40) }
                 else { [TimeSpan]::FromMinutes(8) }
             $deadline = [DateTime]::UtcNow.Add($timeout)
@@ -446,7 +456,7 @@ try {
                 } elseif ($process.WaitForExit(1000)) {
                     break
                 }
-                if ($Scenario -in @('cpu-list-total-ttc', 'standard-status-controls', 'recurrent-plan', 'stored-variant-plan', 'delayed-resource-icons', 'appmek-resource-icons') -or
+                if ($Scenario -in @('cpu-list-total-ttc', 'standard-status-controls', 'recurrent-plan', 'stored-variant-plan', 'delayed-resource-icons', 'appmek-resource-icons', 'crafting-suspension') -or
                         $selectedCases -contains 'recurrent-plan' -or $selectedCases -contains 'stored-variant-plan') {
                     $progressPath = Join-Path $evidence 'driver-progress.json'
                     if (Test-Path -LiteralPath $progressPath -PathType Leaf) {
@@ -493,7 +503,7 @@ try {
                             -CheckpointTimeoutSeconds $CheckpointTimeoutSeconds -ProcessId $process.Id `
                             -ProgressProcessId $progressPid -CallbackSequence $callbackSequence `
                             -StartedAt $scenarioStartedAt -StartupTimeoutSeconds $StartupTimeoutSeconds `
-                            -ActiveScenarioObserved:$activeScenarioObserved -Checkpoint $checkpoint
+                            -ActiveScenarioObserved:$activeScenarioObserved -Interactive:$Interactive -Checkpoint $checkpoint
                     }
                     if ($watchdogReason) { break }
                 }
@@ -614,6 +624,9 @@ try {
         $standardContracts = (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'ui-smoke-groups.json') -Raw | ConvertFrom-Json).cases
         $requiredChecks = if ($caseScenario -in @('delayed-resource-icons','appmek-resource-icons')) {
             @()
+        } elseif ($caseScenario -eq 'crafting-suspension' -and $DedicatedAddress) {
+            if ($SuspensionReload) { @($standardContracts.$caseScenario.connectedReloadChecks) }
+            else { @($standardContracts.$caseScenario.connectedChecks) }
         } elseif ($standardContracts.$caseScenario) {
             if ($DedicatedAddress -and $standardContracts.$caseScenario.connectedChecks) {
                 @($standardContracts.$caseScenario.checks) + @($standardContracts.$caseScenario.connectedChecks)
@@ -676,6 +689,9 @@ try {
         $requiredScreenshots = if ($caseScenario -in @('delayed-resource-icons','appmek-resource-icons')) {
             Get-ResourceFixtureScreenshots (Get-ResourceFixtureCases $caseScenario $Target) `
                 ([bool]$DedicatedAddress) (!$ResourceFixtureOnly)
+        } elseif ($caseScenario -eq 'crafting-suspension' -and $DedicatedAddress) {
+            if ($SuspensionReload) { @($standardContracts.$caseScenario.connectedReloadScreenshots) }
+            else { @($standardContracts.$caseScenario.connectedScreenshots) }
         } elseif ($standardContracts.$caseScenario) {
             if ($DedicatedAddress -and $standardContracts.$caseScenario.connectedScreenshots) {
                 @($standardContracts.$caseScenario.screenshots) + @($standardContracts.$caseScenario.connectedScreenshots)

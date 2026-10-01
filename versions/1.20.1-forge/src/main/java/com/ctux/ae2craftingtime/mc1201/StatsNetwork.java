@@ -12,6 +12,8 @@ import com.ctux.ae2craftingtime.mc1201.net.PlanStoredVariantsS2C;
 import com.ctux.ae2craftingtime.mc1201.net.WarningPreferenceC2S;
 import com.ctux.ae2craftingtime.mc1201.net.ServerOptionsSnapshotS2C;
 import com.ctux.ae2craftingtime.mc1201.net.ServerOptionsUpdateC2S;
+import com.ctux.ae2craftingtime.mc1201.net.CraftingSuspensionC2S;
+import com.ctux.ae2craftingtime.mc1201.net.CraftingSuspensionS2C;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkRegistry;
@@ -20,7 +22,14 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 @SuppressWarnings({ "deprecation", "removal" })
 public final class StatsNetwork {
-    private static final String PROTOCOL = "25";
+    public static boolean supportsCraftingSuspension() { return true; }
+    public static boolean selectedSuspended() {
+        var player = net.minecraft.client.Minecraft.getInstance().player;
+        return player != null && player.containerMenu instanceof appeng.menu.me.crafting.CraftingCPUMenu menu
+                && ((CraftingSuspensionMenuState) menu).ae2craftingtime$suspensionSnapshot() != null
+                && ((CraftingSuspensionMenuState) menu).ae2craftingtime$suspensionSnapshot().suspended();
+    }
+    private static final String PROTOCOL = "26";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(Ae2CraftingTime.MOD_ID, "main"),
             () -> PROTOCOL,
@@ -68,9 +77,15 @@ public final class StatsNetwork {
         CHANNEL.registerMessage(id++, ServerOptionsSnapshotS2C.class, ServerOptionsSnapshotS2C::encode,
                 ServerOptionsSnapshotS2C::decode, ServerOptionsSnapshotS2C::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
-        CHANNEL.registerMessage(id, ServerOptionsUpdateC2S.class, ServerOptionsUpdateC2S::encode,
+        CHANNEL.registerMessage(id++, ServerOptionsUpdateC2S.class, ServerOptionsUpdateC2S::encode,
                 ServerOptionsUpdateC2S::decode, ServerOptionsUpdateC2S::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(id++, CraftingSuspensionC2S.class, CraftingSuspensionC2S::encode,
+                CraftingSuspensionC2S::decode, CraftingSuspensionC2S::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(id, CraftingSuspensionS2C.class, CraftingSuspensionS2C::encode,
+                CraftingSuspensionS2C::decode, CraftingSuspensionS2C::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
     }
 
     public static void sendTo(ServerPlayer player, StatsSnapshotS2C packet) {
@@ -81,6 +96,9 @@ public final class StatsNetwork {
         if (canSend(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
     public static void sendTo(ServerPlayer player, ServerOptionsSnapshotS2C packet) {
+        if (canSend(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+    public static void sendTo(ServerPlayer player, CraftingSuspensionS2C packet) {
         if (canSend(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
     public static void sendTo(ServerPlayer player, PlanRecurrenceS2C packet) { if (canSend(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet); }
@@ -102,6 +120,7 @@ public final class StatsNetwork {
         if (canSend()) CHANNEL.sendToServer(packet);
     }
     public static void sendToServer(ServerOptionsUpdateC2S packet) { if (canSend()) CHANNEL.sendToServer(packet); }
+    public static void sendToServer(CraftingSuspensionC2S packet) { if (canSend()) CHANNEL.sendToServer(packet); }
 
     public static void sendToServer(StatsRequestC2S packet) { if (canSend()) CHANNEL.sendToServer(packet); }
     public static void sendToServer(CpuTtcRequestC2S packet) { if (canSend()) CHANNEL.sendToServer(packet); }

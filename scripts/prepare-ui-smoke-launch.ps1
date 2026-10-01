@@ -16,10 +16,11 @@ param(
     [string]$ResourceFixtureId,
     [string]$HeadSha,
     [string]$GraphIdentity,
-    [ValidateSet('alpha')][string]$Role,
+    [ValidateSet('alpha','beta')][string]$Role,
     [string]$OfflineName,
     [ValidatePattern('^[a-f0-9]{32}$')][string]$OfflineUuid,
     [switch]$ResumeOnly,
+    [switch]$SuspensionReload,
     [switch]$ResourceFixtureOnly,
     [switch]$Prewarm,
     [long]$PrewarmDeadline,
@@ -130,12 +131,19 @@ if ($CampaignId) {
     if ($CampaignId -cnotmatch '^[A-Za-z0-9._-]{1,128}$') { throw 'Invalid UI-smoke campaign identity' }
     $arguments.Insert(0, "-Dae2craftingtime.test.campaign=$CampaignId")
 }
+if ($SuspensionReload) {
+    if ($Scenario -ne 'crafting-suspension' -or !$Role -or !$DedicatedAddress)
+        { throw 'Suspension reload requires a connected crafting-suspension role' }
+    $arguments.Insert(0, '-Dae2craftingtime.test.suspensionReload=true')
+}
 if ($Role) {
-    $expectedName = 'Ae2ctAlpha'
-    $expectedUuid = '446b6d0ccadd3e57baf699d70f01a628'
-    if ($Scenario -notin @('recurrent-plan','stored-variant-plan') -or $DedicatedAddress -notmatch '^(127\.0\.0\.1|localhost):[0-9]{1,5}$' -or
+    $expectedName = if ($Role -eq 'beta') { 'Ae2ctBeta' } else { 'Ae2ctAlpha' }
+    $expectedUuid = if ($Role -eq 'beta') { 'fb410ed6b38c4d06b76d47ec97aaaadd' } else { '446b6d0ccadd3e57baf699d70f01a628' }
+    if (($Role -eq 'beta' -and $Scenario -ne 'crafting-suspension') -or
+            $Scenario -notin @('recurrent-plan','stored-variant-plan','crafting-suspension') -or
+            $DedicatedAddress -notmatch '^(127\.0\.0\.1|localhost):[0-9]{1,5}$' -or
             $OfflineName -cne $expectedName -or $OfflineUuid -cne $expectedUuid) {
-        throw 'Recurrent connected role requires its bounded offline identity'
+        throw 'Connected role requires its bounded offline identity'
     }
     $arguments.Insert(0, "-Dae2craftingtime.test.role=$Role")
     $arguments.Add('--username'); $arguments.Add($OfflineName)
@@ -150,7 +158,7 @@ if ($ResourceFixtureId) {
     $arguments.Insert(0, "-Dae2craftingtime.test.headSha=$HeadSha")
     $arguments.Insert(0, "-Dae2craftingtime.test.graph=$($GraphIdentity.ToLowerInvariant())")
 }
-if ($ResourceFixtureId) {
+if ($ResourceFixtureId -and !$Role) {
     $arguments.Add('--username'); $arguments.Add('Ae2ctAlpha')
     $arguments.Add('--uuid'); $arguments.Add('446b6d0ccadd3e57baf699d70f01a628')
 }

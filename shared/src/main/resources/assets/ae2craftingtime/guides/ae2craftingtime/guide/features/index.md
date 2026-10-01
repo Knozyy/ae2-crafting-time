@@ -21,10 +21,11 @@ steps quickly.
 7. [Details and reset](details-and-reset.md)
 8. [Saved history](saved-history.md)
 9. [Configuration](configuration.md)
-10. [AE2: Crafting Tree](crafting-tree.md)
-11. [ME Requester](me-requester.md)
-12. [Addon support](addon-support.md)
-13. [The guide book](guide-book.md)
+10. [Crafting suspension](crafting-suspension.md)
+11. [AE2: Crafting Tree](crafting-tree.md)
+12. [ME Requester](me-requester.md)
+13. [Addon support](addon-support.md)
+14. [The guide book](guide-book.md)
 
 [Introduction](../index.md) | [Chapter 1](../getting-started.md) |
 [Chapter 3: Statuses](../statuses/index.md)

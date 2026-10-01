@@ -316,6 +316,9 @@ public final class ProfilerBridge {
                 : PROFILER.remainingJobSeconds(scope, ProfilerBridge::estimateSeconds);
     }
 
+    /** The Forge 1.20.1-only suspension hook is absent on this native version. */
+    public static boolean isSuspended(Object scope) { return false; }
+
     public static void rebindJobEstimate(Object previousScope, Object currentScope) {
         if (isEnabled()) {
             PROFILER.rebindJobEstimate(previousScope, currentScope);

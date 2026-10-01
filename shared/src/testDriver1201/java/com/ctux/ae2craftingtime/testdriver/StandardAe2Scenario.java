@@ -46,6 +46,12 @@ final class StandardAe2Scenario {
             Map.entry("waiting-status", List.of("submitted", "waiting", "first-dispatch", "recovered", "layout")),
             Map.entry("running-status", List.of("submitted", "running", "progress", "header", "layout")),
             Map.entry("cpu-list-total-ttc", CpuListTtcScenario.CHECKS),
+            Map.entry("crafting-suspension", List.of("standard-cpus", "real-dispatch", "button-geometry",
+                    "paused-no-dispatch", "in-flight-progress", "small-completes", "same-job-resumed",
+                    "exact-output", "suspended-title", "three-cycles", "option-visible", "disabled-resumes",
+                    "disabled-action-rejected", "profiling-off-recovery", "cancel-while-paused",
+                    "cancel-conserved", "final-inflight-completes", "final-output-conserved", "paused-diagnostics-clean", "resume-delay-rearms",
+                    "stale-job-rejected", "suspended-badge", "suspended-rows")),
             Map.entry("delayed-status", List.of("submitted", "delayed", "row", "style", "tooltip", "layout", "recovered",
                     "overlap", "stable-selection", "winner-recovery", "rainbow-preserved", "plate-recovered",
                     "final-plate", "completed", "output", "profile-sample", "plate-cleared")),
@@ -61,6 +67,23 @@ final class StandardAe2Scenario {
         BADGE_PERSIST, BADGE_RELAUNCH }
     private final String leaf;
     private final StandardCraftFixture fixture = new StandardCraftFixture();
+    private int suspensionStage;
+    private int suspensionCycle = 1;
+    private int suspensionStaleMenu;
+    private long suspensionStaleContext;
+    private boolean suspensionActionSent;
+    private boolean suspensionRunningObserved;
+    private int suspensionGuardTicks;
+    private int suspensionCase;
+    private long suspensionFinalRawBefore;
+    private String suspensionLargeId;
+    private String suspensionPreviousId;
+    private long suspensionUndispatched;
+    private long suspensionReturned;
+    private long suspensionPauseTick;
+    private long suspensionResumeTick;
+    private boolean suspensionDelayedObserved;
+    private boolean suspensionResumedCaptured;
     private final CpuListTtcScenario cpuList;
     private final boolean connectedDedicated;
     private final String world;
@@ -216,6 +239,7 @@ final class StandardAe2Scenario {
     private int variantSecondMenu;
 
     String checkpoint() { return "phase=" + phase + " fixture=" + fixture.checkpoint
+            + (leaf.equals("crafting-suspension") ? " suspension=" + suspensionStage : "")
             + (leaf.equals("badge-background") ? " badge=" + badgeStep + " replan=" + badgeReplanAttempts : "")
             + (leaf.equals("recurrent-plan") ? " recurrence=" + recurrenceCase + " sort=" + sort : "")
             + (leaf.equals("stored-variant-plan") ? " variant=" + variantStep + " lifecycle=" + variantLifecycle : "")
@@ -240,6 +264,9 @@ final class StandardAe2Scenario {
 
     boolean tick(Minecraft minecraft, FixtureMarker marker, Map<String, Boolean> checks,
             Consumer<String> screenshot, BiConsumer<Integer, Integer> moveMouse) throws Exception {
+        if (leaf.equals("crafting-suspension")) return connectedDedicated
+                ? tickConnectedSuspension(minecraft, checks, screenshot)
+                : tickSuspension(minecraft, marker, checks, screenshot);
         if (connectedDedicated && leaf.equals("recurrent-plan") && !recurrenceCaptured) {
             var state = RecurrentPlanControl.state();
             if (!state.ready() || !state.epoch().equals(CpuListTtcControl.epoch())
@@ -1716,6 +1743,708 @@ final class StandardAe2Scenario {
                 return false;
             }
             return true;
+        }
+        return false;
+    }
+
+    private boolean tickConnectedSuspension(Minecraft minecraft, Map<String, Boolean> checks,
+            Consumer<String> screenshot) {
+        if (!DriverPlatform.TARGET.equals("1.20.1-forge"))
+            throw new IllegalStateException("Connected suspension requires Forge 1.20.1");
+        var role = System.getProperty("ae2craftingtime.test.role", "");
+        if (!role.equals("alpha") && !role.equals("beta"))
+            throw new IllegalStateException("Connected suspension needs Alpha/Beta role");
+        boolean reload = Boolean.getBoolean("ae2craftingtime.test.suspensionReload");
+        var state = CpuListTtcControl.state();
+        if (!state.ready() || !state.epoch().equals(CpuListTtcControl.epoch()) || state.serverState().isBlank())
+            return false;
+        var serverJob = new com.google.gson.Gson().fromJson(state.serverState(),
+                StandardCraftFixture.SuspensionState.class);
+        fixture.checkpoint = "suspension=" + state.phase() + " " + state.serverState();
+        if (reload && suspensionStage == 8)
+            return state.phase().equals("completed") && serverJob != null && serverJob.networkOutput() == 64
+                    && CpuListTtcControl.request("complete-observed");
+        if (serverJob == null || serverJob.jobId().isBlank()) return false;
+        if (suspensionLargeId == null) suspensionLargeId = serverJob.jobId();
+        if (!suspensionLargeId.equals(serverJob.jobId()))
+            throw new IllegalStateException("Connected suspension changed job identity");
+        if (fixture.terminal == null) fixture.bindTerminal(new net.minecraft.core.BlockPos(state.x(), state.y(), state.z()));
+        if (suspensionStage == 0) {
+            if (minecraft.screen == null) {
+                openSuspensionCpu(minecraft, 0);
+                return false;
+            }
+            var selected = selectedSuspensionSnapshot(minecraft);
+            if (selected == null || !selected.hasJob() || !selected.jobId().toString().equals(suspensionLargeId)) return false;
+            mark(checks, reload ? "same-loaded-job" : "same-live-job", true);
+            if (!reload) {
+                mark(checks, "native-menu", suspensionButton(minecraft, "Suspend") != null);
+                screenshot.accept("crafting-suspension-connected-running.png");
+            } else {
+                mark(checks, "paused-visible", selected.suspended() && serverJob.suspended());
+                screenshot.accept("crafting-suspension-connected-loaded.png");
+            }
+            phase = Stage.ACTIVE;
+            suspensionStage = 1;
+            return false;
+        }
+        if (!reload) {
+            if (suspensionStage == 1 && !suspensionRunningObserved) {
+                if (!CpuListTtcControl.request("running-observed")) return false;
+                suspensionRunningObserved = true;
+            }
+            if (suspensionStage == 1 && role.equals("alpha")) {
+                if (!state.phase().equals("pause-ready")) return false;
+                var button = suspensionButton(minecraft, "Suspend");
+                if (button == null) return false;
+                DriverPlatform.click(minecraft, button.getX() + 4, button.getY() + 4);
+                suspensionStage = 2;
+                return false;
+            }
+            if (suspensionStage <= 2) {
+                var selected = selectedSuspensionSnapshot(minecraft);
+                if (selected == null || !selected.suspended() || !serverJob.suspended()) return false;
+                mark(checks, "paused-visible", selected.jobId().toString().equals(suspensionLargeId));
+                screenshot.accept("crafting-suspension-connected-paused.png");
+                suspensionStage = 3;
+            }
+            if (suspensionStage == 3 && CpuListTtcControl.request("pause-observed")) {
+                mark(checks, "paused-saved", true);
+                return true;
+            }
+            return false;
+        }
+        if (suspensionStage == 1) {
+            if (!CpuListTtcControl.request("loaded")) return false;
+            suspensionStage = 2;
+            return false;
+        }
+        if (role.equals("beta") && suspensionStage == 2) {
+            var menu = minecraft.player.containerMenu;
+            if (!(menu instanceof appeng.menu.me.crafting.CraftingCPUMenu)) return false;
+            suspensionStaleMenu = menu.containerId;
+            suspensionStaleContext = com.ctux.ae2craftingtime.mc1201.StatsRequestContext.cpuContext(
+                    (appeng.menu.me.crafting.CraftingCPUMenu) menu);
+            minecraft.player.closeContainer();
+            suspensionStage = 3;
+            return false;
+        }
+        if (role.equals("beta") && suspensionStage == 3) {
+            if (minecraft.screen == null) { openSuspensionCpu(minecraft, 1); return false; }
+            if (!(minecraft.player.containerMenu instanceof appeng.menu.me.crafting.CraftingCPUMenu)) return false;
+            if (!suspensionActionSent) {
+                sendStaleSuspension(suspensionStaleMenu, suspensionStaleContext,
+                        java.util.UUID.fromString(suspensionLargeId), false);
+                suspensionActionSent = true;
+            }
+            suspensionStage = 4;
+            return false;
+        }
+        if (role.equals("beta") && suspensionStage == 4) {
+            if (!serverJob.suspended() || !CpuListTtcControl.request("stale-sent")) return false;
+            mark(checks, "stale-rejected", true);
+            minecraft.player.closeContainer();
+            suspensionStage = 5;
+            return false;
+        }
+        if (role.equals("beta") && suspensionStage == 5) {
+            if (minecraft.screen == null) { openSuspensionCpu(minecraft, 0); return false; }
+            var selected = selectedSuspensionSnapshot(minecraft);
+            if (selected == null || !selected.hasJob()
+                    || !selected.jobId().toString().equals(suspensionLargeId)) return false;
+            suspensionStage = 6;
+            return false;
+        }
+        if (role.equals("alpha") && suspensionStage == 2) {
+            if (!state.phase().equals("resume-ready")) return false;
+            var selected = selectedSuspensionSnapshot(minecraft);
+            if (selected == null || !selected.suspended()) return false;
+            mark(checks, "stale-rejected", serverJob.suspended());
+            var button = suspensionButton(minecraft, "Resume");
+            if (button == null) return false;
+            DriverPlatform.click(minecraft, button.getX() + 4, button.getY() + 4);
+            suspensionStage = 6;
+            return false;
+        }
+        if (suspensionStage == 6) {
+            var selected = selectedSuspensionSnapshot(minecraft);
+            if (selected == null || selected.suspended() || serverJob.suspended() || !serverJob.busy()) return false;
+            mark(checks, "same-job-resumed", selected.jobId().toString().equals(suspensionLargeId));
+            mark(checks, "resumed-visible", suspensionButton(minecraft, "Suspend") != null);
+            screenshot.accept("crafting-suspension-connected-resumed.png");
+            suspensionStage = 7;
+        }
+        if (suspensionStage == 7 && CpuListTtcControl.request("resumed")) suspensionStage = 8;
+        return false;
+    }
+
+    private void openSuspensionCpu(Minecraft minecraft, int index) {
+        var cpu = fixture.terminal.west(2 + index * 2);
+        minecraft.gameMode.useItemOn(minecraft.player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(cpu).add(0, 0, -0.5), Direction.NORTH, cpu, false));
+    }
+
+    private static net.minecraft.client.gui.components.Button suspensionButton(Minecraft minecraft, String text) {
+        if (minecraft.screen == null) return null;
+        return minecraft.screen.children().stream().filter(net.minecraft.client.gui.components.Button.class::isInstance)
+                .map(net.minecraft.client.gui.components.Button.class::cast)
+                .filter(button -> button.getMessage().getString().equals(text)).findFirst().orElse(null);
+    }
+
+    private static net.minecraft.client.gui.components.Button suspensionButtonStarting(Minecraft minecraft, String text) {
+        if (minecraft.screen == null) return null;
+        return minecraft.screen.children().stream().filter(net.minecraft.client.gui.components.Button.class::isInstance)
+                .map(net.minecraft.client.gui.components.Button.class::cast)
+                .filter(button -> button.getMessage().getString().startsWith(text)).findFirst().orElse(null);
+    }
+
+    private static com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot selectedSuspensionSnapshot(
+            Minecraft minecraft) {
+        if (!(minecraft.player.containerMenu instanceof appeng.menu.me.crafting.CraftingCPUMenu menu)) return null;
+        try {
+            return (com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot) menu.getClass()
+                    .getMethod("ae2craftingtime$suspensionSnapshot").invoke(menu);
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalStateException("Forge suspension menu state unavailable", error);
+        }
+    }
+
+    private static void sendStaleSuspension(int container, long context, java.util.UUID job, boolean desired) {
+        try {
+            var packet = Class.forName("com.ctux.ae2craftingtime.mc1201.net.CraftingSuspensionC2S");
+            var request = new com.ctux.ae2craftingtime.core.CraftingSuspension.Request(container, context, job, desired);
+            var message = packet.getConstructor(com.ctux.ae2craftingtime.core.CraftingSuspension.Request.class)
+                    .newInstance(request);
+            com.ctux.ae2craftingtime.mc1201.StatsNetwork.class.getMethod("sendToServer", packet)
+                    .invoke(null, message);
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalStateException("Cannot send retained stale Forge suspension request", error);
+        }
+    }
+
+    private boolean suspensionPausedStable(ServerPlayer player) {
+        var large = fixture.suspensionState(player, 0);
+        if (!large.busy() || !large.suspended() || !large.profilerSuspended()
+                || !large.jobId().equals(suspensionLargeId)) return false;
+        var tick = player.level().getGameTime();
+        if (suspensionPauseTick == 0) {
+            if (suspensionStage == 3) {
+                if (large.waiting() == 0 || large.furnaceInput() + large.furnaceOutput() == 0)
+                    throw new IllegalStateException("No in-flight furnace return at pause acknowledgement");
+                suspensionReturned = large.remaining();
+            }
+            suspensionPauseTick = tick;
+            suspensionUndispatched = large.undispatched();
+            fixture.pumpSuspension(player);
+            return false;
+        }
+        fixture.pumpSuspension(player);
+        large = fixture.suspensionState(player, 0);
+        if (large.undispatched() != suspensionUndispatched)
+            throw new IllegalStateException("Paused CPU dispatched another pattern");
+        return tick - suspensionPauseTick >= 10;
+    }
+
+    private boolean tickSuspension(Minecraft minecraft, FixtureMarker marker, Map<String, Boolean> checks,
+            Consumer<String> screenshot) {
+        if (!DriverPlatform.TARGET.equals("1.20.1-forge"))
+            throw new IllegalStateException("Crafting suspension requires Forge 1.20.1");
+        if (suspensionStage == 0) {
+            fixture.configureSuspension();
+            if (server(minecraft, player -> fixture.prepare(player, marker) && fixture.submitSuspensionLarge(player))) {
+                mark(checks, "standard-cpus", true);
+                phase = Stage.ACTIVE;
+                suspensionStage++;
+            }
+            return false;
+        }
+        if (suspensionStage == 1) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                var large = fixture.suspensionState(player, 0);
+                if (large.undispatched() >= 64 || large.furnaceInput() == 0 || large.networkOutput() == 0)
+                    return false;
+                suspensionLargeId = large.jobId();
+                return !suspensionLargeId.isEmpty();
+            })) return false;
+            mark(checks, "real-dispatch", true);
+            suspensionStage++;
+            return false;
+        }
+        if (suspensionStage == 2) {
+            if (minecraft.screen == null) {
+                var cpu = fixture.terminal.west(2);
+                minecraft.gameMode.useItemOn(minecraft.player, InteractionHand.MAIN_HAND,
+                        new BlockHitResult(Vec3.atCenterOf(cpu).add(0, 0, -0.5), Direction.NORTH, cpu, false));
+                return false;
+            }
+            if (!(minecraft.screen instanceof appeng.client.gui.me.crafting.CraftingCPUScreen<?> screen)) return false;
+            var cancel = screen.children().stream().filter(net.minecraft.client.gui.components.Button.class::isInstance)
+                    .map(net.minecraft.client.gui.components.Button.class::cast)
+                    .filter(button -> button.getMessage().getString().equals("Cancel")).findFirst().orElse(null);
+            var suspend = screen.children().stream().filter(net.minecraft.client.gui.components.Button.class::isInstance)
+                    .map(net.minecraft.client.gui.components.Button.class::cast)
+                    .filter(button -> button.getMessage().getString().equals("Suspend")).findFirst().orElse(null);
+            if (cancel == null || suspend == null) return false;
+            mark(checks, "button-geometry", suspend.getX() == cancel.getX() - 60
+                    && suspend.getY() == cancel.getY() && suspend.getWidth() == 50 && suspend.getHeight() == 20);
+            if (suspensionCycle == 1) screenshot.accept("crafting-suspension-running.png");
+            suspensionPauseTick = 0;
+            DriverPlatform.click(minecraft, suspend.getX() + 4, suspend.getY() + 4);
+            suspensionStage++;
+            return false;
+        }
+        if (suspensionStage == 3) {
+            if (!server(minecraft, this::suspensionPausedStable)) return false;
+            mark(checks, "paused-no-dispatch", true);
+            var screen = minecraft.screen;
+            var observed = UiObservationStore.latest();
+            boolean title = observed != null && observed.text().stream()
+                    .anyMatch(line -> line.key().equals("gui.ae2craftingtime.suspended")
+                            && line.bounds() != null && line.bounds().inside(observed.gui()));
+            if (!title) return false;
+            var titleText = observed.text().stream()
+                    .filter(line -> line.key().equals("gui.ae2craftingtime.suspended")).findFirst().orElseThrow();
+            mark(checks, "suspended-badge", recurrentBadgeMatches(observed.badges(), titleText.bounds(),
+                    com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground()));
+            mark(checks, "suspended-rows", observed.text().stream().noneMatch(line ->
+                    line.key().startsWith("text.ae2craftingtime.")
+                            && !line.key().contains("amount")));
+            mark(checks, "suspended-title", screen != null && screen.children().stream()
+                    .filter(net.minecraft.client.gui.components.Button.class::isInstance)
+                    .map(net.minecraft.client.gui.components.Button.class::cast)
+                    .anyMatch(button -> button.getMessage().getString().equals("Resume")) && title);
+            if (suspensionCycle == 1) screenshot.accept("crafting-suspension-paused.png");
+            suspensionStage++;
+            return false;
+        }
+        if (suspensionStage == 4) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                var large = fixture.suspensionState(player, 0);
+                if (!large.busy() || !large.suspended() || !large.profilerSuspended()
+                        || !large.jobId().equals(suspensionLargeId)
+                        || large.undispatched() != suspensionUndispatched)
+                    throw new IllegalStateException("Paused CPU changed before in-flight return");
+                if (large.remaining() >= suspensionReturned) return false;
+                mark(checks, "in-flight-progress", true);
+                if (!fixture.submitSuspensionSmall(player)) return false;
+                var small = fixture.suspensionState(player, 1);
+                return !small.jobId().isEmpty() && !small.jobId().equals(suspensionLargeId);
+            })) return false;
+            suspensionStage++;
+            return false;
+        }
+        if (suspensionStage == 5) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                var large = fixture.suspensionState(player, 0);
+                var small = fixture.suspensionState(player, 1);
+                if (large.undispatched() != suspensionUndispatched)
+                    throw new IllegalStateException("Paused CPU dispatched another pattern");
+                var delayTicks = Math.max(400,
+                        com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current()
+                                .minimumNoProgressSeconds() * 20L) + 20;
+                if (player.level().getGameTime() - suspensionPauseTick < delayTicks) return false;
+                var key = com.ctux.ae2craftingtime.mc1201.ProfilerBridge.key(
+                        com.ctux.ae2craftingtime.mc1201.ProfilerBridge.networkId(
+                                fixture.suspensionCpu(player, 0).getGrid()),
+                        appeng.api.stacks.AEItemKey.of(net.minecraft.world.item.Items.IRON_INGOT));
+                if (com.ctux.ae2craftingtime.mc1201.ProfilerBridge.isStillDelayed(key)
+                        || com.ctux.ae2craftingtime.mc1201.ProfilerBridge.remainingJobSeconds(
+                                fixture.suspensionCpu(player, 0)).isPresent())
+                    throw new IllegalStateException("Paused job retained a delayed warning or total estimate");
+                return !small.busy() && large.busy() && large.jobId().equals(suspensionLargeId);
+            })) return false;
+            mark(checks, "small-completes", true);
+            mark(checks, "paused-diagnostics-clean", !hasPlate("minecraft:iron_ingot", 4)
+                    && !hasPlate("minecraft:iron_ingot", 8));
+            if (suspensionCycle == 1) screenshot.accept("crafting-suspension-small-complete.png");
+            suspensionStage++;
+            return false;
+        }
+        if (suspensionStage == 6) {
+            var resume = minecraft.screen.children().stream()
+                    .filter(net.minecraft.client.gui.components.Button.class::isInstance)
+                    .map(net.minecraft.client.gui.components.Button.class::cast)
+                    .filter(button -> button.getMessage().getString().equals("Resume"))
+                    .findFirst().orElse(null);
+            if (resume == null) return false;
+            DriverPlatform.click(minecraft, resume.getX() + 4, resume.getY() + 4);
+            suspensionStage++;
+            return false;
+        }
+        if (suspensionStage == 7) {
+            if (suspensionCycle == 1 && suspensionResumeTick > 0 && !suspensionResumedCaptured) {
+                var selected = selectedSuspensionSnapshot(minecraft);
+                if (selected == null || selected.suspended()) return false;
+                screenshot.accept("crafting-suspension-resumed.png");
+                suspensionResumedCaptured = true;
+            }
+            if (!server(minecraft, player -> {
+                if (suspensionCycle != 1 || suspensionDelayedObserved) fixture.pumpSuspension(player);
+                var large = fixture.suspensionState(player, 0);
+                if (large.busy() && !large.jobId().equals(suspensionLargeId))
+                    throw new IllegalStateException("Resume replaced the large job");
+                if (large.busy() && !large.suspended()) mark(checks, "same-job-resumed", true);
+                if (suspensionCycle == 1 && !suspensionDelayedObserved) {
+                    if (large.suspended()) return false;
+                    var tick = player.level().getGameTime();
+                    if (suspensionResumeTick == 0) suspensionResumeTick = tick;
+                    var key = com.ctux.ae2craftingtime.mc1201.ProfilerBridge.key(
+                            com.ctux.ae2craftingtime.mc1201.ProfilerBridge.networkId(
+                                    fixture.suspensionCpu(player, 0).getGrid()),
+                            appeng.api.stacks.AEItemKey.of(net.minecraft.world.item.Items.IRON_INGOT));
+                    var delayed = com.ctux.ae2craftingtime.mc1201.ProfilerBridge.isStillDelayed(key);
+                    if (delayed && tick - suspensionResumeTick <
+                            com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current()
+                                    .minimumNoProgressSeconds() * 20L - 5)
+                        throw new IllegalStateException("Resume inherited the paused delay timer");
+                    if (!delayed) return false;
+                    mark(checks, "resume-delay-rearms", true);
+                    suspensionDelayedObserved = true;
+                }
+                if (suspensionCycle < 3) return large.busy() && !large.suspended();
+                if (large.busy()) return false;
+                mark(checks, "exact-output", large.networkOutput() == 66);
+                return true;
+            })) return false;
+            if (suspensionCycle < 3) {
+                suspensionStage = 8;
+                return false;
+            }
+            suspensionStage = 20;
+            return false;
+        }
+        if (suspensionStage == 8) {
+            if (!server(minecraft, player -> {
+                var large = fixture.suspensionState(player, 0);
+                return large.busy() && !large.suspended();
+            })) return false;
+            var suspend = minecraft.screen.children().stream()
+                    .filter(net.minecraft.client.gui.components.Button.class::isInstance)
+                    .map(net.minecraft.client.gui.components.Button.class::cast)
+                    .filter(button -> button.getMessage().getString().equals("Suspend"))
+                    .findFirst().orElse(null);
+            if (suspend == null) return false;
+            suspensionPauseTick = 0;
+            DriverPlatform.click(minecraft, suspend.getX() + 4, suspend.getY() + 4);
+            suspensionStage++;
+            return false;
+        }
+        if (suspensionStage == 9) {
+            if (!server(minecraft, this::suspensionPausedStable)) return false;
+            var resume = minecraft.screen.children().stream()
+                    .filter(net.minecraft.client.gui.components.Button.class::isInstance)
+                    .map(net.minecraft.client.gui.components.Button.class::cast)
+                    .filter(button -> button.getMessage().getString().equals("Resume"))
+                    .findFirst().orElse(null);
+            if (resume == null) return false;
+            DriverPlatform.click(minecraft, resume.getX() + 4, resume.getY() + 4);
+            suspensionCycle++;
+            suspensionStage = suspensionCycle < 3 ? 8 : 10;
+            return false;
+        }
+        if (suspensionStage == 10) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                var large = fixture.suspensionState(player, 0);
+                return large.busy() && !large.suspended();
+            })) return false;
+            var suspend = suspensionButton(minecraft, "Suspend");
+            if (suspend == null) return false;
+            suspensionPauseTick = 0;
+            DriverPlatform.click(minecraft, suspend.getX() + 4, suspend.getY() + 4);
+            suspensionStage = 11;
+            return false;
+        }
+        if (suspensionStage == 11) {
+            if (!server(minecraft, this::suspensionPausedStable)) return false;
+            minecraft.setScreen(new com.ctux.ae2craftingtime.mc1201.ServerOptionsScreen(minecraft.screen));
+            suspensionStage = 12;
+            return false;
+        }
+        if (suspensionStage == 12) {
+            if (!(minecraft.screen instanceof com.ctux.ae2craftingtime.mc1201.ServerOptionsScreen)) return false;
+            var option = suspensionButtonStarting(minecraft, "Allow crafting suspension: ");
+            if (option == null || !option.active) return false;
+            mark(checks, "option-visible", true);
+            DriverPlatform.click(minecraft, option.getX() + 4, option.getY() + 4);
+            suspensionStage = 13;
+            return false;
+        }
+        if (suspensionStage == 13) {
+            var done = suspensionButton(minecraft, "Done");
+            if (done == null) return false;
+            DriverPlatform.click(minecraft, done.getX() + 4, done.getY() + 4);
+            suspensionStage = 14;
+            return false;
+        }
+        if (suspensionStage == 14) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                return !com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.enabled(
+                            com.ctux.ae2craftingtime.core.OptionFeature.CRAFTING_SUSPENSION)
+                        && !fixture.suspensionState(player, 0).suspended();
+            })) return false;
+            mark(checks, "disabled-resumes", true);
+            mark(checks, "three-cycles", suspensionCycle == 3);
+            if (!(minecraft.screen instanceof appeng.client.gui.me.crafting.CraftingCPUScreen<?>)) return false;
+            screenshot.accept("crafting-suspension-disabled.png");
+            var menu = (appeng.menu.me.crafting.CraftingCPUMenu) minecraft.player.containerMenu;
+            sendStaleSuspension(menu.containerId,
+                    com.ctux.ae2craftingtime.mc1201.StatsRequestContext.cpuContext(menu),
+                    java.util.UUID.fromString(suspensionLargeId), true);
+            suspensionGuardTicks = 0;
+            suspensionStage = 15;
+            return false;
+        }
+        if (suspensionStage == 15) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                return !fixture.suspensionState(player, 0).suspended();
+            })) return false;
+            if (++suspensionGuardTicks < 5) return false;
+            mark(checks, "disabled-action-rejected", true);
+            minecraft.setScreen(new com.ctux.ae2craftingtime.mc1201.ServerOptionsScreen(minecraft.screen));
+            suspensionStage = 16;
+            return false;
+        }
+        if (suspensionStage == 16) {
+            var option = suspensionButtonStarting(minecraft, "Allow crafting suspension: ");
+            if (option == null || !option.active) return false;
+            DriverPlatform.click(minecraft, option.getX() + 4, option.getY() + 4);
+            suspensionStage = 17;
+            return false;
+        }
+        if (suspensionStage == 17) {
+            var profiling = suspensionButtonStarting(minecraft, "Profiling and TTC: ");
+            if (profiling == null || !profiling.active) return false;
+            DriverPlatform.click(minecraft, profiling.getX() + 4, profiling.getY() + 4);
+            suspensionStage = 18;
+            return false;
+        }
+        if (suspensionStage == 18) {
+            var done = suspensionButton(minecraft, "Done");
+            if (done == null) return false;
+            DriverPlatform.click(minecraft, done.getX() + 4, done.getY() + 4);
+            suspensionStage = 19;
+            return false;
+        }
+        if (suspensionStage == 19) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                var cfg = com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current();
+                return cfg.features().enabled(com.ctux.ae2craftingtime.core.OptionFeature.CRAFTING_SUSPENSION)
+                        && !cfg.features().enabled(com.ctux.ae2craftingtime.core.OptionFeature.PROFILING)
+                        && !fixture.suspensionState(player, 0).suspended();
+            })) return false;
+            if (!(minecraft.screen instanceof appeng.client.gui.me.crafting.CraftingCPUScreen<?>)) return false;
+            var suspend = suspensionButton(minecraft, "Suspend");
+            if (suspend == null || !suspend.visible || !suspend.active) return false;
+            DriverPlatform.click(minecraft, suspend.getX() + 4, suspend.getY() + 4);
+            suspensionStage = 40;
+            return false;
+        }
+        if (suspensionStage == 40) {
+            if (!server(minecraft, player -> fixture.suspensionState(player, 0).suspended())) return false;
+            minecraft.setScreen(new com.ctux.ae2craftingtime.mc1201.ServerOptionsScreen(minecraft.screen));
+            suspensionStage = 41;
+            return false;
+        }
+        if (suspensionStage == 41) {
+            var option = suspensionButtonStarting(minecraft, "Allow crafting suspension: ");
+            if (option == null || !option.active) return false;
+            DriverPlatform.click(minecraft, option.getX() + 4, option.getY() + 4);
+            suspensionStage = 42;
+            return false;
+        }
+        if (suspensionStage == 42) {
+            var done = suspensionButton(minecraft, "Done");
+            if (done == null) return false;
+            DriverPlatform.click(minecraft, done.getX() + 4, done.getY() + 4);
+            suspensionStage = 43;
+            return false;
+        }
+        if (suspensionStage == 43) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                var cfg = com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current();
+                return !cfg.features().enabled(com.ctux.ae2craftingtime.core.OptionFeature.CRAFTING_SUSPENSION)
+                        && !cfg.features().enabled(com.ctux.ae2craftingtime.core.OptionFeature.PROFILING)
+                        && !fixture.suspensionState(player, 0).suspended();
+            })) return false;
+            mark(checks, "profiling-off-recovery", true);
+            minecraft.setScreen(new com.ctux.ae2craftingtime.mc1201.ServerOptionsScreen(minecraft.screen));
+            suspensionStage = 44;
+            return false;
+        }
+        if (suspensionStage == 44) {
+            var option = suspensionButtonStarting(minecraft, "Allow crafting suspension: ");
+            if (option == null || !option.active) return false;
+            DriverPlatform.click(minecraft, option.getX() + 4, option.getY() + 4);
+            suspensionStage = 45;
+            return false;
+        }
+        if (suspensionStage == 45) {
+            var done = suspensionButton(minecraft, "Done");
+            if (done == null) return false;
+            DriverPlatform.click(minecraft, done.getX() + 4, done.getY() + 4);
+            suspensionStage = 7;
+            return false;
+        }
+        if (suspensionStage == 20) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                if (suspensionCase == 0) {
+                    suspensionPreviousId = suspensionLargeId;
+                    fixture.beginSuspensionCase(player, 4);
+                    suspensionCase = 1;
+                }
+                return fixture.submitSuspensionLarge(player);
+            })) return false;
+            suspensionStage = 21;
+            return false;
+        }
+        if (suspensionStage == 21) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                var job = fixture.suspensionState(player, 0);
+                if (job.busy() && job.undispatched() < 4 && job.furnaceInput() > 0) {
+                    suspensionLargeId = job.jobId();
+                    return true;
+                }
+                return false;
+            })) return false;
+            if (suspensionLargeId.equals(suspensionPreviousId))
+                throw new IllegalStateException("Replacement job reused the prior UUID");
+            if (!(minecraft.player.containerMenu instanceof appeng.menu.me.crafting.CraftingCPUMenu)) {
+                openSuspensionCpu(minecraft, 0);
+                return false;
+            }
+            var menu = (appeng.menu.me.crafting.CraftingCPUMenu) minecraft.player.containerMenu;
+            sendStaleSuspension(menu.containerId,
+                    com.ctux.ae2craftingtime.mc1201.StatsRequestContext.cpuContext(menu),
+                    java.util.UUID.fromString(suspensionPreviousId), true);
+            suspensionGuardTicks = 0;
+            suspensionStage = 22;
+            return false;
+        }
+        if (suspensionStage == 22) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                var job = fixture.suspensionState(player, 0);
+                return job.busy() && !job.suspended() && job.jobId().equals(suspensionLargeId);
+            })) return false;
+            if (++suspensionGuardTicks < 5) return false;
+            mark(checks, "stale-job-rejected", true);
+            var button = suspensionButton(minecraft, "Suspend");
+            if (button == null) return false;
+            DriverPlatform.click(minecraft, button.getX() + 4, button.getY() + 4);
+            suspensionStage = 23;
+            return false;
+        }
+        if (suspensionStage == 23) {
+            if (!server(minecraft, player -> fixture.suspensionState(player, 0).suspended())) return false;
+            var cancel = suspensionButton(minecraft, "Cancel");
+            if (cancel == null || !cancel.active) return false;
+            DriverPlatform.click(minecraft, cancel.getX() + 4, cancel.getY() + 4);
+            suspensionStage = 24;
+            return false;
+        }
+        if (suspensionStage == 24) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                return !fixture.suspensionState(player, 0).busy();
+            })) return false;
+            var cleared = selectedSuspensionSnapshot(minecraft);
+            if (cleared == null || cleared.hasJob() || cleared.suspended()) return false;
+            mark(checks, "cancel-while-paused", true);
+            screenshot.accept("crafting-suspension-cancelled.png");
+            suspensionStage = 25;
+            return false;
+        }
+        if (suspensionStage == 25) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                var job = fixture.suspensionState(player, 0);
+                return job.furnaceInput() == 0 && job.furnaceOutput() == 0
+                        && job.networkRaw() + job.networkOutput() == 4;
+            })) return false;
+            mark(checks, "cancel-conserved", true);
+            suspensionStage = 26;
+            return false;
+        }
+        if (suspensionStage == 26) {
+            if (!server(minecraft, player -> {
+                if (suspensionCase == 1) {
+                    fixture.beginSuspensionCase(player, 1);
+                    suspensionFinalRawBefore = fixture.suspensionState(player, 0).networkRaw();
+                    suspensionCase = 2;
+                }
+                return fixture.submitSuspensionLarge(player);
+            })) return false;
+            suspensionStage = 27;
+            return false;
+        }
+        if (suspensionStage == 27) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                var job = fixture.suspensionState(player, 0);
+                if (job.busy() && job.undispatched() == 0 && job.furnaceInput() > 0) {
+                    suspensionLargeId = job.jobId();
+                    return true;
+                }
+                return false;
+            })) return false;
+            suspensionStage = 28;
+            return false;
+        }
+        if (suspensionStage == 28) {
+            var button = suspensionButton(minecraft, "Suspend");
+            if (button == null) return false;
+            DriverPlatform.click(minecraft, button.getX() + 4, button.getY() + 4);
+            suspensionStage = 29;
+            return false;
+        }
+        if (suspensionStage == 29) {
+            if (!server(minecraft, player -> fixture.suspensionState(player, 0).suspended())) return false;
+            suspensionStage = 30;
+            return false;
+        }
+        if (suspensionStage == 30) {
+            if (!server(minecraft, player -> {
+                fixture.pumpSuspension(player);
+                var finalJob = fixture.suspensionState(player, 0);
+                if (finalJob.busy() || finalJob.suspended() || finalJob.profilerSuspended()) return false;
+                mark(checks, "final-output-conserved", finalJob.networkOutput() == 1
+                        && finalJob.networkRaw() == suspensionFinalRawBefore - 1
+                        && finalJob.furnaceInput() == 0 && finalJob.furnaceOutput() == 0);
+                return true;
+            })) return false;
+            mark(checks, "final-inflight-completes", true);
+            screenshot.accept("crafting-suspension-complete.png");
+            minecraft.setScreen(new com.ctux.ae2craftingtime.mc1201.ServerOptionsScreen(minecraft.screen));
+            suspensionStage = 31;
+            return false;
+        }
+        if (suspensionStage == 31) {
+            var profiling = suspensionButtonStarting(minecraft, "Profiling and TTC: ");
+            if (profiling == null || !profiling.active) return false;
+            DriverPlatform.click(minecraft, profiling.getX() + 4, profiling.getY() + 4);
+            suspensionStage = 32;
+            return false;
+        }
+        if (suspensionStage == 32) {
+            var done = suspensionButton(minecraft, "Done");
+            if (done == null) return false;
+            DriverPlatform.click(minecraft, done.getX() + 4, done.getY() + 4);
+            suspensionStage = 33;
+            return false;
+        }
+        if (suspensionStage == 33) {
+            return server(minecraft, player -> com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.enabled(
+                    com.ctux.ae2craftingtime.core.OptionFeature.PROFILING));
         }
         return false;
     }

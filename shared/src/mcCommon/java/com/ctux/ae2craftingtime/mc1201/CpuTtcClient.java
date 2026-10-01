@@ -99,6 +99,11 @@ public final class CpuTtcClient {
     }
 
     public static OptionalLong seconds(int serial) {
+        var player = Minecraft.getInstance().player;
+        if (activeMenu != null && player != null && activeMenu == player.containerMenu
+                && com.ctux.ae2craftingtime.core.CraftingSuspension.masksSelectedCard(
+                        serial, activeMenu.getSelectedCpuSerial(), StatsNetwork.selectedSuspended()))
+            return OptionalLong.empty();
         var seconds = frameSeconds.get(serial);
         return seconds == null ? OptionalLong.empty() : OptionalLong.of(seconds);
     }

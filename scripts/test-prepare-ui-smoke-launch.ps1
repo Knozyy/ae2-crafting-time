@@ -44,6 +44,21 @@ try {
     if (!(Get-Content (Join-Path $runtime 'ui-smoke-java.args') -Raw).Contains('scenario=stored-variant-plan')) {
         throw 'Bounded stored-variant connected launch was not prepared'
     }
+    $parameters.Scenario = 'crafting-suspension'
+    foreach ($role in @('alpha', 'beta')) {
+        $name = if ($role -eq 'alpha') { 'Ae2ctAlpha' } else { 'Ae2ctBeta' }
+        $uuid = if ($role -eq 'alpha') { '446b6d0ccadd3e57baf699d70f01a628' } else { 'fb410ed6b38c4d06b76d47ec97aaaadd' }
+        & (Join-Path $scripts 'prepare-ui-smoke-launch.ps1') @parameters -Role $role -OfflineName $name `
+            -OfflineUuid $uuid -DedicatedAddress '127.0.0.1:25565' -ControlDirectory (Join-Path $temp $role) `
+            -ResourceFixtureId ('c' * 32) -HeadSha ('a' * 40) -GraphIdentity ('b' * 64) -SuspensionReload | Out-Null
+        $roleArguments = Get-Content (Join-Path $runtime 'ui-smoke-java.args') -Raw
+        if ([regex]::Matches($roleArguments, '--username').Count -ne 1 -or
+                [regex]::Matches($roleArguments, '--uuid').Count -ne 1 -or
+                !$roleArguments.Contains($name) -or !$roleArguments.Contains($uuid) -or
+                !$roleArguments.Contains('-Xmx8G') -or !$roleArguments.Contains('suspensionReload=true')) {
+            throw 'Suspension launch lost its distinct role identity, heap or reload phase'
+        }
+    }
     $parameters.Scenario = 'recurrent-plan'
     foreach ($invalid in @(
         @{name='OtherPlayer';uuid='446b6d0ccadd3e57baf699d70f01a628';address='127.0.0.1:25565'},

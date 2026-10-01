@@ -152,6 +152,37 @@ try {
         -CallbackSequence 2000 -StartedAt $now.AddSeconds(-121) -StartupTimeoutSeconds 120 `
         -Checkpoint 'state=WORLD_READY phase=ACTIVE fixture=ready cpu-list=RELAUNCH_OPEN screen=none'
     if ($activeStalled -ne 'no-checkpoint') { throw 'Fresh callbacks masked a stalled active scenario checkpoint' }
+    $finishedCheckpoint = 'state=QUIT_REQUESTED phase=ACTIVE fixture=ready screen=appeng.client.gui.me.crafting.CraftingCPUScreen'
+    $interactiveFinished = Get-UiSmokeProgressDecision -Now $now -CallbackAt $now.AddSeconds(-1) -CheckpointAt $now.AddSeconds(-61) `
+        -CallbackTimeoutSeconds 15 -CheckpointTimeoutSeconds 60 -ProcessId 42 -ProgressProcessId 42 `
+        -CallbackSequence 2000 -StartedAt $now.AddSeconds(-121) -StartupTimeoutSeconds 120 -ActiveScenarioObserved -Interactive `
+        -Checkpoint $finishedCheckpoint
+    if ($interactiveFinished) { throw 'Interactive completed scenario did not remain available for manual checks' }
+    $interactiveNoCallback = Get-UiSmokeProgressDecision -Now $now -CallbackAt $now.AddSeconds(-16) -CheckpointAt $now.AddSeconds(-61) `
+        -CallbackTimeoutSeconds 15 -CheckpointTimeoutSeconds 60 -ProcessId 42 -ProgressProcessId 42 `
+        -CallbackSequence 2000 -StartedAt $now.AddSeconds(-121) -StartupTimeoutSeconds 120 -ActiveScenarioObserved -Interactive `
+        -Checkpoint $finishedCheckpoint
+    if ($interactiveNoCallback -ne 'no-callback') { throw 'Interactive completion bypassed the callback watchdog' }
+    $interactiveNoProcess = Get-UiSmokeProgressDecision -Now $now -CallbackAt $now.AddSeconds(-1) -CheckpointAt $now.AddSeconds(-61) `
+        -CallbackTimeoutSeconds 15 -CheckpointTimeoutSeconds 60 -ProcessId 42 -ProgressProcessId 41 `
+        -CallbackSequence 2000 -StartedAt $now.AddSeconds(-121) -StartupTimeoutSeconds 120 -ActiveScenarioObserved -Interactive `
+        -Checkpoint $finishedCheckpoint
+    if ($interactiveNoProcess -ne 'no-callback') { throw 'Interactive completion bypassed the current-process guard' }
+    $nonInteractiveFinished = Get-UiSmokeProgressDecision -Now $now -CallbackAt $now.AddSeconds(-1) -CheckpointAt $now.AddSeconds(-61) `
+        -CallbackTimeoutSeconds 15 -CheckpointTimeoutSeconds 60 -ProcessId 42 -ProgressProcessId 42 `
+        -CallbackSequence 2000 -StartedAt $now.AddSeconds(-121) -StartupTimeoutSeconds 120 -ActiveScenarioObserved `
+        -Checkpoint $finishedCheckpoint
+    if ($nonInteractiveFinished -ne 'no-checkpoint') { throw 'Non-interactive completion bypassed the checkpoint watchdog' }
+    $interactiveActive = Get-UiSmokeProgressDecision -Now $now -CallbackAt $now.AddSeconds(-1) -CheckpointAt $now.AddSeconds(-61) `
+        -CallbackTimeoutSeconds 15 -CheckpointTimeoutSeconds 60 -ProcessId 42 -ProgressProcessId 42 `
+        -CallbackSequence 2000 -StartedAt $now.AddSeconds(-121) -StartupTimeoutSeconds 120 -ActiveScenarioObserved -Interactive `
+        -Checkpoint 'state=WORLD_READY phase=ACTIVE fixture=ready screen=appeng.client.gui.me.crafting.CraftingCPUScreen'
+    if ($interactiveActive -ne 'no-checkpoint') { throw 'Interactive active scenario bypassed the checkpoint watchdog' }
+    $interactiveFailed = Get-UiSmokeProgressDecision -Now $now -CallbackAt $now.AddSeconds(-1) -CheckpointAt $now.AddSeconds(-61) `
+        -CallbackTimeoutSeconds 15 -CheckpointTimeoutSeconds 60 -ProcessId 42 -ProgressProcessId 42 `
+        -CallbackSequence 2000 -StartedAt $now.AddSeconds(-121) -StartupTimeoutSeconds 120 -ActiveScenarioObserved -Interactive `
+        -Checkpoint 'state=FAILED phase=ACTIVE fixture=ready screen=appeng.client.gui.me.crafting.CraftingCPUScreen'
+    if ($interactiveFailed -ne 'no-checkpoint') { throw 'Interactive failed scenario bypassed the checkpoint watchdog' }
     $resourceActiveStalled = Get-UiSmokeProgressDecision -Now $now -CallbackAt $now.AddSeconds(-1) -CheckpointAt $now.AddSeconds(-61) `
         -CallbackTimeoutSeconds 15 -CheckpointTimeoutSeconds 60 -ProcessId 42 -ProgressProcessId 42 `
         -CallbackSequence 2000 -StartedAt $now.AddSeconds(-301) -StartupTimeoutSeconds 300 `

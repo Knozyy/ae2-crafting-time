@@ -20,6 +20,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class StatsNetwork {
+    public static boolean supportsCraftingSuspension() { return false; }
+    public static boolean selectedSuspended() { return false; }
     private static final ResourceLocation REQUEST_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID,
             "stats_request_v2");
     private static final ResourceLocation SNAPSHOT_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID,
@@ -36,8 +38,8 @@ public final class StatsNetwork {
     private static final ResourceLocation PLAN_RECURRENCE_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "plan_recurrence_v1");
     private static final ResourceLocation PLAN_STORED_VARIANTS_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "plan_stored_variants_v1");
     private static final ResourceLocation WARNING_PREFERENCE_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "warning_preference_v1");
-    private static final ResourceLocation SERVER_OPTIONS_SNAPSHOT_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "server_options_snapshot_v2");
-    private static final ResourceLocation SERVER_OPTIONS_UPDATE_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "server_options_update_v2");
+    private static final ResourceLocation SERVER_OPTIONS_SNAPSHOT_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "server_options_snapshot_v3");
+    private static final ResourceLocation SERVER_OPTIONS_UPDATE_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "server_options_update_v3");
 
     public static void registerServer() {
         ServerPlayNetworking.registerGlobalReceiver(REQUEST_ID,

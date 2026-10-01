@@ -53,7 +53,8 @@ public enum OptionFeature {
     NEO_ECO(Owner.SERVER, Group.INTEGRATIONS, "neoEco"),
     AE2_LIGHTNING_TECH(Owner.SERVER, Group.INTEGRATIONS, "ae2LightningTech"),
     APPLIED_MEKANISTICS(Owner.SERVER, Group.INTEGRATIONS, "appliedMekanistics"),
-    CHANCE_OUTPUT_DETECTION(Owner.SERVER, Group.DIAGNOSTICS, "chanceOutputDetection");
+    CHANCE_OUTPUT_DETECTION(Owner.SERVER, Group.DIAGNOSTICS, "chanceOutputDetection"),
+    CRAFTING_SUSPENSION(Owner.SERVER, Group.GENERAL, "craftingSuspension");
 
     public enum Owner { CLIENT, SERVER }
     public enum Group { DISPLAYS, WARNINGS, APPEARANCE, CONTROLS, GENERAL, DIAGNOSTICS, NOTIFICATIONS, INTEGRATIONS, ADVANCED }

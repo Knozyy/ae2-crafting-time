@@ -2,7 +2,7 @@
 navigation:
   title: "AE2: Crafting Tree"
   parent: features/index.md
-  position: 9
+  position: 10
 ---
 
 # AE2: Crafting Tree
@@ -22,5 +22,5 @@ navigation:
 
 *Тестові зразки демонструють оцінку під вузлом Crafting Tree.*
 
-[Назад: Налаштування](configuration.md) | [Можливості](index.md) |
+[Назад: Призупинення крафту](crafting-suspension.md) | [Можливості](index.md) |
 [Далі: ME Requester](me-requester.md) | [Подробиці та скидання](details-and-reset.md)

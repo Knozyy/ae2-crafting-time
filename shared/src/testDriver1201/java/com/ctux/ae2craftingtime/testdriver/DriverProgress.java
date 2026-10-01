@@ -12,7 +12,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 
 final class DriverProgress {
-    static final int MOVE_ATTEMPTS = 5;
+    static final int MOVE_ATTEMPTS = 25;
     private final Path output;
     private final ProgressMover mover;
     private String checkpoint;

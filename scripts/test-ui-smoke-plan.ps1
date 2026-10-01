@@ -52,6 +52,9 @@ try {
     Put 'shared/src/test/java/Test.java' 'tests'
     Assert ((Plan).result -eq 'NOT_REQUIRED') 'Docs and tests require no runtime'
     Clean
+    Put 'scripts/ui-smoke-impact.json' 'policy'
+    Assert ((Plan).result -eq 'NOT_REQUIRED') 'Smoke selection policy requires planner checks, not runtime'
+    Clean
     foreach ($pair in @(
         @('versions/1.20.1-forge/src/main/New.java',1),
         @('shared/src/mc1201/java/Packet.java',3),
@@ -75,6 +78,32 @@ try {
     $nativeFixture = Plan
     Assert ($nativeFixture.targets.Count -eq 1 -and $nativeFixture.targets[0].target -eq '26.1.2-neoforge') 'Native replacement must select only 26.1.2'
     Clean
+    Put 'shared/src/main/java/com/ctux/ae2craftingtime/core/CraftingSuspension.java' 'Forge-only native state'
+    $suspensionCore = Plan
+    Assert ($suspensionCore.targets.Count -eq 1 -and $suspensionCore.targets[0].target -eq '1.20.1-forge') 'Suspension core must own only Forge'
+    Assert ($suspensionCore.targets[0].mode -eq 'focused' -and $suspensionCore.targets[0].cases.Count -eq 1 -and
+            $suspensionCore.targets[0].cases[0] -eq 'crafting-suspension') 'Suspension core must select the focused case'
+    Clean
+    Put 'versions/1.20.1-forge/src/main/java/com/ctux/ae2craftingtime/mc1201/mixin/CraftingSuspensionLogicMixin.java' 'native hook'
+    $suspensionHook = Plan
+    Assert ($suspensionHook.targets.Count -eq 1 -and $suspensionHook.targets[0].cases.Count -eq 1 -and
+            $suspensionHook.targets[0].cases[0] -eq 'crafting-suspension') 'Forge suspension hook must select the focused case'
+    Clean
+    foreach ($fixture in @('StandardAe2Scenario','StandardCraftFixture','DedicatedCpuScenario',
+            'CraftPlanScenario','DriverProgress','CpuListTtcControl')) {
+        Put "shared/src/testDriver1201/java/com/ctux/ae2craftingtime/testdriver/$fixture.java" 'suspension fixture'
+        $fixturePlan = Plan
+        Assert (@($fixturePlan.targets | Where-Object { $_.target -eq '1.20.1-forge' -and
+                    'crafting-suspension' -cin $_.cases }).Count -eq 1) "$fixture must select Forge suspension"
+        Assert (@($fixturePlan.targets | Where-Object { $_.target -ne '1.20.1-forge' -and
+                    'crafting-suspension' -cin $_.cases }).Count -eq 0) "$fixture must not select suspension on other loaders"
+        Clean
+    }
+    Reject { & "$PSScriptRoot/expand-ui-smoke-groups.ps1" -Target 1.20.1-fabric -Scenarios crafting-suspension } `
+        'Fabric must reject the Forge-only suspension case'
+    Reject { & "$PSScriptRoot/expand-ui-smoke-groups.ps1" -Target 26.1.2-neoforge -Scenarios crafting-suspension } `
+        'NeoForge 26 must reject the Forge-only suspension case'
+    Clean
     Put 'shared/src/main/java/com/ctux/ae2craftingtime/core/StallDiagnostic.java' 'delayed'
     $plan = Plan
     Assert ($plan.targets.Count -eq 4) 'Dedicated delayed file must reach all targets'
@@ -95,7 +124,6 @@ try {
             'versions/1.21.1-neoforge/build.gradle',
             'versions/26.1.2-neoforge/src/testDriver/java/com/ctux/ae2craftingtime/testdriver/TestDriverRuntime.java',
             'scripts/run-client.ps1',
-            'scripts/run-connected-dedicated-ui-smoke.ps1',
             'scripts/ui-smoke-scheduled-java.ps1')) {
         Put $path 'cpu-list implementation boundary'
     }
@@ -107,6 +135,25 @@ try {
         'CPU-list feature must not add optional-addon graphs'
     Assert (@($cpuPlan.targets | Where-Object { !$_.graphs[0].baseOnly }).Count -eq 0) `
         'CPU-list primary graph must resolve only AE2 and the test driver'
+    Clean
+    foreach ($runner in @('run-connected-dedicated-ui-smoke','run-ui-smoke','prepare-ui-smoke-launch')) {
+        Put "scripts/$runner.ps1" 'shared CPU-list and Forge suspension runner'
+        $runnerPlan = Plan
+        Assert ($runnerPlan.targets.Count -eq 4) "$runner must retain all CPU-list targets"
+        Assert (@($runnerPlan.targets | Where-Object { $_.target -eq '1.20.1-forge' -and
+                    @($_.cases).Count -eq 2 -and 'cpu-list-total-ttc' -cin $_.cases -and 'crafting-suspension' -cin $_.cases }).Count -eq 1) `
+            "$runner must select both Forge cases"
+        Assert (@($runnerPlan.targets | Where-Object { $_.target -ne '1.20.1-forge' -and
+                    (@($_.cases).Count -ne 1 -or $_.cases[0] -cne 'cpu-list-total-ttc') }).Count -eq 0) `
+            "$runner must not schedule Forge-only suspension on other targets"
+        Clean
+    }
+    Put 'shared/src/main/java/com/ctux/ae2craftingtime/core/CpuTtcCache.java' 'shared CPU-list change'
+    Put 'scripts/run-connected-dedicated-ui-smoke.ps1' 'shared runner change'
+    $mixedRunner = Plan
+    Assert ($mixedRunner.targets.Count -eq 4 -and @($mixedRunner.targets | Where-Object {
+                $_.target -eq '1.20.1-forge' -and @($_.cases).Count -eq 2 }).Count -eq 1) `
+        'Mixed CPU-list and runner changes must keep Forge suspension scoped'
     Clean
     Put 'shared/src/mcCommon/java/com/ctux/ae2craftingtime/mc1201/mixin/CraftingStatusTableRendererMixin.java' 'only delayed method changed'
     Assert ((Plan).targets[0].cases.Count -eq 12) 'Never narrow mixed renderers by keywords'

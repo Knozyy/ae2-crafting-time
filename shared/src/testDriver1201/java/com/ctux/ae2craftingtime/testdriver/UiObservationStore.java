@@ -113,6 +113,7 @@ public final class UiObservationStore {
             return;
         }
         if (observed.key().startsWith("text.ae2craftingtime.")
+                || observed.key().equals("gui.ae2craftingtime.suspended")
                 || active.screen.contains("CraftingStatusScreen")
                 || active.cpuCards.stream().anyMatch(card -> observed.bounds().overlaps(card.nameArea))) {
             active.text.add(observed);
@@ -133,6 +134,11 @@ public final class UiObservationStore {
         }
         if (active != null && active.screen.contains("CraftingStatusScreen") && text.startsWith("TTC:")) {
             active.text.add(new UiSnapshot.ObservedText("native-title", text, List.of(),
+                    transformed(graphics, x, y, x + width, y + height)));
+        }
+        if (active != null && active.screen.contains("CraftingCPUScreen")
+                && text.equals(net.minecraft.client.resources.language.I18n.get("gui.ae2craftingtime.suspended"))) {
+            active.text.add(new UiSnapshot.ObservedText("gui.ae2craftingtime.suspended", text, List.of(),
                     transformed(graphics, x, y, x + width, y + height)));
         }
     }

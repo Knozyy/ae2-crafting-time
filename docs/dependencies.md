@@ -435,3 +435,14 @@ Tree package variants use the existing selector's choice. A failed read disables
 only the selected Tree variant's TTC additions, the Requester TTC overlay, or
 AdvancedAE selected-CPU lookup. Host behavior and server samples remain intact.
 This is not recovery from an incompatible CPU adapter or a failed transformation.
+
+## Forge 1.20.1 crafting suspension verification
+
+Issue [#631](https://github.com/cTux/ae2-crafting-time/issues/631) uses the
+prepared Forge 47.4.23 / AE2 15.4.10 base client and matching schema-2
+dedicated source. Forge-only standard CPU mixins are compiled against the
+minimum AE2 15.0.10 API. The `crafting-suspension` driver case uses two real
+fueled vanilla furnaces and, for connected proof, distinct Alpha/Beta clients
+with two clean server phases on one disposable world. Fabric and NeoForge
+retain their existing native crafting paths; the new Forge mixin configuration
+must not appear in their artifacts.

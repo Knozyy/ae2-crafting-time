@@ -19,6 +19,7 @@ import com.ctux.ae2craftingtime.mc1201.TtcColorContext;
 import com.ctux.ae2craftingtime.mc1201.RowTextColor;
 import com.ctux.ae2craftingtime.mc1201.TtcText;
 import com.ctux.ae2craftingtime.mc1201.IntegrationLog;
+import com.ctux.ae2craftingtime.mc1201.StatsNetwork;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -63,6 +64,7 @@ public abstract class CraftingStatusTableRendererMixin {
                 && (entry.getStoredAmount() > 0 || entry.getActiveAmount() > 0 || entry.getPendingAmount() > 0)) {
             cir.getReturnValue().add(TtcText.statusAmountsLegend());
         }
+        if (StatsNetwork.selectedSuspended()) return;
         ae2craftingtime$appendTooltip(cir.getReturnValue(), entry.getActiveAmount(), entry.getPendingAmount(),
                 ae2craftingtime$noSpace(entry), ae2craftingtime$blockReason(entry),
                 () -> (ClientOptionsRuntime.enabled(OptionFeature.DETAILED_TOOLTIPS)
@@ -147,6 +149,7 @@ public abstract class CraftingStatusTableRendererMixin {
     }
 
     private static void ae2craftingtime$appendTtc(CraftingStatusEntry entry, List<Component> lines) {
+        if (StatsNetwork.selectedSuspended()) return;
         if (!ClientOptionsRuntime.enabled(OptionFeature.STATUS_ROWS)) return;
         if (ae2craftingtime$noSpace(entry) && ClientOptionsRuntime.enabled(OptionFeature.NO_SPACE_STATUS)) {
             lines.add(TtcText.noSpace());
@@ -223,6 +226,7 @@ public abstract class CraftingStatusTableRendererMixin {
     }
 
     private static boolean ae2craftingtime$noSpace(CraftingStatusEntry entry) {
+        if (StatsNetwork.selectedSuspended()) return false;
         return CraftingRowState.noSpace(
                 Minecraft.getInstance().screen instanceof CraftingCPUScreen<?> screen
                         && screen.getMenu().isCantStoreItems(),
@@ -230,6 +234,7 @@ public abstract class CraftingStatusTableRendererMixin {
     }
 
     private static CraftingBlockReason ae2craftingtime$blockReason(CraftingStatusEntry entry) {
+        if (StatsNetwork.selectedSuspended()) return null;
         return CraftingRowState.blockReason(entry.getPendingAmount(),
                 ClientStats.blockReason(ProfilerBridge.key(entry.getWhat())));
     }

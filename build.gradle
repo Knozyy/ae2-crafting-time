@@ -33,7 +33,7 @@ tasks.register('checkGuideResources') {
         def featurePages = [
                 'time-estimates.md', 'learning-throughput.md', 'confidence.md', 'job-accuracy.md',
                 'delay-diagnostics.md', 'sorting-and-colors.md', 'details-and-reset.md',
-                'saved-history.md', 'configuration.md', 'crafting-tree.md', 'me-requester.md',
+                'saved-history.md', 'configuration.md', 'crafting-suspension.md', 'crafting-tree.md', 'me-requester.md',
                 'addon-support.md', 'guide-book.md'
         ]
         def statusPages = [

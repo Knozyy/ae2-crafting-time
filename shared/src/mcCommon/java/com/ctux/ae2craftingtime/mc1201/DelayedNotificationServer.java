@@ -24,6 +24,10 @@ public final class DelayedNotificationServer {
             new ProviderPlateState<>(PacketLimits.MAX_HIGHLIGHT_POSITIONS);
 
     public static void tick(Object scope, IGrid grid, Object logic, long tick, MinecraftServer server) {
+        if (ProfilerBridge.isSuspended(scope)) {
+            clearScope(scope, server);
+            return;
+        }
         maybeNotify(scope, grid, tick, server);
         BlockReasonNotifier.maybeNotifyPower(scope, grid, tick, server);
         BlockReasonNotifier.maybeNotifySpace(scope, grid, logic, server);
@@ -35,7 +39,8 @@ public final class DelayedNotificationServer {
         if (scope == null || server == null || sender == null) return;
         var current = new java.util.HashMap<ProviderPlateState.Recipient,
                 ProviderPlateState.Contribution<BlockPos, AEKey>>();
-        if (grid != null && !ProfilerBridge.discardDisabledScope(scope, tick, server)) {
+        if (grid != null && !ProfilerBridge.isSuspended(scope)
+                && !ProfilerBridge.discardDisabledScope(scope, tick, server)) {
             var noSpace = new LinkedHashSet<ProfileKey>();
             var network = ProfilerBridge.networkId(grid);
             if (ServerOptionsRuntime.enabled(OptionFeature.NO_SPACE_DETECTION)) {
@@ -104,7 +109,7 @@ public final class DelayedNotificationServer {
 
     public static void maybeNotify(Object scope, IGrid grid, long tick, MinecraftServer server,
             BiConsumer<ServerPlayer, ProviderHighlightCodec.Highlight> highlightSender) {
-        if (scope == null || server == null) {
+        if (scope == null || server == null || ProfilerBridge.isSuspended(scope)) {
             return;
         }
         if (ProfilerBridge.discardDisabledScope(scope, tick, server)) return;

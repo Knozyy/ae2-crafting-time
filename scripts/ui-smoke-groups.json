@@ -5,12 +5,20 @@
     "provider-dispatch-statuses": ["no-channel-status", "no-target-status", "input-blocked-status", "locked-status"]
   },
   "focusedCases": {
-    "1.20.1-forge": ["delayed-resource-icons", "appmek-resource-icons", "chance-output-status"],
+    "1.20.1-forge": ["delayed-resource-icons", "appmek-resource-icons", "chance-output-status", "crafting-suspension"],
     "1.20.1-fabric": ["delayed-resource-icons"],
     "1.21.1-neoforge": ["delayed-resource-icons", "appmek-resource-icons"],
     "26.1.2-neoforge": ["delayed-resource-icons"]
   },
   "cases": {
+    "crafting-suspension": {
+      "checks": ["standard-cpus", "real-dispatch", "button-geometry", "paused-no-dispatch", "in-flight-progress", "small-completes", "same-job-resumed", "exact-output", "suspended-title", "three-cycles", "paused-diagnostics-clean", "resume-delay-rearms", "option-visible", "disabled-resumes", "disabled-action-rejected", "profiling-off-recovery", "stale-job-rejected", "cancel-while-paused", "cancel-conserved", "final-inflight-completes", "final-output-conserved", "suspended-badge", "suspended-rows"],
+      "screenshots": ["crafting-suspension-running.png", "crafting-suspension-paused.png", "crafting-suspension-small-complete.png", "crafting-suspension-resumed.png", "crafting-suspension-disabled.png", "crafting-suspension-cancelled.png", "crafting-suspension-complete.png"],
+      "connectedChecks": ["same-live-job", "native-menu", "paused-visible", "paused-saved"],
+      "connectedReloadChecks": ["same-loaded-job", "paused-visible", "stale-rejected", "same-job-resumed", "resumed-visible"],
+      "connectedScreenshots": ["crafting-suspension-connected-running.png", "crafting-suspension-connected-paused.png"],
+      "connectedReloadScreenshots": ["crafting-suspension-connected-loaded.png", "crafting-suspension-connected-resumed.png"]
+    },
     "chance-output-status": {
       "checks": ["real-job", "sawmill-recipe", "zero-return", "partial-return", "chance-label", "tooltip", "layout", "cancelled", "real-random-recipe"],
       "screenshots": ["chance-output-zero-return.png", "chance-output-40-outstanding.png", "chance-output-tooltip.png", "chance-output-cancelled.png"]

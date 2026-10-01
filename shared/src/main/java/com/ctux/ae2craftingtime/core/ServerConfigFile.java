@@ -12,6 +12,7 @@ public final class ServerConfigFile {
     private static final System.Logger LOGGER = System.getLogger("ae2craftingtime");
     private static final Map<OptionFeature, String> DESCRIPTIONS = Map.ofEntries(
             Map.entry(OptionFeature.PROFILING, "Collect server craft timing and derived TTC/diagnostics. False suppresses new profiling and those derived results."),
+            Map.entry(OptionFeature.CRAFTING_SUSPENSION, "Allow standard AE2 crafting CPUs to suspend and resume jobs on Minecraft 1.20.1 Forge. Disabling resumes suspended jobs on their next logic tick."),
             Map.entry(OptionFeature.SAVE_HISTORY, "Persist learned timing history across world loads. False stops new history writes; existing saved history is not deleted."),
             Map.entry(OptionFeature.ACCURACY_RECORDING, "Record prediction accuracy for server diagnostics. False stops accuracy recording."),
             Map.entry(OptionFeature.WAITING_TRACKING, "Track crafts waiting for progress. False removes this server diagnostic from client status displays."),

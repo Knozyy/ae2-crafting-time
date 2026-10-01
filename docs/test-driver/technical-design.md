@@ -1083,3 +1083,36 @@ reset states, then reopen Appearance after Done to capture the saved On state;
 validate the final screenshot and
 continuation set in the existing host evidence gate. Keep process provenance in
 `relaunch-evidence.json`; no new runner or fixture format is introduced.
+
+## Forge crafting suspension (#631)
+
+The new leaf reuses `StandardCraftFixture` and `StandardAe2Scenario`. Native
+patterns use native blocking mode and feed fueled vanilla furnaces; the fixture transfers only actual
+furnace output to AE storage. CPU/job UUID, persisted NBT flag, independent
+profiler flag, queued tasks, waiting, network raw/ingot and furnace counts are
+observed at each checkpoint. The client clicks native screen controls and
+opens the existing Server Options screen to test its save path. The singleplayer
+case waits beyond the delay threshold while paused, then observes a genuine
+no-progress episode after resume. A replacement job receives a stale old-UUID
+action with the current menu context. Core codec and
+state transitions have separate pure-Java boundary tests.
+
+`DedicatedCpuScenario` reuses the atomic `CpuListTtcControl` command/state
+files in `control/alpha` and `control/beta`. Each role has its own epoch-bound,
+monotonic command acknowledgement and native menu snapshot. The host runner
+launches both clients concurrently only for this leaf, validates their exact
+PID/start/executable/exit facts, stops phase 1, and restarts the same copied
+world for phase 2. The external continuation stores the original UUID, counts,
+epoch and artifact hashes. A new epoch prevents stale role commands from the
+first process from authorizing the second. Existing single-client scenarios
+keep their original lock and launch path.
+
+Both connected clients acknowledge the running job before Alpha pauses it.
+The server publishes the final acknowledgement and waits for both clients to
+exit before saving/shutting down, avoiding a disconnect before client evidence
+is written. Progress checkpoints contain the actual native job/furnace counts
+and scenario stage, never elapsed time. Both clients keep an 8 GiB maximum heap.
+The profiling-off case pauses a live job with profiling disabled, then disables
+suspension through Options/Done and waits for native recovery. Supplemental
+CS-6, permission and file-reload checks are listed in the
+[feature design](../crafting-suspension/technical-design.md#supplemental-runtime-checks-after-the-automated-leaf).

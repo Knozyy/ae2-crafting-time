@@ -11,6 +11,7 @@ function Get-UiSmokeProgressDecision {
         [DateTime]$StartedAt = [DateTime]::MinValue,
         [int]$StartupTimeoutSeconds = 300,
         [switch]$ActiveScenarioObserved,
+        [switch]$Interactive,
         [string]$Checkpoint = ''
     )
     $plannedFabricRejoin = $Checkpoint -match 'cpu-list=REJOIN_REQUEST(?:\s|$)' -and
@@ -52,7 +53,8 @@ function Get-UiSmokeProgressDecision {
     if ($CallbackTimeoutSeconds -gt 0 -and ($Now.ToUniversalTime() - $CallbackAt.ToUniversalTime()).TotalSeconds -gt $CallbackTimeoutSeconds) {
         return 'no-callback'
     }
-    if ($CheckpointTimeoutSeconds -gt 0 -and ($Now.ToUniversalTime() - $CheckpointAt.ToUniversalTime()).TotalSeconds -gt $CheckpointTimeoutSeconds) {
+    if ($CheckpointTimeoutSeconds -gt 0 -and !($Interactive -and $Checkpoint -match '^state=QUIT_REQUESTED(?:\s|$)') -and
+            ($Now.ToUniversalTime() - $CheckpointAt.ToUniversalTime()).TotalSeconds -gt $CheckpointTimeoutSeconds) {
         return 'no-checkpoint'
     }
     return $null

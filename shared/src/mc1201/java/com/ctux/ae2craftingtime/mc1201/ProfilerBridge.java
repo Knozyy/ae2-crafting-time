@@ -99,7 +99,7 @@ public final class ProfilerBridge {
 
     public static java.util.Map<ProfileKey, com.ctux.ae2craftingtime.core.CraftingBlockReason> blockReasons(
             Object scope, IGrid grid, long tick) {
-        if (grid == null) {
+        if (grid == null || PROFILER.isSuspended(scope)) {
             return java.util.Map.of();
         }
         var live = PROFILER.blockReasons(scope, tick, missingProviders(scope, grid));
@@ -116,7 +116,7 @@ public final class ProfilerBridge {
 
     public static java.util.Map<ProfileKey, CraftingBlockReason> liveBlockReasons(Object scope, IGrid grid,
             long tick) {
-        if (grid == null || scope == null) return java.util.Map.of();
+        if (grid == null || scope == null || PROFILER.isSuspended(scope)) return java.util.Map.of();
         var live = PROFILER.blockReasons(scope, tick, missingProviders(scope, grid));
         live.entrySet().removeIf(entry -> !reasonEnabled(entry.getValue()));
         return live;
@@ -128,7 +128,8 @@ public final class ProfilerBridge {
 
     public static Set<ProfileKey> missingProviders(Object scope, IGrid grid) {
         isEnabled();
-        return grid == null || !ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_PROVIDER_DETECTION)
+        return grid == null || PROFILER.isSuspended(scope)
+                || !ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_PROVIDER_DETECTION)
                 ? Set.of() : PROFILER.missingProviderOutputs(scope,
                 pattern -> ((CraftingService) grid.getCraftingService())
                         .getProviders((IPatternDetails) pattern).iterator().hasNext());
@@ -316,6 +317,16 @@ public final class ProfilerBridge {
                 : PROFILER.remainingJobSeconds(scope, ProfilerBridge::estimateSeconds);
     }
 
+    public static boolean isSuspended(Object scope) { return PROFILER.isSuspended(scope); }
+
+    public static void setSuspended(Object scope, boolean suspended, long tick,
+            net.minecraft.server.MinecraftServer server) {
+        if (scope == null || !PROFILER.setSuspended(scope, suspended, tick)) return;
+        if (suspended) ACCURACY.finish(scope, false, tick, System.nanoTime());
+        BlockReasonNotifier.clear(scope);
+        DelayedNotificationServer.clearScope(scope, server);
+    }
+
     public static void rebindJobEstimate(Object previousScope, Object currentScope) {
         if (isEnabled()) {
             PROFILER.rebindJobEstimate(previousScope, currentScope);
@@ -345,7 +356,7 @@ public final class ProfilerBridge {
     }
 
     public static List<CraftProfiler.DelayedEvent> pollNewlyDelayed(Object scope, long tick) {
-        if (scope == null || !isEnabled()) {
+        if (scope == null || !isEnabled() || PROFILER.isSuspended(scope)) {
             return List.of();
         }
         return PROFILER.pollNewlyDelayed(scope, tick);
@@ -521,12 +532,12 @@ public final class ProfilerBridge {
     }
 
     public static OptionalLong waitingTicks(ProfileKey key, Object scope, long tick) {
-        if (key == null || !isEnabled()
+        if (key == null || !isEnabled() || PROFILER.isSuspended(scope)
                 || !ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.WAITING_TRACKING)) {
             return OptionalLong.empty();
         }
         var live = PROFILER.waitingTicks(key, scope, tick);
-        return live.isPresent() ? live : PROFILER.rememberedWaitingTicks(key, tick);
+        return live.isPresent() || PROFILER.ignoreRemembered(scope) ? live : PROFILER.rememberedWaitingTicks(key, tick);
     }
 
     public static void updateCapacity(Object scope, int usedParallelSlots, int totalParallelSlots, long tick) {
@@ -543,7 +554,7 @@ public final class ProfilerBridge {
         return stats(lookupKey).map(stats -> {
             var stall = scope == null ? Optional.<StallDiagnostic>empty()
                     : PROFILER.stall(lookupKey, scope, tick);
-            if (stall.isEmpty()) {
+            if (stall.isEmpty() && !PROFILER.ignoreRemembered(scope)) {
                 stall = PROFILER.rememberedStall(lookupKey);
             }
             return new StatsEntry(displayKey, stats, accuracy(lookupKey), stall);

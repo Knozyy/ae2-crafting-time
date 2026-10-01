@@ -98,7 +98,9 @@ public final class ServerOptionsScreen extends OptionsBaseScreen {
             button.active = next != group;
         }
         var features = Arrays.stream(OptionFeature.values())
-                .filter(value -> value.owner() == OptionFeature.Owner.SERVER && value.group() == group).toList();
+                .filter(value -> value.owner() == OptionFeature.Owner.SERVER && value.group() == group)
+                .filter(value -> value != OptionFeature.CRAFTING_SUSPENSION
+                        || StatsNetwork.supportsCraftingSuspension()).toList();
         var tooltipDefaults = new FeatureOptions(OptionFeature.Owner.SERVER);
         int totalRows = features.size() + (group == OptionFeature.Group.ADVANCED ? 4 : 0);
         for (int i = page * rows; i < Math.min(totalRows, (page + 1) * rows); i++) {

@@ -957,3 +957,23 @@ job state, result checks, English screenshots/sidecars and dependency manifest;
 review badge/tooltip layout. The screenshot also supplies the canonical book
 crop after visual review. No new runner, production dependency or persistent
 channel diagnostic is introduced.
+
+## Crafting suspension (#631)
+
+The Forge 1.20.1 `crafting-suspension` leaf uses two standard CPUs, two native
+providers in native blocking mode with the same processing pattern, and fueled furnaces. It drives the
+real Suspend, Resume, Cancel and Server Options controls. The large 64-output
+job pauses three times without changing UUID; a competing two-output job must
+finish while the large job remains paused. Exact output and raw-input counts,
+in-flight completion after suspension, cancellation refunds, disabled-action
+rejection and profiling-off recovery are required checks. Furnace products are
+transferred into native AE storage only after real machine ticks.
+
+The connected leaf runs two distinct offline profiles at once. Both must see
+matching server job state; Beta sends a retained stale action after changing
+CPUs. Phase 1 saves a paused job and stops both clients and server. Phase 2
+restarts the same disposable world under a new epoch, verifies the original
+UUID, resumes through Alpha's menu, and finishes the native job. The runner
+records artifact hashes, phase/PID ledgers, server checkpoints, client
+screenshots and sidecars outside the world. Other connected leaves retain their
+one-client launch path.

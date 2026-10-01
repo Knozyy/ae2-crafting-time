@@ -4,6 +4,47 @@ $scripts = Join-Path $temp "scripts"
 $source = Join-Path $temp "versions\1.20.1-forge\run\saves\ae2-crafting-time"
 New-Item -ItemType Directory -Path $scripts, $source -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot "run-ui-smoke.ps1") -Destination (Join-Path $scripts "run-ui-smoke.ps1")
+$runnerAst = [System.Management.Automation.Language.Parser]::ParseFile(
+    (Join-Path $scripts 'run-ui-smoke.ps1'), [ref]$null, [ref]$null)
+$timeoutAssignments = @($runnerAst.FindAll({ param($node)
+    $node -is [System.Management.Automation.Language.AssignmentStatementAst] -and
+        $node.Left.Extent.Text -ceq '$timeout'
+}, $true))
+if ($timeoutAssignments.Count -ne 1) { throw 'Smoke runner timeout selection was not unique' }
+$selectTimeout = [scriptblock]::Create($timeoutAssignments[0].Extent.Text + "`n" + '$timeout.TotalMinutes')
+foreach ($case in @(
+        @{ scenario='crafting-suspension'; interactive=$false; minutes=15 },
+        @{ scenario='craft-plan'; interactive=$false; minutes=8 },
+        @{ scenario='suite'; interactive=$false; minutes=40 },
+        @{ scenario='crafting-suspension'; interactive=$true; minutes=30 }
+    )) {
+    $Scenario = $case.scenario; $Interactive = $case.interactive
+    if ((& $selectTimeout) -ne $case.minutes) {
+        throw "Unexpected smoke timeout for $Scenario interactive=$Interactive"
+    }
+}
+$progressGates = @($runnerAst.FindAll({ param($node)
+    $node -is [System.Management.Automation.Language.IfStatementAst] -and
+        $node.Clauses[0].Item1.Extent.Text -match '\$Scenario -in' -and
+        $node.Extent.Text -match 'Get-UiSmokeProgressDecision'
+}, $true))
+if ($progressGates.Count -ne 1 -or
+        $progressGates[0].Extent.Text -cnotmatch '-CallbackTimeoutSeconds\s+\$CallbackTimeoutSeconds' -or
+        $progressGates[0].Extent.Text -cnotmatch '-CheckpointTimeoutSeconds\s+\$CheckpointTimeoutSeconds') {
+    throw 'Smoke progress watchdog was not bound to its configured callback/checkpoint limits'
+}
+$selectWatchdog = [scriptblock]::Create($progressGates[0].Clauses[0].Item1.Extent.Text)
+$selectedCases = @()
+foreach ($case in @(
+        @{ scenario='crafting-suspension'; expected=$true },
+        @{ scenario='cpu-list-total-ttc'; expected=$true },
+        @{ scenario='craft-plan'; expected=$false }
+    )) {
+    $Scenario = $case.scenario
+    if ((& $selectWatchdog) -ne $case.expected) {
+        throw "Unexpected smoke progress watchdog selection for $Scenario"
+    }
+}
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot "prepare-ui-smoke-suite.ps1"), (Join-Path $PSScriptRoot "ui-smoke-forge-suite.json"), (Join-Path $PSScriptRoot "ui-smoke-fabric-suite.json"), (Join-Path $PSScriptRoot "ui-smoke-neoforge-suite.json"), (Join-Path $PSScriptRoot "ui-smoke-neoforge-26.1.2-suite.json") -Destination $scripts
 foreach ($file in @('expand-ui-smoke-groups.ps1','release-matrix.json','ui-smoke-coverage.json','ui-smoke-groups.json',
         'prepare-ui-smoke-resume.ps1','ui-smoke-dependency-identity.ps1','ui-smoke-progress.ps1',
@@ -328,6 +369,9 @@ try {
         throw 'Status font fixture does not widen the actual amount glyphs over the uniform fallback'
     }
     Invoke-Case "pass" -Scenario cpu-list-total-ttc -shouldPass $false
+    Invoke-Case "pass" -Scenario crafting-suspension -shouldPass $true
+    Invoke-Case "missing-screenshot" -Scenario crafting-suspension -shouldPass $false
+    Invoke-Case "pass" -Scenario crafting-suspension -Target 1.20.1-fabric -shouldPass $false
     Invoke-Case "pass" -Scenario standard-ae2 -shouldPass $true
     Invoke-Case "missing-screenshot" -Scenario standard-ae2 -shouldPass $false
     $failedManifest = Join-Path $temp 'build/ui-smoke/1.20.1-forge/compatible/standard-ae2/evidence/resolved-mods.json'

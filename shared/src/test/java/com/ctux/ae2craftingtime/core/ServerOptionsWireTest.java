@@ -21,18 +21,31 @@ class ServerOptionsWireTest {
         config.setTypicalDurationMultiplier(1);
         var encoded = ServerOptionsWire.encode(new ServerOptionsWire.Snapshot(7, true, config));
         assertEquals(ServerOptionsWire.LENGTH, encoded.length);
+        assertEquals(3, Byte.toUnsignedInt(encoded[0]));
         var decoded = ServerOptionsWire.decode(encoded);
         assertEquals(7, decoded.revision());
         assertTrue(decoded.editable());
         assertFalse(decoded.config().features().enabled(OptionFeature.PROFILING));
         assertFalse(decoded.config().features().enabled(OptionFeature.NO_POWER_DETECTION));
         assertTrue(decoded.config().features().enabled(OptionFeature.NO_SPACE_DETECTION));
+        assertTrue(decoded.config().features().enabled(OptionFeature.CRAFTING_SUSPENSION));
         assertEquals(100, decoded.config().maxSamples());
         assertEquals(1000, decoded.config().outlierMultiplier());
         assertEquals(3600, decoded.config().minimumNoProgressSeconds());
         assertEquals(1, decoded.config().typicalDurationMultiplier());
         assertFalse(ServerOptionsWire.decode(ServerOptionsWire.encode(
                 new ServerOptionsWire.Snapshot(0, false, new ServerConfig()))).editable());
+    }
+
+    @Test
+    void appendedSuspensionBitDoesNotMoveExistingOptions() {
+        var config = new ServerConfig();
+        var before = ServerOptionsWire.encode(new ServerOptionsWire.Snapshot(0, false, config));
+        config.features().setEnabled(OptionFeature.CRAFTING_SUSPENSION, false);
+        var after = ServerOptionsWire.encode(new ServerOptionsWire.Snapshot(0, false, config));
+        long difference = ByteBuffer.wrap(before).getLong(6) ^ ByteBuffer.wrap(after).getLong(6);
+        assertEquals(1L << 19, difference);
+        assertFalse(ServerOptionsWire.decode(after).config().features().enabled(OptionFeature.CRAFTING_SUSPENSION));
     }
 
     @Test
@@ -46,7 +59,7 @@ class ServerOptionsWireTest {
         assertThrows(IllegalArgumentException.class, () -> ServerOptionsWire.decode(null));
         assertThrows(IllegalArgumentException.class, () -> ServerOptionsWire.decode(new byte[3]));
         var badVersion = Arrays.copyOf(good, good.length);
-        badVersion[0] = 3;
+        badVersion[0] = 2;
         assertThrows(IllegalArgumentException.class, () -> ServerOptionsWire.decode(badVersion));
         var badRevision = Arrays.copyOf(good, good.length);
         ByteBuffer.wrap(badRevision).putInt(1, -1);

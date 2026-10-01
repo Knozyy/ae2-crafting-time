@@ -2,7 +2,7 @@
 navigation:
   title: "AE2: Crafting Tree"
   parent: features/index.md
-  position: 9
+  position: 10
 ---
 
 # AE2: Crafting Tree
@@ -23,5 +23,5 @@ also hides its badges and interactions.
 
 *Seeded sample values demonstrate the estimate below a Crafting Tree node.*
 
-[Previous: Configuration](configuration.md) | [Features](index.md) |
+[Previous: Crafting suspension](crafting-suspension.md) | [Features](index.md) |
 [Next: ME Requester](me-requester.md) | [Details and reset](details-and-reset.md)
