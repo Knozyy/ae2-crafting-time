@@ -65,8 +65,10 @@ byte, accepting only 0 or 1. Reject wrong lengths, trailing bytes, invalid
 context, zero UUID and malformed state before mutation. Put binary validation
 in the covered pure-core codec; the Forge adapter delegates to it.
 
-`cpuContext` uses existing `StatsRequestContext.cpuContext`: container ID plus
-selected serial, or -1 for a direct CPU menu. Require the sender's current
+`cpuContext` uses the complete value from `StatsRequestContext.cpuContext`:
+the container ID in the high 32 bits and the unsigned selected serial in the
+low 32 bits. A direct CPU menu uses unsigned -1 only for its serial component.
+Require the sender's current
 `CraftingCPUMenu`, matching container/context, `stillValid(sender)`, standard
 CPU/logic, a live job with matching native crafting-link UUID, channel support
 and enabled server feature. Resolve the CPU through the existing
@@ -88,7 +90,7 @@ invalid context and trailing/truncated bytes. A live job must have a nonzero UUI
 a job. Encode/decode/validation live in covered pure core; Forge buffer and
 client-thread handling are thin adapters.
 
-Before native `broadcastChanges`, send a changed snapshot, including an initial
+After native `broadcastChanges` sends its selected-CPU sync, send a changed snapshot, including an initial
 snapshot, to that menu's player only when `StatsNetwork.canSend(player)` is true.
 Clear state when no CPU/job is selected. The client accepts it only for its
 current CPU menu and matching container/context; store state on that menu, never
@@ -167,3 +169,101 @@ no new generic harness or installer is required.
 
 
 
+## Supplemental runtime checks after the automated leaf
+
+The leaf's PASS is not all of CS-6. On the same tested production bundle,
+retain the completed singleplayer fixture with the existing `-Interactive`
+mode and use the VM's normal input plus `minecraft_get_ui_snapshot` and
+`minecraft_take_screenshot`. The two standard CPUs and furnace providers remain
+in that disposable world. Stock raw iron and fuel only; every returned ingot
+must come from those furnaces. With the automatic leaf finished, collect real
+furnace outputs and insert them through the ME terminal to drive returns.
+
+Use the existing native read-only command `/data get block <x> <y> <z>` at each
+observed CPU root for authoritative job facts. A cheats-authorized singleplayer
+observer can run it in normal chat; dedicated checks use the existing operator
+console/RCON or operator observer without granting the tested non-operator
+editing permission. Capture the native command output in chat screenshots and
+the corresponding CPU UI before and after each return. Narrow reads of
+`job.link.craftId`, `job.waitingFor`, `job.tasks` and `job.remainingAmount` avoid
+truncated output: retain all four integer UUID components, waiting item amounts
+under `#`, task amounts under `#craftingProgress`, remaining amount and the
+`ae2craftingtime:suspended` byte. These are the native facts already read by the
+driver's `SuspensionState`; do not write NBT. The UI snapshot's `jobId` is an
+output key, not the native UUID, and completed-leaf fixture observations are
+stale. No new MCP field or observation harness is needed.
+
+1. Keep profiling, accuracy and delay warnings on. Read the configured
+   `maxSamples` and current iron accuracy count before the baseline and again
+   before the job pair. Leave spare capacity for every successful untouched job
+   through the final count; if needed, enlarge the existing Server Options
+   value through Done, up to its supported maximum of 100, preserving history.
+   An unchanged full-window count proves neither sample addition nor omission.
+   Keep this baseline, pair and final count in the same loaded world session:
+   `ProfilerBridge.load` replaces runtime accuracy and pending-job tracking;
+   persisted throughput history does not preserve that accuracy experiment.
+   Finish one normal small iron
+   job to establish a real learned estimate. Record the iron accuracy sample
+   count through the existing TTC details/chat before and after each later job.
+   Submit two estimated jobs on separate CPUs. Pause/resume only one of them;
+   after both finish, the untouched job must add one accuracy sample and the
+   paused job must add none. Retained throughput history must remain available.
+2. To prove overlapping warnings, withhold the real furnace outputs from AE
+   storage after each CPU has dispatched. For the controlled setup below, pause
+   the large job while it still has undispatched work; withhold furnace fuel as
+   needed to keep the native
+   machine capacity and queued work observable. Collect genuine furnace outputs
+   into the player inventory, let the second CPU dispatch, then resume the first
+   for the warning baseline. Keep the real items for later return. Record both
+   native job UUIDs and each CPU's undispatched, waiting and remaining amounts.
+   Wait for both jobs to show Delayed and the shared provider highlights.
+   Suspend the large job: its selected rows/title lose diagnostics immediately while
+   the other CPU stays Delayed and its provider highlight remains.
+
+   Shared-storage iron returns have no CPU identity. Before and after each
+   terminal return, record both UUIDs and per-CPU amounts to identify the actual
+   recipient; never assume which job consumes an ingot or finishes first.
+   One controlled setup is to keep the large job suspended with undispatched
+   work greater than zero and drain its finite in-flight waiting outputs using
+   the retained real items. Record waiting = 0 and remaining > 0 for that same
+   paused job, with the other job still active; further genuine returns cannot
+   fill the paused job's undispatched work. This setup is optional: direct
+   before/after per-CPU observations that prove the other UUID completed while
+   the paused UUID stayed active with remaining > 0 also satisfy the check.
+   In either case, observe the other job actually complete: the completed
+   job's highlight contribution must disappear without the paused job restoring
+   it. Record both selected CPU screens, warning chat and world highlights,
+   not only a global output-level boolean. If return ownership, other-job
+   completion or the paused job's continued activity cannot be established,
+   record an incomplete check and diagnose
+   the fixture state; do not claim PASS or repeat the same sequence blindly.
+3. In the terminal Crafting Status screen, select each CPU and switch back,
+   including automatic selection after cancellation. Verify the suspended
+   selected card immediately has no numeric estimate; other cards retain their
+   own estimates. Close/reopen the menu and resize once. Record context, job
+   identity, title and button geometry from observed UI snapshots and PNGs.
+4. With a suspended job selected, switch Badge background off, then on with a
+   non-default color/opacity through Client Options and Done. In both states
+   record the actual Suspended title text and bounds; the enclosing fill must
+   appear only when enabled and use the configured appearance. Inspect row
+   tooltips too: no Waiting, Delayed or blocker text from cached data survives.
+5. Resume while still withholding outputs. Record the configured delay threshold
+   and observe no immediate warning, followed by a fresh genuine delayed episode.
+   Return the retained real outputs and record normal completion/conservation.
+
+Also exercise a non-operator connected client: it can Suspend/Resume an
+accessible native job, cannot edit Server Options, and a denied edit leaves the
+server revision/config unchanged. Read the saved server file after Done.
+Prove file-based recovery in a separate disposable-world campaign on the same
+tested bundle: save a genuinely suspended job, stop the world cleanly, preserve
+the original stopped-world/config backup, set `craftingSuspension = false`,
+and restart that recovery world. Record its job identity/counts and the loaded
+config, then verify next-tick unstranding and normal completion. Do not edit job
+NBT or reuse the connected persistence campaign's world or backup. That campaign
+keeps exactly two phases and verifies suspension survives its enabled restart;
+file-based recovery adds no phase to it. These checks remain mandatory and
+pending until
+steps 3 and 4 of the [verification ladder](implementation-plan.md#verification-ladder-and-commands)
+retain their current-head evidence; no automated marker substitutes for them.
+Optional-install observation and unsupported-loader artifact checks
+remain separate gates in the implementation plan.

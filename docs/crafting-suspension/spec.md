@@ -1,12 +1,21 @@
 # Crafting suspension on Forge 1.20.1
 
-Status: ready-to-implement
+Status: in-progress
 
 Scope: Initial Forge 1.20.1 backport and its focused verification.
 
 Issue: [#631](https://github.com/cTux/ae2-crafting-time/issues/631)
 
 Planning: [Reviewed implementation plan](implementation-plan.md)
+
+Implementation: [PR #637](https://github.com/cTux/ae2-crafting-time/pull/637)
+
+Remaining gates: retain the supplemental manual diagnostics, accuracy and UI
+evidence; non-operator permission checks; stopped-file recovery with
+`craftingSuspension = false`; optional-install peer checks; published wiki
+readback; current-head CI and review; and the implementation merge. Complete
+the [verification ladder](implementation-plan.md#verification-ladder-and-commands),
+including dedicated restart evidence and verified VM shutdown, before finishing.
 
 ## Player behavior
 

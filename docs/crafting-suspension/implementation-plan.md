@@ -86,6 +86,9 @@ and completes. Do not recreate the grid or resubmit the job after reload.
 Store continuation metadata outside the world with the campaign/head identity;
 validate it against the actual loaded job. Finally cleanly stop server and both
 clients. No process-wide Java kill and no source-fixture mutation.
+Keep suspension enabled for this persistence restart. The supplemental
+file-disabled recovery check uses its own disposable world and retained backup;
+it does not add a phase or modify this campaign's world, config or backup.
 
 ## Verification ladder and commands
 
@@ -119,16 +122,30 @@ recorded outputs, not guessed directories.
    targets against prepared AE2 15.4.10. Check the Forge-only mixin config is
    absent from every other artifact. Parse locale JSON, compare new keys and
    placeholders, check guide/wiki links and `git diff --check`.
-3. Build/package on host and run only the new base scenario first:
+3. Build/package on host and run only the new base scenario first, retaining
+   its fixture for the supplemental manual checks:
 
    ```powershell
-   ./scripts/invoke-ui-smoke-codexvm.ps1 -Target 1.20.1-forge -BaseOnly -Scenario crafting-suspension
+   ./scripts/invoke-ui-smoke-codexvm.ps1 -Target 1.20.1-forge -BaseOnly -Scenario crafting-suspension -Interactive
    ```
+
+   Use the tested implementation branch containing the existing
+   [interactive completion fix](https://github.com/cTux/ae2-crafting-time/blob/efa6093b37ea61f9fb07e68f9aa80631c2588bc4/scripts/ui-smoke-progress.ps1#L56),
+   included in PR #637's `d5b10fe` head. It exempts interactive
+   `state=QUIT_REQUESTED` from checkpoint aging while retaining callback,
+   process and overall deadline supervision. This documentation-only base
+   does not supply the implementation runner; do not disable its other guards.
 
    Use the English prepared runtime, production JAR and isolated test-driver.
    Assert actual button rendering, positioning, labels, and server accounting;
    inspect required screenshots, sidecars and automatic-review outcomes. Capture
    running, suspended, small-complete, resumed, cancelled and disabled states.
+   After the leaf completes, use the retained fixture to perform all five
+   [supplemental runtime checks](technical-design.md#supplemental-runtime-checks-after-the-automated-leaf).
+   Save the observed UI snapshots, screenshots, accuracy counts, warning and
+   highlight transitions, delay timing and conserved item counts alongside the
+   leaf report. Record the tested head, bundle hashes, timestamps and each
+   manual result; a leaf PASS does not replace these observations.
 4. Reuse that exact head's immutable native bundle. Dispatch connected execution
    through the same host wrapper, with `-BundleDirectory <host-bundle>` and
    `-ServerDirectory <verified-guest-source>` plus `-AcceptMinecraftEula` under
@@ -145,6 +162,12 @@ recorded outputs, not guessed directories.
    no guest Gradle builds. Prove two-player synchronization, disabled/stale
    rejection and the clean restart sequence. Attach phase/PID/start/stop and
    count evidence, both clients' matching-state screenshots, and file hashes.
+   Also retain the supplemental non-operator permission evidence. Run the
+   stopped-file `craftingSuspension = false` recovery check in a separate
+   disposable-world campaign as described in the technical design, preserving
+   its original stopped-world/config backup. Record that campaign's identity,
+   server revision, saved config, job counts and post-restart state separately;
+   do not add a phase to the two-phase persistence run or alter its backup.
 5. Because synchronization must preserve optional installation, use existing
    observation mode on the same Forge source/bundle for server-only and
    client-only peers. Open the native CPU/status screen and prove no addon
