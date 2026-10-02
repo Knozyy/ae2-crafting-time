@@ -18,7 +18,7 @@ class StandardConnectedBoundaryTest {
     private final LinkedHashMap<String, Boolean> checks = new LinkedHashMap<>();
 
     @BeforeEach void configureControl() {
-        for (var name : java.util.List.of("role", "control", "campaign", "suspensionReload")) {
+        for (var name : java.util.List.of("role", "control", "campaign", "suspensionReload", "continuation")) {
             var key = "ae2craftingtime.test." + name;
             previous.put(key, System.getProperty(key));
             System.clearProperty(key);
@@ -29,6 +29,7 @@ class StandardConnectedBoundaryTest {
     }
 
     @AfterEach void restoreControl() {
+        StoredVariantObservation.enable(false);
         previous.forEach((key, value) -> {
             if (value == null) System.clearProperty(key);
             else System.setProperty(key, value);
@@ -69,6 +70,37 @@ class StandardConnectedBoundaryTest {
         state(true, "epoch", "{\"jobId\":\"different-job\"}");
         var failure = assertThrows(IllegalStateException.class, () -> tick(scenario));
         assertEquals("Connected suspension changed job identity", failure.getMessage());
+        assertEquals(java.util.Map.of("same-live-job", false), checks);
+    }
+
+    @Test void storedVariantWaitsForAReadyMatchingCampaignBeforeReadingThePlayer() throws Exception {
+        var stateDirectory = Files.createDirectories(directory.resolve("variant"));
+        for (var ready : java.util.List.of(false, true)) {
+            var state = new Properties();
+            state.setProperty("ready", Boolean.toString(ready));
+            state.setProperty("epoch", "other");
+            try (var output = Files.newOutputStream(stateDirectory.resolve("state.properties"))) {
+                state.store(output, null);
+            }
+            assertFalse(tick(new StandardAe2Scenario("stored-variant-plan", "world", directory, true)));
+        }
+        assertEquals(java.util.Map.of("same-live-job", false), checks);
+    }
+
+    @Test void cpuBadgeSelectionStartsWithBackgroundsEnabledAndWaitsForServerReadiness() throws Exception {
+        var features = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features();
+        var feature = com.ctux.ae2craftingtime.core.OptionFeature.BADGE_BACKGROUND;
+        boolean original = features.enabled(feature);
+        try {
+            for (var initial : java.util.List.of(false, true)) {
+                features.setEnabled(feature, initial);
+                var scenario = new StandardAe2Scenario("cpu-list-total-ttc", "world", directory, true);
+                assertTrue(features.enabled(feature));
+                assertFalse(tick(scenario));
+            }
+        } finally {
+            features.setEnabled(feature, original);
+        }
         assertEquals(java.util.Map.of("same-live-job", false), checks);
     }
 

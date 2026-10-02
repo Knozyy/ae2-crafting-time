@@ -90,6 +90,9 @@ final class CpuListTtcScenario {
         this.world = world;
         this.connectedDedicated = connectedDedicated;
         CpuListInputControl.reset();
+        // Badge hit-testing requires visible backgrounds in this disposable scenario.
+        com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features()
+                .setEnabled(com.ctux.ae2craftingtime.core.OptionFeature.BADGE_BACKGROUND, true);
         var path = System.getProperty("ae2craftingtime.test.continuation", "");
         this.evidence = output.resolve(checkpointFile(!path.isBlank()));
         if (path.isBlank()) {
