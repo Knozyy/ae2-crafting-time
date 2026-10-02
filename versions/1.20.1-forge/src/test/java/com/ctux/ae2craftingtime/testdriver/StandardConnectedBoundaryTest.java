@@ -87,7 +87,7 @@ class StandardConnectedBoundaryTest {
         assertEquals(java.util.Map.of("same-live-job", false), checks);
     }
 
-    @Test void cpuBadgeSelectionStartsWithBackgroundsEnabledAndWaitsForServerReadiness() throws Exception {
+    @Test void cpuBadgeSelectionPreparesLoadedOptionsAndWaitsForServerReadiness() throws Exception {
         var features = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features();
         var feature = com.ctux.ae2craftingtime.core.OptionFeature.BADGE_BACKGROUND;
         boolean original = features.enabled(feature);
@@ -95,6 +95,9 @@ class StandardConnectedBoundaryTest {
             for (var initial : java.util.List.of(false, true)) {
                 features.setEnabled(feature, initial);
                 var scenario = new StandardAe2Scenario("cpu-list-total-ttc", "world", directory, true);
+                // Startup can load options after constructing the scenario.
+                features.setEnabled(feature, initial);
+                CpuListTtcScenario.prepareClientOptions(features);
                 assertTrue(features.enabled(feature));
                 assertFalse(tick(scenario));
             }

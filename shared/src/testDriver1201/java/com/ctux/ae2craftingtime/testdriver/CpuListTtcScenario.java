@@ -90,9 +90,6 @@ final class CpuListTtcScenario {
         this.world = world;
         this.connectedDedicated = connectedDedicated;
         CpuListInputControl.reset();
-        // Badge hit-testing requires visible backgrounds in this disposable scenario.
-        com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features()
-                .setEnabled(com.ctux.ae2craftingtime.core.OptionFeature.BADGE_BACKGROUND, true);
         var path = System.getProperty("ae2craftingtime.test.continuation", "");
         this.evidence = output.resolve(checkpointFile(!path.isBlank()));
         if (path.isBlank()) {
@@ -131,6 +128,8 @@ final class CpuListTtcScenario {
 
     boolean tick(Minecraft minecraft, FixtureMarker marker, Map<String, Boolean> checks,
             Consumer<String> capture, BiConsumer<Integer, Integer> moveMouse) {
+        // Client setup can replace the options after this scenario is constructed.
+        prepareClientOptions(com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features());
         Consumer<String> screenshot = name -> { if (captured.add(name)) capture.accept(name); };
         if (continuation != null) continuation.checks().forEach(check -> mark(checks, check));
         var snapshot = UiObservationStore.latest();
@@ -838,6 +837,10 @@ final class CpuListTtcScenario {
         return snapshot.cpuCards().stream().filter(value -> value.serial() == serial).findFirst()
                 .orElseThrow(() -> new IllegalStateException("CPU serial " + serial + " is not visible"));
     }
+    static void prepareClientOptions(com.ctux.ae2craftingtime.core.FeatureOptions options) {
+        options.setEnabled(com.ctux.ae2craftingtime.core.OptionFeature.BADGE_BACKGROUND, true);
+    }
+
     static Rect selectionBadge(java.util.List<UiSnapshot.CpuCard> cards, int serial) {
         return cards.stream().filter(value -> value.serial() == serial).findFirst()
                 .orElseThrow(() -> new IllegalStateException("CPU serial " + serial + " is not visible")).badge();
