@@ -1,6 +1,6 @@
 # Crafting suspension on Forge 1.20.1
 
-Status: in-progress
+Status: finished
 
 Scope: Initial Forge 1.20.1 backport and its focused verification.
 
@@ -8,14 +8,22 @@ Issue: [#631](https://github.com/cTux/ae2-crafting-time/issues/631)
 
 Planning: [Reviewed implementation plan](implementation-plan.md)
 
-Implementation: [PR #637](https://github.com/cTux/ae2-crafting-time/pull/637)
+Implementation: [PR #637](https://github.com/cTux/ae2-crafting-time/pull/637),
+merged as `079c4be603b8f07e438fd55c49ea2911d10972a8`.
 
-Remaining gates: retain the supplemental manual diagnostics, accuracy and UI
-evidence; non-operator permission checks; stopped-file recovery with
-`craftingSuspension = false`; optional-install peer checks; published wiki
-readback; current-head CI and review; and the implementation merge. Complete
-the [verification ladder](implementation-plan.md#verification-ladder-and-commands),
-including dedicated restart evidence and verified VM shutdown, before finishing.
+Verification: [PR #637's final evidence](https://github.com/cTux/ae2-crafting-time/pull/637)
+records the production UI, accounting, diagnostics, accuracy, two-client restart,
+permissions, file-disabled recovery and optional-peer checks. Final head
+`e9c565619e93f9c60fe8719e55588380f1cb09ba` changes only planning documents from
+tested `d5b10fe41013cd70db4a0a33d0f8f1fbe2366f7e`; unchanged source carries the
+recorded runtime evidence, rather than claiming a new Minecraft run.
+[Build](https://github.com/cTux/ae2-crafting-time/actions/runs/36927661822),
+[tests](https://github.com/cTux/ae2-crafting-time/actions/runs/36927661466) and
+the configured review passed on e9. All six English/Ukrainian
+[wiki pages](https://github.com/cTux/ae2-crafting-time/wiki/Feature-Crafting-Suspension)
+were published and read back at `733fd286d39231573daceeeb639f7b058bb6324b`.
+Owned Java processes/tasks and the temporary token were cleared; CodexVM's
+clean soft shutdown was verified at 2026-10-01 21:04:27.455 UTC.
 
 ## Player behavior
 
@@ -97,5 +105,5 @@ option, safe disable behavior, addon limitation and limits of machine relief.
 | CS-7 | Both locales and live wiki guidance agree; unsupported loaders/native versions and optional-install peers retain their behavior. |
 | CS-8 | Covered core and boundary checks, focused singleplayer and dedicated production runs, current-head CI and exact VM shutdown evidence pass. |
 
-Planning review found no issue-body correction necessary. This status records a
-reviewed plan, not shipped behavior; implementation and runtime checks remain.
+Planning review found no issue-body correction necessary. The initial scope is
+delivered with the verification evidence linked above.
