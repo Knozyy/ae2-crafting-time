@@ -83,6 +83,7 @@ dependencies {
     implementation "${ae2Group}:appliedenergistics2:${providers.gradleProperty('runtimeAe2NeoForge1211Version').getOrElse('19.0.24')}"
     compileOnly 'org.appliedenergistics:guideme:21.1.0'
     compileOnly 'maven.modrinth:jei:w1zqfWJi'
+    testRuntimeOnly 'maven.modrinth:jei:w1zqfWJi'
     if (!providers.gradleProperty('runtimeLatestNeoForge1211').isPresent()) {
         runtimeOnly 'org.appliedenergistics:guideme:21.1.0'
     }

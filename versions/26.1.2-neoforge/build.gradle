@@ -73,6 +73,7 @@ dependencies {
     implementation "org.appliedenergistics:appliedenergistics2:${providers.gradleProperty('runtimeAe2NeoForge2612Version').getOrElse('26.1.10-beta')}"
     compileOnly 'org.appliedenergistics:guideme:26.1.10-alpha'
     compileOnly 'maven.modrinth:jei:21Q5T62Q'
+    testRuntimeOnly 'maven.modrinth:jei:21Q5T62Q'
     compileOnly 'maven.modrinth:advancedae:26.1.7'
     compileOnly 'maven.modrinth:qelfSMnn:v2PSNZ3v'
     compileOnly 'curse.maven:ae2-network-analyser-961856:8127472'
