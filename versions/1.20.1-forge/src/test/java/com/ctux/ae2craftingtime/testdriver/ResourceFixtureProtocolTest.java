@@ -171,6 +171,70 @@ class ResourceFixtureProtocolTest {
         assertEquals(command, ResourceFixtureControl.readCommand(directory));
     }
 
+    @Test void lifecycleRejectsScenarioSlotAndOverflowViolations() {
+        var held = state(ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Phase.HELD);
+        var command = new ResourceFixtureControl.Command(epoch, held.scenario(), player, fixture,
+                3, 5, ResourceFixtureControl.Action.RELEASE, ResourceFixtureControl.Case.ITEM, 0);
+        var previous = new ResourceFixtureControl.Command(epoch, held.scenario(), player, fixture,
+                3, 4, ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Case.ITEM, 0);
+        assertEquals(ResourceFixtureControl.Phase.SETTLED,
+                ResourceFixtureControl.decide(held, command, previous, false).nextPhase());
+        assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.decide(held,
+                new ResourceFixtureControl.Command(epoch, "other", player, fixture, 3, 5,
+                        command.action(), command.resourceCase(), 0), null, false));
+        for (var resource : List.of(ResourceFixtureControl.Case.ITEM, ResourceFixtureControl.Case.FLUID_OVERLAP,
+                ResourceFixtureControl.Case.CHEMICAL_OVERLAP)) {
+            var overlapping = new ResourceFixtureControl.State(epoch, held.scenario(), player, fixture,
+                    3, 4, 3, held.action(), resource, 0, held.phase(), "", "", "[]", "[]");
+            for (var action : List.of(ResourceFixtureControl.Action.RELEASE, ResourceFixtureControl.Action.CANCEL)) {
+                var slotOne = new ResourceFixtureControl.Command(epoch, held.scenario(), player, fixture,
+                        3, 5, action, resource, 1);
+                if (resource == ResourceFixtureControl.Case.ITEM) {
+                    assertThrows(IllegalArgumentException.class,
+                            () -> ResourceFixtureControl.decide(overlapping, slotOne, null, false));
+                } else {
+                    assertEquals(ResourceFixtureControl.Phase.SETTLED,
+                            ResourceFixtureControl.decide(overlapping, slotOne, null, false).nextPhase());
+                }
+            }
+        }
+        var corrupt = new ResourceFixtureControl.State(epoch, held.scenario(), player, fixture,
+                0, 4, 0, held.action(), held.resourceCase(), 0, held.phase(), "", "", "[]", "[]");
+        assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.decide(corrupt,
+                new ResourceFixtureControl.Command(epoch, held.scenario(), player, fixture,
+                        0, 5, ResourceFixtureControl.Action.ABORT, held.resourceCase(), 0), null, false));
+        var overflow = new ResourceFixtureControl.Command(epoch, held.scenario(), player, fixture,
+                3, Long.MAX_VALUE, command.action(), command.resourceCase(), 0);
+        assertThrows(IllegalStateException.class,
+                () -> ResourceFixtureControl.decide(held, overflow, null, true));
+    }
+
+    @Test void checkpointNamesAndScreenshotsMatchEachSupportedResourceRoute() {
+        for (var resource : ResourceFixtureControl.Case.values()) {
+            for (boolean connected : new boolean[]{false, true}) {
+                for (boolean production : new boolean[]{false, true}) {
+                    var checkpoints = ResourceFixtureControl.expectedCheckpoints(resource, connected, production);
+                    assertEquals("held", checkpoints.get(0));
+                    assertEquals("cancelled", checkpoints.get(checkpoints.size() - 1));
+                    assertEquals(connected, checkpoints.contains("rejoined"));
+                    assertEquals(production && resource == ResourceFixtureControl.Case.WATER,
+                            checkpoints.contains("resource-reloaded"));
+                    boolean overlap = resource == ResourceFixtureControl.Case.FLUID_OVERLAP
+                            || resource == ResourceFixtureControl.Case.CHEMICAL_OVERLAP;
+                    assertEquals(overlap, checkpoints.contains("winner-promoted"));
+                    assertEquals(production && overlap, checkpoints.contains("provider-removed"));
+                    assertEquals(resource == ResourceFixtureControl.Case.ITEM && !connected,
+                            checkpoints.contains("recovery-pair"));
+                    assertEquals(checkpoints.stream().map(checkpoint -> ResourceFixtureControl.wireCase(resource)
+                            + "-" + checkpoint + ".png").toList(),
+                            ResourceFixtureControl.expectedScreenshots(resource, connected, production));
+                }
+            }
+        }
+        assertDoesNotThrow(() -> ResourceFixtureControl.validateCase("1.21.1-neoforge",
+                "appmek-resource-icons", ResourceFixtureControl.Case.CHEMICAL_OVERLAP));
+    }
+
     @Test void writeRejectsOversizedStateAndInvalidControlParent() throws Exception {
         var state = state(ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Phase.HELD);
         assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.writeState(directory,

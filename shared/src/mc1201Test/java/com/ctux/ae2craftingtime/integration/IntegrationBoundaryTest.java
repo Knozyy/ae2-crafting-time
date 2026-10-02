@@ -24,6 +24,25 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 class IntegrationBoundaryTest {
     @Test
+    void pluginKeepsDefaultMixinDiscoveryAndTargetBytecodeUnchanged() {
+        var plugin = new IntegrationMixinPlugin();
+        var node = new ClassNode();
+        node.name = "example/Target";
+        var targets = new HashSet<>(Set.of("example.Target"));
+        plugin.onLoad("example.mixin");
+        assertNull(plugin.getRefMapperConfig());
+        assertNull(plugin.getMixins());
+        plugin.acceptTargets(targets, Set.of("other.Target"));
+        assertEquals(Set.of("example.Target"), targets);
+        plugin.preApply("example.Target", node, "example.mixin.TargetMixin", null);
+        plugin.postApply("example.Target", node, "example.mixin.TargetMixin", null);
+        assertEquals("example/Target", node.name);
+        assertTrue(node.fields.isEmpty());
+        assertTrue(node.methods.isEmpty());
+        assertTrue(node.interfaces.isEmpty());
+    }
+
+    @Test
     void cpuSelectionListRetainsTheSharedRenderAndInputSeams() throws Exception {
         var node = new ClassNode();
         try (var input = getClass().getResourceAsStream("/appeng/client/gui/widgets/CPUSelectionList.class")) {
