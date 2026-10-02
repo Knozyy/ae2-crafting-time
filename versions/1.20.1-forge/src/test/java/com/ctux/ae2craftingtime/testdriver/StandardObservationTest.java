@@ -120,6 +120,16 @@ class StandardObservationTest {
         assertTrue(StandardAe2Scenario.suspensionCaptureReady(complete, empty, true));
     }
 
+    @Test void cpuCardTotalsIgnoreOtherLabelsMissingBoundsAndTheHeader() {
+        var total = "text.ae2craftingtime.ttc";
+        var card = text(total, "~5s", new Rect(10, 29, 20, 5));
+        var values = List.of(text("other", "other", new Rect(10, 30, 20, 5)),
+                text(total, "no bounds", null), text(total, "header", new Rect(10, 28, 20, 5)), card);
+        var frame = new UiSnapshot("screen", "menu", new Rect(0, 10, 80, 80),
+                100, 100, 1, 1, 0, List.of(), values, List.of(), List.of(), List.of(), List.of());
+        assertEquals(List.of(card), StandardAe2Scenario.cpuCardTotals(frame));
+        assertTrue(StandardAe2Scenario.cpuCardTotals(snapshot(List.of(), List.of())).isEmpty());
+    }
     private UiSnapshot suspensionFrame(List<UiSnapshot.ObservedText> text, List<UiSnapshot.Row> rows) {
         return new UiSnapshot("appeng.client.gui.me.crafting.CraftingCPUScreen", "menu", cell,
                 100, 100, 1, 1, 0, rows, text, List.of(), List.of(), List.of(), List.of());
@@ -138,3 +148,4 @@ class StandardObservationTest {
                 List.of(row(0)), text, badges, List.of(), List.of(), List.of());
     }
 }
+

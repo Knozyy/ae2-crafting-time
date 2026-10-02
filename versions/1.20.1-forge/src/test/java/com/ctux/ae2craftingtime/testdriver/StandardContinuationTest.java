@@ -119,6 +119,23 @@ class StandardContinuationTest {
         }
     }
 
+    @Test void relaunchRejectsIncompleteChecksBeforeTouchingMinecraft() throws Exception {
+        for (var leaf : List.of("standard-status-controls", "badge-background")) {
+            var path = directory.resolve(leaf + "-incomplete.json");
+            Files.writeString(path, continuation().toString());
+            withContinuation(path, () -> {
+                var scenario = new StandardAe2Scenario(leaf, "world", directory, false);
+                var checks = new java.util.LinkedHashMap<String, Boolean>();
+                var failure = assertThrows(IllegalStateException.class, () -> scenario.tick(null, null, checks,
+                        name -> fail("Invalid continuations must not capture: " + name),
+                        (x, y) -> fail("Invalid continuations must not move the mouse")));
+                assertEquals(leaf.equals("badge-background")
+                        ? "Badge relaunch predecessor or saved config differs"
+                        : "Status relaunch predecessor omitted required checks", failure.getMessage());
+                assertTrue(checks.isEmpty());
+            });
+        }
+    }
     private void write(StandardAe2Scenario scenario, String leaf, List<String> screenshots) {
         if (leaf.equals("badge-background")) {
             scenario.writeBadgeContinuation(new StandardAe2Scenario.BadgeContinuation(
@@ -161,3 +178,4 @@ class StandardContinuationTest {
         }
     }
 }
+
