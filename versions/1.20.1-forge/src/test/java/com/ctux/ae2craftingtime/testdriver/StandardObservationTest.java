@@ -100,10 +100,10 @@ class StandardObservationTest {
 
     @Test void suspensionCapturesWaitForBothMenuAndRenderedState() {
         var job = java.util.UUID.randomUUID();
-        var disabled = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1, job, true, false, false);
-        var running = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1, job, true, true, false);
-        var paused = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1, job, true, true, true);
-        var complete = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1,
+        var disabled = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1L << 32, job, true, false, false);
+        var running = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1L << 32, job, true, true, false);
+        var paused = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1L << 32, job, true, true, true);
+        var complete = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1L << 32,
                 com.ctux.ae2craftingtime.core.CraftingSuspension.NO_JOB, true, true, false);
         var empty = suspensionFrame(List.of(), List.of());
         var stale = suspensionFrame(List.of(text("gui.ae2craftingtime.suspended", "Suspended", textBounds)), List.of());
