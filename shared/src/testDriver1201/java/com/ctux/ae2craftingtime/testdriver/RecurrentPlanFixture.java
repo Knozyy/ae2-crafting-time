@@ -157,7 +157,7 @@ final class RecurrentPlanFixture implements ICraftingProvider {
                 var a = AEItemKey.of(Items.SMOOTH_STONE);
                 var cancelled = service.beginCraftingCalculation(player.level(), () -> source, a, 1024,
                         appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
-                if (!cancelled.cancel(true) || !cancelled.isCancelled()) throw new IllegalStateException("Cancellation was not observed");
+                validateCancellation(cancelled.cancel(true), cancelled.isCancelled());
                 boundaryPlans = List.of(
                         service.beginCraftingCalculation(player.level(), () -> source, a, 2,
                                 appeng.api.networking.crafting.CalculationStrategy.CRAFT_LESS),
@@ -166,33 +166,65 @@ final class RecurrentPlanFixture implements ICraftingProvider {
                 return false;
             }
             if (boundaryPlans.stream().anyMatch(future -> !future.isDone())) return false;
-            try {
-                var less = boundaryPlans.get(0).get();
-                var full = boundaryPlans.get(1).get();
-                if (less.simulation() || less.finalOutput().amount() != 1 || !((PlanRecurrence) less).ae2craftingtime$recurrentKeys().isEmpty()
-                        || !full.simulation() || !((PlanRecurrence) full).ae2craftingtime$recurrentKeys().equals(Set.of(AEItemKey.of(Items.STONE))))
-                    throw new IllegalStateException("Concurrent or CRAFT_LESS attempts leaked recurrence");
-            } catch (java.util.concurrent.ExecutionException | InterruptedException error) {
-                throw new IllegalStateException(error);
-            }
+            var less = await(boundaryPlans.get(0));
+            var full = await(boundaryPlans.get(1));
+            validateAttempts(less.simulation(), less.finalOutput().amount(),
+                    ((PlanRecurrence) less).ae2craftingtime$recurrentKeys(), full.simulation(),
+                    ((PlanRecurrence) full).ae2craftingtime$recurrentKeys(), AEItemKey.of(Items.STONE));
         }
         var actual = ((PlanRecurrence) plan).ae2craftingtime$recurrentKeys();
-        if (!actual.equals(expected) || plan.simulation() == successful)
-            throw new IllegalStateException(configured + " expected recurrence=" + expected + " success=" + successful
-                    + " actual recurrence=" + actual + " simulation=" + plan.simulation());
-        if (configured.equals("large") && menu.getPlan().getEntries().size() <= 256)
-            throw new IllegalStateException("Large recurrence plan did not cross the chunk boundary");
-        if (configured.startsWith("reported-") && menu.getPlan().getEntries().stream()
-                .noneMatch(entry -> expected.contains(entry.getWhat()) && entry.getMissingAmount() == requestedAmount()))
-            throw new IllegalStateException("Reported regression lost missing quantity " + requestedAmount());
+        validateOutcome(configured, expected, successful, actual, plan.simulation());
+        validateSummary(configured, menu.getPlan().getEntries().size(), menu.getPlan().getEntries().stream()
+                .anyMatch(entry -> requestedMissing(expected, entry.getWhat(), entry.getMissingAmount(), requestedAmount())),
+                requestedAmount());
         for (var entry : menu.getPlan().getEntries()) {
-            boolean flag = ((com.ctux.ae2craftingtime.mc1201.RecurrentPlanEntry) entry).ae2craftingtime$recurrent();
-            if (flag != (entry.getMissingAmount() > 0 && expected.contains(entry.getWhat())))
-                throw new IllegalStateException("Summary diagnosis or positive-missing intersection differs");
+            validateFlag(expected, entry.getWhat(), entry.getMissingAmount(),
+                    ((com.ctux.ae2craftingtime.mc1201.RecurrentPlanEntry) entry).ae2craftingtime$recurrent());
         }
         System.out.println("AE2CT recurrence case=" + configured + " simulation=" + plan.simulation()
                 + " missing=" + plan.missingItems() + " rows=" + menu.getPlan().getEntries().size());
         return true;
+    }
+
+    static void validateCancellation(boolean cancelled, boolean observed) {
+        if (!cancelled || !observed) throw new IllegalStateException("Cancellation was not observed");
+    }
+
+    static <T> T await(java.util.concurrent.Future<T> future) {
+        try {
+            return future.get();
+        } catch (java.util.concurrent.ExecutionException | InterruptedException error) {
+            throw new IllegalStateException(error);
+        }
+    }
+
+    static void validateAttempts(boolean lessSimulation, long lessOutput, Set<?> lessKeys,
+            boolean fullSimulation, Set<?> fullKeys, Object missing) {
+        if (lessSimulation || lessOutput != 1 || !lessKeys.isEmpty()
+                || !fullSimulation || !fullKeys.equals(Set.of(missing)))
+            throw new IllegalStateException("Concurrent or CRAFT_LESS attempts leaked recurrence");
+    }
+
+    static void validateOutcome(String name, Set<?> expected, boolean successful, Set<?> actual, boolean simulation) {
+        if (!actual.equals(expected) || simulation == successful)
+            throw new IllegalStateException(name + " expected recurrence=" + expected + " success=" + successful
+                    + " actual recurrence=" + actual + " simulation=" + simulation);
+    }
+
+    static void validateSummary(String name, int rows, boolean quantityPresent, long requested) {
+        if (name.equals("large") && rows <= 256)
+            throw new IllegalStateException("Large recurrence plan did not cross the chunk boundary");
+        if (name.startsWith("reported-") && !quantityPresent)
+            throw new IllegalStateException("Reported regression lost missing quantity " + requested);
+    }
+
+    static boolean requestedMissing(Set<?> expected, Object key, long missing, long requested) {
+        return expected.contains(key) && missing == requested;
+    }
+
+    static void validateFlag(Set<?> expected, Object key, long missing, boolean flag) {
+        if (flag != (missing > 0 && expected.contains(key)))
+            throw new IllegalStateException("Summary diagnosis or positive-missing intersection differs");
     }
 
     boolean recurrent() { return !expected.isEmpty(); }
