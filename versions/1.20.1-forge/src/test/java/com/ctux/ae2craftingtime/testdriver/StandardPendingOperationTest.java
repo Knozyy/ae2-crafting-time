@@ -81,8 +81,9 @@ class StandardPendingOperationTest {
             var heading = TtcComponents.text("text.ae2craftingtime.stats.ttc").getString();
             var time = TtcComponents.time("~5s").getString();
             var delayed = TtcComponents.text("text.ae2craftingtime.stall.delayed").getString();
+            var seconds = TtcComponents.text("text.ae2craftingtime.value.whole_seconds", 4L).getString();
             var valid = new ArrayList<>(List.of(text("unrelated", "ignored"),
-                    text("text.ae2craftingtime.stats.ttc", heading + ": 7s, " + delayed + ": 4s, Typical: " + time),
+                    text("text.ae2craftingtime.stats.ttc", heading + ": 7s, " + delayed + ": " + seconds + ", Typical: " + time),
                     text("text.ae2craftingtime.stall.improvements", "Improve"),
                     text("text.ae2craftingtime.locate_hint", "Locate"),
                     text("text.ae2craftingtime.details_hint", "Details"),
@@ -94,7 +95,7 @@ class StandardPendingOperationTest {
                 assertEquals(false, method.invoke(null, snapshot(missing)), "missing " + index);
             }
             for (var wrong : List.of("wrong", heading + ": 7s, " + delayed + ": 3s, Typical: " + time,
-                    "wrong: 7s, " + delayed + ": 4s, Typical: " + time)) {
+                    "wrong: 7s, " + delayed + ": " + seconds + ", Typical: " + time)) {
                 var mismatch = new ArrayList<>(valid);
                 mismatch.set(1, text("text.ae2craftingtime.stats.ttc", wrong));
                 assertEquals(false, method.invoke(null, snapshot(mismatch)), wrong);
