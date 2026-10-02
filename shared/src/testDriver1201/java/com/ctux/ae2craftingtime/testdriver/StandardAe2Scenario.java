@@ -1909,6 +1909,15 @@ final class StandardAe2Scenario {
         }
     }
 
+    static boolean suspensionCaptureReady(com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot selected,
+            UiSnapshot observed, boolean completed) {
+        if (selected == null || selected.suspended() || observed == null
+                || !observed.screen().equals("appeng.client.gui.me.crafting.CraftingCPUScreen")) return false;
+        if (observed.text().stream().anyMatch(text -> text.key().equals("gui.ae2craftingtime.suspended")))
+            return false;
+        return completed ? !selected.hasJob() && observed.rows().isEmpty() : !selected.enabled();
+    }
+
     private static void sendStaleSuspension(int container, long context, java.util.UUID job, boolean desired) {
         try {
             var packet = Class.forName("com.ctux.ae2craftingtime.mc1201.net.CraftingSuspensionC2S");
@@ -2190,6 +2199,8 @@ final class StandardAe2Scenario {
             mark(checks, "disabled-resumes", true);
             mark(checks, "three-cycles", suspensionCycle == 3);
             if (!(minecraft.screen instanceof appeng.client.gui.me.crafting.CraftingCPUScreen<?>)) return false;
+            if (!suspensionCaptureReady(selectedSuspensionSnapshot(minecraft), UiObservationStore.latest(), false))
+                return false;
             screenshot.accept("crafting-suspension-disabled.png");
             var menu = (appeng.menu.me.crafting.CraftingCPUMenu) minecraft.player.containerMenu;
             sendStaleSuspension(menu.containerId,
@@ -2423,6 +2434,8 @@ final class StandardAe2Scenario {
                 return true;
             })) return false;
             mark(checks, "final-inflight-completes", true);
+            if (!suspensionCaptureReady(selectedSuspensionSnapshot(minecraft), UiObservationStore.latest(), true))
+                return false;
             screenshot.accept("crafting-suspension-complete.png");
             minecraft.setScreen(new com.ctux.ae2craftingtime.mc1201.ServerOptionsScreen(minecraft.screen));
             suspensionStage = 31;

@@ -98,6 +98,33 @@ class StandardObservationTest {
         assertEquals(java.util.Map.of("requested", false), checks);
     }
 
+    @Test void suspensionCapturesWaitForBothMenuAndRenderedState() {
+        var job = java.util.UUID.randomUUID();
+        var disabled = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1, job, true, false, false);
+        var running = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1, job, true, true, false);
+        var paused = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1, job, true, true, true);
+        var complete = new com.ctux.ae2craftingtime.core.CraftingSuspension.Snapshot(1, 1,
+                com.ctux.ae2craftingtime.core.CraftingSuspension.NO_JOB, true, true, false);
+        var empty = suspensionFrame(List.of(), List.of());
+        var stale = suspensionFrame(List.of(text("gui.ae2craftingtime.suspended", "Suspended", textBounds)), List.of());
+        assertFalse(StandardAe2Scenario.suspensionCaptureReady(null, empty, false));
+        assertFalse(StandardAe2Scenario.suspensionCaptureReady(paused, empty, false));
+        assertFalse(StandardAe2Scenario.suspensionCaptureReady(disabled, null, false));
+        assertFalse(StandardAe2Scenario.suspensionCaptureReady(disabled, snapshot(List.of(), List.of()), false));
+        assertFalse(StandardAe2Scenario.suspensionCaptureReady(disabled, stale, false));
+        assertFalse(StandardAe2Scenario.suspensionCaptureReady(running, empty, false));
+        assertTrue(StandardAe2Scenario.suspensionCaptureReady(disabled, empty, false));
+        assertFalse(StandardAe2Scenario.suspensionCaptureReady(running, empty, true));
+        assertFalse(StandardAe2Scenario.suspensionCaptureReady(complete,
+                suspensionFrame(List.of(), List.of(row(0))), true));
+        assertTrue(StandardAe2Scenario.suspensionCaptureReady(complete, empty, true));
+    }
+
+    private UiSnapshot suspensionFrame(List<UiSnapshot.ObservedText> text, List<UiSnapshot.Row> rows) {
+        return new UiSnapshot("appeng.client.gui.me.crafting.CraftingCPUScreen", "menu", cell,
+                100, 100, 1, 1, 0, rows, text, List.of(), List.of(), List.of(), List.of());
+    }
+
     private UiSnapshot.Row row(long missing) {
         return new UiSnapshot.Row("minecraft:stone", 1, missing, cell, List.of());
     }
