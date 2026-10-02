@@ -455,6 +455,8 @@ public final class DedicatedCpuScenario {
         if (visited && !recurrentSwapped) {
             recurrentFixture.setRecurrent(rolePlayer, true);
             recurrentSwapped = true;
+            // Publish the swap only after prepare installs the new diagnostic patterns.
+            return;
         }
         var swapped = recurrentSwapped && "swapped".equals(recurrentAction);
         recurrentReplanned |= swapped;
