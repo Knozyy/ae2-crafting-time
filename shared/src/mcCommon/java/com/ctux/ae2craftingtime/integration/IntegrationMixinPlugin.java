@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.function.Function;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.launch.MixinInitialisationError;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -26,17 +27,18 @@ public final class IntegrationMixinPlugin implements IMixinConfigPlugin {
         private static final IntegrationSelection SELECTION = new IntegrationSelection(IntegrationCatalog.CANDIDATES,
                 IntegrationPlatform.TARGET, IntegrationPlatform.isClient(), IntegrationPlatform::version,
                 candidate -> IntegrationContract.check(candidate.contract(), IntegrationMixinPlugin::bytecode),
-                decision -> {
-                    var logger = LoggerFactory.getLogger("ae2craftingtime/integrations");
-                    var message = "dependency={} version={} adapter={} reason={} rejected={} (selection only)";
-                    if (decision.reason().equals("no_compatible_variant")) {
-                        logger.warn(message, decision.dependency(), decision.installedVersion(), decision.variant(),
-                                decision.reason(), decision.rejected());
-                    } else {
-                        logger.info(message, decision.dependency(), decision.installedVersion(), decision.variant(),
-                                decision.reason(), decision.rejected());
-                    }
-                });
+                decision -> logDecision(decision, LoggerFactory.getLogger("ae2craftingtime/integrations")));
+    }
+
+    static void logDecision(IntegrationSelection.Decision decision, Logger logger) {
+        var message = "dependency={} version={} adapter={} reason={} rejected={} (selection only)";
+        if (decision.reason().equals("no_compatible_variant")) {
+            logger.warn(message, decision.dependency(), decision.installedVersion(), decision.variant(),
+                    decision.reason(), decision.rejected());
+        } else {
+            logger.info(message, decision.dependency(), decision.installedVersion(), decision.variant(),
+                    decision.reason(), decision.rejected());
+        }
     }
 
     public static Map<String, IntegrationSelection.Decision> snapshot() {
@@ -49,8 +51,9 @@ public final class IntegrationMixinPlugin implements IMixinConfigPlugin {
     }
 
     static IntegrationContract.ClassInfo read(String internalName, Function<String, InputStream> resources) {
-        try (var input = resources.apply(internalName + ".class")) {
-            if (input == null) return null;
+        var input = resources.apply(internalName + ".class");
+        if (input == null) return null;
+        try (input) {
             var node = new ClassNode();
             new ClassReader(input).accept(node, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
             return describe(node);

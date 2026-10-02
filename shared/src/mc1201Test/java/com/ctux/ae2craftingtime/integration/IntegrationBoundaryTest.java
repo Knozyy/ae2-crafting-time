@@ -24,6 +24,30 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 class IntegrationBoundaryTest {
     @Test
+    void selectionLogsTheOriginalDecisionAndOnlyWarnsForIncompatibleAdapters() {
+        for (var reason : List.of("selected", "mod_absent", "no_compatible_variant")) {
+            var decision = new IntegrationSelection.Decision("addon", "1.2.3", "adapter", reason,
+                    Set.of("Mixin"), List.of("old-adapter:missing-method"));
+            var level = new java.util.concurrent.atomic.AtomicReference<String>();
+            var calls = new java.util.concurrent.atomic.AtomicInteger();
+            var logger = (org.slf4j.Logger) java.lang.reflect.Proxy.newProxyInstance(
+                    org.slf4j.Logger.class.getClassLoader(), new Class<?>[]{org.slf4j.Logger.class},
+                    (proxy, called, arguments) -> {
+                        calls.incrementAndGet();
+                        level.set(called.getName());
+                        assertEquals("dependency={} version={} adapter={} reason={} rejected={} (selection only)",
+                                arguments[0]);
+                        assertEquals(List.of("addon", "1.2.3", "adapter", reason, decision.rejected()),
+                                java.util.Arrays.asList((Object[]) arguments[1]));
+                        return null;
+                    });
+            IntegrationMixinPlugin.logDecision(decision, logger);
+            assertEquals(reason.equals("no_compatible_variant") ? "warn" : "info", level.get());
+            assertEquals(1, calls.get());
+        }
+    }
+
+    @Test
     void pluginKeepsDefaultMixinDiscoveryAndTargetBytecodeUnchanged() {
         var plugin = new IntegrationMixinPlugin();
         var node = new ClassNode();

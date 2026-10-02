@@ -248,6 +248,103 @@ class ResourceFixtureProtocolTest {
         assertNotNull(failure.getCause());
     }
 
+    @Test void initialIdentityAndFinalEvidenceRejectEveryChangedField() throws Exception {
+        var initial = new ResourceFixtureControl.State(epoch, "delayed-resource-icons", player, fixture,
+                1, 0, 0, ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Case.ITEM, 0,
+                ResourceFixtureControl.Phase.READY, "", "0,64,0", "[]", "[]");
+        assertDoesNotThrow(() -> ResourceFixtureControl.requireInitialIdentity(initial, epoch, fixture,
+                player, initial.scenario()));
+        for (var entry : Map.of("epoch", UUID.randomUUID().toString(), "player", UUID.randomUUID().toString(),
+                "fixture", UUID.randomUUID().toString(), "scenario", "other", "revision", "2", "ack", "1")
+                .entrySet()) {
+            ResourceFixtureControl.writeState(directory, initial);
+            replace("state.properties", entry.getKey(), entry.getValue());
+            var changed = ResourceFixtureControl.readState(directory);
+            assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.requireInitialIdentity(
+                    changed, epoch, fixture, player, initial.scenario()), entry.getKey());
+        }
+        var clean = state(ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Phase.CLEAN);
+        var evidence = new ResourceFixtureControl.ClientEvidence(epoch, clean.scenario(), player, fixture,
+                3, 5, "a".repeat(64));
+        assertDoesNotThrow(() -> ResourceFixtureControl.requireClientEvidence(clean, evidence, 5));
+        assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.requireClientEvidence(
+                state(ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Phase.HELD), evidence, 5));
+        for (var entry : Map.of("epoch", UUID.randomUUID().toString(), "player", UUID.randomUUID().toString(),
+                "fixture", UUID.randomUUID().toString(), "scenario", "other", "revision", "4", "captures", "6")
+                .entrySet()) {
+            ResourceFixtureControl.writeClientEvidence(directory, evidence);
+            replace("client-evidence.properties", entry.getKey(), entry.getValue());
+            var changed = ResourceFixtureControl.readClientEvidence(directory);
+            assertThrows(IllegalArgumentException.class,
+                    () -> ResourceFixtureControl.requireClientEvidence(clean, changed, 5), entry.getKey());
+        }
+    }
+
+    @Test void zeroSequenceCannotPassAgainstACorruptNegativeAcknowledgement() {
+        var corrupt = new ResourceFixtureControl.State(epoch, "delayed-resource-icons", player, fixture,
+                3, -1, 0, ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Case.ITEM, 0,
+                ResourceFixtureControl.Phase.HELD, "", "", "[]", "[]");
+        assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.decide(corrupt,
+                new ResourceFixtureControl.Command(epoch, corrupt.scenario(), player, fixture, 3, 0,
+                        ResourceFixtureControl.Action.RELEASE, ResourceFixtureControl.Case.ITEM, 0), null, false));
+    }
+
+    @Test void parserHandlesValueSeparatorsAndRejectsAnAmbiguousEnumKey() throws Exception {
+        for (var scenario : List.of("resource:icons", "resource=icons")) {
+            var command = new ResourceFixtureControl.Command(epoch, scenario, player, fixture, 3, 4,
+                    ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Case.ITEM, 0);
+            ResourceFixtureControl.writeCommand(directory, command);
+            assertEquals(command, ResourceFixtureControl.readCommand(directory));
+        }
+        ResourceFixtureControl.writeState(directory,
+                state(ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Phase.HELD));
+        var path = directory.resolve("resource/state.properties");
+        Files.writeString(path, Files.readString(path).replace("phase=", "phase\u000b="));
+        assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.readState(directory));
+    }
+
+    @Test void failedAtomicWritePreservesTheTargetAndRemovesItsTemporaryFile() throws Exception {
+        var target = Files.createDirectories(directory.resolve("resource/state.properties"));
+        Files.writeString(target.resolve("preserved"), "keep");
+        var failure = assertThrows(IllegalStateException.class, () -> ResourceFixtureControl.writeState(directory,
+                state(ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Phase.HELD)));
+        assertInstanceOf(java.io.IOException.class, failure.getCause());
+        assertEquals("keep", Files.readString(target.resolve("preserved")));
+        try (var files = Files.list(target.getParent())) {
+            assertEquals(List.of("state.properties"), files.map(path -> path.getFileName().toString()).toList());
+        }
+    }
+
+    @Test void filesystemErrorsAndLinkedParentsCannotBypassTheControlBoundary() throws Exception {
+        var root = directory.resolve("read");
+        var value = state(ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Phase.HELD);
+        ResourceFixtureControl.writeState(root, value);
+        assertEquals(value, ResourceFixtureControl.readState(root));
+        var path = root.resolve("resource/state.properties");
+        var posix = Files.getFileAttributeView(path, java.nio.file.attribute.PosixFileAttributeView.class);
+        if (posix != null) {
+            var original = posix.readAttributes().permissions();
+            try {
+                posix.setPermissions(java.util.Set.of());
+                if (!Files.isReadable(path)) {
+                    var failure = assertThrows(IllegalStateException.class,
+                            () -> ResourceFixtureControl.readState(root));
+                    assertInstanceOf(java.io.IOException.class, failure.getCause());
+                }
+            } finally {
+                posix.setPermissions(original);
+            }
+            assertEquals(value, ResourceFixtureControl.readState(root));
+            var real = Files.createDirectories(directory.resolve("real"));
+            var linkedParent = Files.createDirectories(directory.resolve("linked-parent"));
+            Files.createSymbolicLink(linkedParent.resolve("resource"), real);
+            assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.readState(linkedParent));
+            var linkedAncestor = directory.resolve("linked-ancestor");
+            Files.createSymbolicLink(linkedAncestor, root);
+            assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.readState(linkedAncestor));
+        }
+    }
+
     private ResourceFixtureControl.State state(ResourceFixtureControl.Action action, ResourceFixtureControl.Phase phase) {
         long revision = action == ResourceFixtureControl.Action.RESET || action == ResourceFixtureControl.Action.ABORT ? 4 : 3;
         return new ResourceFixtureControl.State(epoch, "delayed-resource-icons", player, fixture, revision,

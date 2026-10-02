@@ -189,7 +189,7 @@ final class ResourceFixtureControl {
             Decision acceptedDecision) {
         var decision = decide(state, command, lastAccepted, operationInFlight);
         if (operationInFlight == null) return decision;
-        if (acceptedDecision == null || !decision.replay()) {
+        if (acceptedDecision == null) {
             throw new IllegalStateException("resource in-flight operation lost its accepted transition");
         }
         return acceptedDecision;
@@ -390,16 +390,12 @@ final class ResourceFixtureControl {
     }
 
     private static Path controlFile(Path root, String name) {
-        var normalized = root.toAbsolutePath().normalize().resolve("resource").resolve(name).normalize();
-        if (!normalized.startsWith(root.toAbsolutePath().normalize().resolve("resource"))) {
-            throw new IllegalArgumentException("resource control path escaped its root");
-        }
-        return normalized;
+        return root.toAbsolutePath().normalize().resolve("resource").resolve(name);
     }
 
     private static void checkedRegular(Path path) {
         checkedParent(path);
-        if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS) || Files.isSymbolicLink(path)) {
+        if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
             throw new IllegalArgumentException("resource control file is missing, linked, or non-regular");
         }
     }
