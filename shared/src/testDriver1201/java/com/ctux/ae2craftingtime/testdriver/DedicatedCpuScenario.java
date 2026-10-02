@@ -284,6 +284,9 @@ public final class DedicatedCpuScenario {
         }
         if (!active.prepare(rolePlayer, origin)) return;
         if (!variantGridsReady) {
+            com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current().features().setEnabled(
+                    com.ctux.ae2craftingtime.core.OptionFeature.RECURRENT_DETECTION, true);
+            com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.sendTo(rolePlayer);
             if (variantSecond == null) variantSecond = gridFixture.variantSecondGrid();
             if (!variantSecond.prepare(rolePlayer, origin)) return;
             variantSecond.setStoredVariantStock(rolePlayer, true, false);
