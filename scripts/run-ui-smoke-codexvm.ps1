@@ -109,7 +109,7 @@ foreach ($ledger in $ledgers) {
         throw 'A connected campaign status is still active; stop or resolve it before starting another'
     }
 }
-if ($ServerDirectory) { $report += '-connected-' + [guid]::NewGuid().ToString('N') }
+if ($ServerDirectory) { $report = Join-Path $stage ('runtime/c-' + [guid]::NewGuid().ToString('N')) }
 if (-not $BundleDirectory) { throw 'Build the bundle on the host through invoke-ui-smoke-codexvm.ps1' }
 $loader = (Get-Content -LiteralPath (Join-Path $BundleDirectory 'profile.json') -Raw | ConvertFrom-Json).loader
 if ($loader -cnotmatch '^[A-Za-z0-9][A-Za-z0-9._+-]*$') { throw 'Invalid prepared loader version' }

@@ -130,6 +130,27 @@ try {
     } finally {
         $env:AE2CT_UI_SMOKE_TEST_INNER_EXIT = $previousInnerExit
     }
+    [IO.File]::WriteAllText((Join-Path $scripts 'run-connected-dedicated-ui-smoke.ps1'), @'
+param([string]$ReportDirectory)
+New-Item -ItemType Directory -Path $ReportDirectory -Force | Out-Null
+@{localReport=$ReportDirectory} | ConvertTo-Json | Set-Content (Join-Path $ReportDirectory 'wrapper-result.json')
+'@, [Text.UTF8Encoding]::new($false))
+    $connectedDestination = Join-Path $source 'build/connected-path-check'
+    $connectedPaths = @()
+    foreach ($launch in 1..2) {
+        & (Join-Path $scripts 'run-ui-smoke-codexvm.ps1') -HeadSha $head -LocalRoot $stage `
+            -Scenario crafting-suspension -ServerDirectory (Join-Path $temp 'sealed-source') `
+            -BundleDirectory (Join-Path $source 'bundle') -ReportDirectory $connectedDestination -AcceptMinecraftEula
+        $result = Get-Content (Join-Path $connectedDestination 'wrapper-result.json') -Raw | ConvertFrom-Json
+        $connectedPaths += $result.localReport
+        if ((Split-Path $result.localReport) -ne (Join-Path $stage 'runtime') -or
+                (Split-Path $result.localReport -Leaf) -cnotmatch '^c-[a-f0-9]{32}$') {
+            throw 'Connected runtime path leaves insufficient space for nested Forge libraries'
+        }
+    }
+    if ($connectedPaths[0] -eq $connectedPaths[1] -or !(Test-Path $connectedPaths[0])) {
+        throw 'Connected launch reused or discarded an earlier runtime report'
+    }
     # Connected Stop resolves the stable campaign record, not a new random report.
     $connectedReport=Join-Path $stage 'reports/1.20.1-forge/compatible/delayed-resource-icons-connected-existing'
     $attempt=Join-Path $connectedReport 'client-attempt-1'
