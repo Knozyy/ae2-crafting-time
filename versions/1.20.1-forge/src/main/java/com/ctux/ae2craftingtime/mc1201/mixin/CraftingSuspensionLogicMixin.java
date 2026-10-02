@@ -27,7 +27,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(CraftingCpuLogic.class)
+// NeoEco's priority-2000 HEAD hook can dispatch and return before ordinary guards.
+@Mixin(value = CraftingCpuLogic.class, priority = 2100)
 public abstract class CraftingSuspensionLogicMixin implements CraftingSuspensionAccess {
     @Shadow(remap = false) @Final private CraftingCPUCluster cluster;
     @Unique private final CraftingSuspension ae2craftingtime$suspension = new CraftingSuspension();

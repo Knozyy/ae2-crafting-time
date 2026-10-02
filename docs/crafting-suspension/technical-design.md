@@ -39,6 +39,8 @@ loader metadata. The logic mixin uses these exact seams with `remap = false`:
 - `executeCrafting` HEAD: return zero only for supported suspended jobs. This
   common dispatch entrance covers direct calls too; normal tick cancellation and
   used-operation bookkeeping still run. Require this gameplay injection.
+  The suspension mixin uses priority 2100 so the guard runs before NeoEco's
+  priority-2000 FastPath hook, which can dispatch and cancel at HEAD.
 - `tickCraftingLogic` HEAD: reconcile disabled config and loaded state, without
   cancelling the tick. Clear/dirty a suspended flag when disabled, even when the
   cluster is offline or profiling is disabled. Refresh profiler suspension state.

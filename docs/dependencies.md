@@ -333,7 +333,7 @@ APIs or an optional string-target mixin cannot reach the screen or key type.
 
 | Path | What it covers | Boundary |
 | --- | --- | --- |
-| Native CPU execution | `CraftingCpuLogicMixin`, including OmniSequence and other addons inheriting its methods | An override bypasses only the method it replaces. Provider observation uses the selected iterator, so it doesn't compete with OmniSequence's provider lookup wrapper. AdvancedAE uses the same observation point. |
+| Native CPU execution | `CraftingCpuLogicMixin`, including OmniSequence and other addons inheriting its methods | An override bypasses only the method it replaces. Provider observation uses the selected iterator, so it doesn't compete with OmniSequence's provider lookup wrapper. AdvancedAE uses the same observation point. Forge suspension runs at priority 2100, before NeoEco's priority-2000 native CPU FastPath dispatch. |
 | Custom CPU adapter | AdvancedAE, NeoEco, and LightningTech call `ProfilerBridge` at dispatch, insertion, finish, and capacity points | Use a small optional `@Pseudo` mixin for custom execution. NeoEco uses `cn.dancingsnow.neoecoae.api.me.ECOCraftingCPULogic`; LightningTech uses `com.moakiee.ae2lt.crafting.timewheel.Ae2LtTimeWheelCraftingCpuLogic`. |
 | Native resource key | `AeKeyAmounts` normalizes `AEKey` through `getAmountPerUnit()` | Verify each key type; use `AEKeyType`, not addon class checks. Preserve raw-mana precision. |
 | Existing AE2 UI hooks | Craft-confirm and crafting-status renderers and screens inheriting their hooked methods | `AbstractTableRendererMixin` only decorates TTC lines; inheritance alone does not prove every screen path is covered. |
