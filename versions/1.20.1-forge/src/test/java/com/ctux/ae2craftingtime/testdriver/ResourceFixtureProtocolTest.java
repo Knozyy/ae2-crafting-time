@@ -1,0 +1,200 @@
+package com.ctux.ae2craftingtime.testdriver;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class ResourceFixtureProtocolTest {
+    @TempDir Path directory;
+    private final UUID epoch = UUID.randomUUID();
+    private final UUID player = UUID.randomUUID();
+    private final UUID fixture = UUID.randomUUID();
+
+    @Test void commandRoundTripsEveryActionCaseAndSlot() {
+        for (var action : ResourceFixtureControl.Action.values()) {
+            for (var resource : ResourceFixtureControl.Case.values()) {
+                for (int slot = 0; slot <= 1; slot++) {
+                    var command = new ResourceFixtureControl.Command(epoch, "delayed-resource-icons", player,
+                            fixture, 3, 4, action, resource, slot);
+                    ResourceFixtureControl.writeCommand(directory, command);
+                    assertEquals(command, ResourceFixtureControl.readCommand(directory));
+                }
+            }
+        }
+    }
+
+    @Test void rejectsMalformedCommandValuesAtTheWireBoundary() throws Exception {
+        var command = new ResourceFixtureControl.Command(epoch, "delayed-resource-icons", player, fixture,
+                3, 4, ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Case.ITEM, 0);
+        var invalid = Map.of(
+                "schema", List.of("0", "2"),
+                "revision", List.of("0", "-1", "not-a-number"),
+                "sequence", List.of("0", "-1"),
+                "slot", List.of("-1", "2"),
+                "scenario", List.of("", "x".repeat(65), "\t"),
+                "action", List.of("unknown", "!", "x".repeat(65)),
+                "case", List.of("unknown", "!", "x".repeat(65)),
+                "epoch", List.of("invalid"));
+        for (var entry : invalid.entrySet()) {
+            for (var value : entry.getValue()) {
+                ResourceFixtureControl.writeCommand(directory, command);
+                replace("command.properties", entry.getKey(), value);
+                assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.readCommand(directory),
+                        entry.getKey() + "=" + value);
+            }
+        }
+    }
+
+    @Test void rejectsMalformedStateAndEvidenceValues() throws Exception {
+        for (var entry : Map.of(
+                "ack", List.of("-1"), "ackRevision", List.of("-1"),
+                "failure", List.of("x".repeat(4097)), "terminal", List.of("x".repeat(129)),
+                "providers", List.of("x".repeat(4097)), "jobs", List.of("x".repeat(32769)),
+                "phase", List.of("unknown", "!", "x".repeat(65))).entrySet()) {
+            for (var value : entry.getValue()) {
+                ResourceFixtureControl.writeState(directory, state(ResourceFixtureControl.Action.CREATE,
+                        ResourceFixtureControl.Phase.HELD));
+                replace("state.properties", entry.getKey(), value);
+                assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.readState(directory),
+                        entry.getKey());
+            }
+        }
+        for (var entry : Map.of("captures", List.of("0", "-1", "129"),
+                "digest", List.of("", "x".repeat(64), "a".repeat(63))).entrySet()) {
+            for (var value : entry.getValue()) {
+                ResourceFixtureControl.writeClientEvidence(directory,
+                        new ResourceFixtureControl.ClientEvidence(epoch, "delayed-resource-icons", player,
+                                fixture, 3, 128, "a".repeat(64)));
+                replace("client-evidence.properties", entry.getKey(), value);
+                assertThrows(IllegalArgumentException.class,
+                        () -> ResourceFixtureControl.readClientEvidence(directory), entry.getKey());
+            }
+        }
+    }
+
+    @Test void acknowledgementsBindEveryActionAndItsAllowedPhases() {
+        for (var action : ResourceFixtureControl.Action.values()) {
+            var command = new ResourceFixtureControl.Command(epoch, "delayed-resource-icons", player,
+                    fixture, 3, 4, action, ResourceFixtureControl.Case.ITEM, 0);
+            for (var phase : ResourceFixtureControl.Phase.values()) {
+                boolean allowed = switch (action) {
+                    case CREATE, RECONNECT, UNLOAD_RELOAD, REMOVE_PROVIDER -> phase == ResourceFixtureControl.Phase.HELD;
+                    case RELEASE, CANCEL -> phase == ResourceFixtureControl.Phase.HELD
+                            || phase == ResourceFixtureControl.Phase.SETTLED;
+                    case REJOIN_PREPARE -> phase == ResourceFixtureControl.Phase.REJOINING;
+                    case RESET -> phase == ResourceFixtureControl.Phase.CLEAN;
+                    case COMPLETE -> phase == ResourceFixtureControl.Phase.COMPLETE;
+                    case ABORT -> phase == ResourceFixtureControl.Phase.FAILED;
+                };
+                if (allowed) {
+                    assertDoesNotThrow(() -> ResourceFixtureControl.requireAcknowledgement(state(action, phase), command));
+                } else {
+                    assertThrows(IllegalArgumentException.class,
+                            () -> ResourceFixtureControl.requireAcknowledgement(state(action, phase), command),
+                            action + ":" + phase);
+                }
+            }
+        }
+    }
+
+    @Test void rejectsAcknowledgementWithAnyChangedCommandField() throws Exception {
+        var command = new ResourceFixtureControl.Command(epoch, "delayed-resource-icons", player,
+                fixture, 3, 4, ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Case.ITEM, 0);
+        var mutations = Map.ofEntries(
+                Map.entry("epoch", UUID.randomUUID().toString()), Map.entry("player", UUID.randomUUID().toString()),
+                Map.entry("fixture", UUID.randomUUID().toString()), Map.entry("scenario", "other"),
+                Map.entry("revision", "4"), Map.entry("ack", "5"), Map.entry("ackRevision", "4"),
+                Map.entry("action", "release"), Map.entry("case", "water"), Map.entry("slot", "1"));
+        for (var entry : mutations.entrySet()) {
+            ResourceFixtureControl.writeState(directory, state(command.action(), ResourceFixtureControl.Phase.HELD));
+            replace("state.properties", entry.getKey(), entry.getValue());
+            var altered = ResourceFixtureControl.readState(directory);
+            assertThrows(IllegalArgumentException.class,
+                    () -> ResourceFixtureControl.requireAcknowledgement(altered, command), entry.getKey());
+        }
+    }
+
+    @Test void abortRequiresItsOriginalFailureAndFullIdentity() throws Exception {
+        var command = new ResourceFixtureControl.Command(epoch, "delayed-resource-icons", player,
+                fixture, 3, 4, ResourceFixtureControl.Action.ABORT, ResourceFixtureControl.Case.ITEM, 0);
+        var abort = new ResourceFixtureControl.Abort(epoch, "delayed-resource-icons", player, fixture, 3,
+                "original failure");
+        assertDoesNotThrow(() -> ResourceFixtureControl.requireAbort(command, abort));
+        for (var entry : Map.of("epoch", UUID.randomUUID().toString(), "player", UUID.randomUUID().toString(),
+                "fixture", UUID.randomUUID().toString(), "scenario", "other", "revision", "4",
+                "failure", " ").entrySet()) {
+            ResourceFixtureControl.writeAbort(directory, abort);
+            replace("abort.properties", entry.getKey(), entry.getValue());
+            var altered = ResourceFixtureControl.readAbort(directory);
+            assertThrows(IllegalArgumentException.class,
+                    () -> ResourceFixtureControl.requireAbort(command, altered), entry.getKey());
+        }
+        assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.requireAbort(
+                new ResourceFixtureControl.Command(epoch, command.scenario(), player, fixture, 3, 4,
+                        ResourceFixtureControl.Action.CREATE, command.resourceCase(), 0), abort));
+    }
+
+    @Test void retainedInFlightTransitionIsRequiredAndReturnedUnchanged() {
+        var state = state(ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Phase.HELD);
+        var command = new ResourceFixtureControl.Command(epoch, state.scenario(), player, fixture,
+                3, 5, ResourceFixtureControl.Action.RELEASE, ResourceFixtureControl.Case.ITEM, 0);
+        var accepted = ResourceFixtureControl.Decision.accept(ResourceFixtureControl.Phase.SETTLED, 3);
+        assertSame(accepted, ResourceFixtureControl.decide(state, command, null, command, accepted));
+        assertThrows(IllegalStateException.class,
+                () -> ResourceFixtureControl.decide(state, command, null, command, null));
+        assertEquals(accepted, ResourceFixtureControl.decide(state, command, null, null, null));
+        for (var action : List.of(ResourceFixtureControl.Action.UNLOAD_RELOAD,
+                ResourceFixtureControl.Action.REMOVE_PROVIDER)) {
+            var transition = ResourceFixtureControl.decide(state,
+                    new ResourceFixtureControl.Command(epoch, state.scenario(), player, fixture, 3, 5,
+                            action, ResourceFixtureControl.Case.ITEM, 0), null, false);
+            assertEquals(ResourceFixtureControl.Phase.HELD, transition.nextPhase());
+            assertEquals(3, transition.nextRevision());
+        }
+    }
+
+    @Test void commandParserAcceptsCommentsAndBothPropertySeparators() throws Exception {
+        var command = new ResourceFixtureControl.Command(epoch, "delayed-resource-icons", player, fixture,
+                3, 4, ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Case.ITEM, 0);
+        ResourceFixtureControl.writeCommand(directory, command);
+        var file = directory.resolve("resource/command.properties");
+        var contents = Files.readString(file);
+        Files.writeString(file, "\n! fixture comment\n" + contents.replace("schema=", "schema:")
+                .replace("revision=3", "revision:3"));
+        assertEquals(command, ResourceFixtureControl.readCommand(directory));
+    }
+
+    @Test void writeRejectsOversizedStateAndInvalidControlParent() throws Exception {
+        var state = state(ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Phase.HELD);
+        assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.writeState(directory,
+                new ResourceFixtureControl.State(epoch, state.scenario(), player, fixture, 3, 4, 3,
+                        state.action(), state.resourceCase(), 0, state.phase(), "", "", "",
+                        "x".repeat(ResourceFixtureControl.MAX_BYTES))));
+        var blocked = directory.resolve("blocked");
+        Files.writeString(blocked, "not a directory");
+        var failure = assertThrows(IllegalStateException.class,
+                () -> ResourceFixtureControl.writeState(blocked, state));
+        assertNotNull(failure.getCause());
+    }
+
+    private ResourceFixtureControl.State state(ResourceFixtureControl.Action action, ResourceFixtureControl.Phase phase) {
+        long revision = action == ResourceFixtureControl.Action.RESET || action == ResourceFixtureControl.Action.ABORT ? 4 : 3;
+        return new ResourceFixtureControl.State(epoch, "delayed-resource-icons", player, fixture, revision,
+                4, 3, action, ResourceFixtureControl.Case.ITEM, 0, phase, "", "0,64,0", "[]", "[]");
+    }
+
+    private void replace(String file, String key, String value) throws Exception {
+        var path = directory.resolve("resource").resolve(file);
+        var properties = new Properties();
+        try (var input = Files.newInputStream(path)) { properties.load(input); }
+        properties.setProperty(key, value);
+        try (var output = Files.newOutputStream(path)) { properties.store(output, null); }
+    }
+}
