@@ -2473,7 +2473,7 @@ final class StandardAe2Scenario {
                 && accuracy.lastPredictedSeconds() > 0 && accuracy.lastActualWallSeconds() > 0;
     }
 
-    private static boolean missingFirst(List<UiSnapshot.Row> rows) {
+    static boolean missingFirst(List<UiSnapshot.Row> rows) {
         var foundMissing = false;
         var foundNonMissing = false;
         for (var row : rows) {
@@ -3029,7 +3029,7 @@ final class StandardAe2Scenario {
         }
     }
 
-    private void writeAmountContinuation(AmountContinuation value) {
+    void writeAmountContinuation(AmountContinuation value) {
         var path = output.resolve("status-amounts-continuation.json");
         try {
             var temp = path.resolveSibling(path.getFileName() + ".tmp");
@@ -3054,10 +3054,10 @@ final class StandardAe2Scenario {
         }
     }
 
-    private record AmountContinuation(int schema, String world, String campaign, String configSha256,
+    record AmountContinuation(int schema, String world, String campaign, String configSha256,
             List<String> checks, List<String> screenshots) {}
 
-    private void writeBadgeContinuation(BadgeContinuation value) {
+    void writeBadgeContinuation(BadgeContinuation value) {
         var path = output.resolve("badge-background-continuation.json");
         try {
             var temp = path.resolveSibling(path.getFileName() + ".tmp");
@@ -3082,10 +3082,10 @@ final class StandardAe2Scenario {
         }
     }
 
-    private record BadgeContinuation(int schema, String world, String campaign, String configSha256,
+    record BadgeContinuation(int schema, String world, String campaign, String configSha256,
             List<String> checks, List<String> screenshots) {}
 
-    private static UiSnapshot.ObservedText rowText(UiSnapshot snapshot, String output, String key) {
+    static UiSnapshot.ObservedText rowText(UiSnapshot snapshot, String output, String key) {
         var row = snapshot.rows().stream().filter(r -> r.outputId().equals(output)).findFirst();
         if (row.isEmpty()) return null;
         var translated = snapshot.text().stream().filter(t -> t.key().equals(key) && t.bounds() != null
@@ -3134,7 +3134,7 @@ final class StandardAe2Scenario {
                 .anyMatch(beam -> beam.position().equals(fixture.terminal.east(providerOffset)));
     }
 
-    private static void validateLayout(UiSnapshot snapshot) {
+    static void validateLayout(UiSnapshot snapshot) {
         if (!statusBadgesValid(snapshot,
                 com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground())) {
             throw new IllegalStateException("Invalid standard status badge layout");
@@ -3181,7 +3181,7 @@ final class StandardAe2Scenario {
                 && t.bounds() != null && t.bounds().y() >= snapshot.gui().y() + 19).toList();
     }
 
-    private static void mark(Map<String, Boolean> checks, String key, boolean value) {
+    static void mark(Map<String, Boolean> checks, String key, boolean value) {
         if (checks.containsKey(key)) checks.put(key, value);
     }
 

@@ -85,6 +85,50 @@ class StandardContinuationTest {
         });
     }
 
+    @Test void savesAndReplacesBothContinuationFormatsWithTheOriginalIdentity() throws Exception {
+        for (var leaf : List.of("standard-status-controls", "badge-background")) {
+            var output = Files.createDirectories(directory.resolve(leaf));
+            var scenario = new StandardAe2Scenario(leaf, "world", output, false);
+            for (var screenshots : List.of(List.of("before.png"), List.of("replacement.png"))) {
+                write(scenario, leaf, screenshots);
+                var file = output.resolve(leaf.equals("badge-background")
+                        ? "badge-background-continuation.json" : "status-amounts-continuation.json");
+                withContinuation(file, () -> {
+                    var restored = new ArrayList<String>();
+                    new StandardAe2Scenario(leaf, "world", output, false, restored);
+                    assertEquals(screenshots, restored);
+                });
+                assertFalse(Files.exists(file.resolveSibling(file.getFileName() + ".tmp")));
+            }
+        }
+    }
+
+    @Test void failedWritesExposeTheCauseAndPreserveExistingTargets() throws Exception {
+        for (var leaf : List.of("standard-status-controls", "badge-background")) {
+            var missing = directory.resolve(leaf + "-missing");
+            var scenario = new StandardAe2Scenario(leaf, "world", missing, false);
+            var failure = assertThrows(IllegalStateException.class, () -> write(scenario, leaf, List.of()));
+            assertInstanceOf(IOException.class, failure.getCause());
+            assertTrue(failure.getMessage().contains("Cannot save"));
+            var target = Files.createDirectories(missing.resolve(leaf.equals("badge-background")
+                    ? "badge-background-continuation.json" : "status-amounts-continuation.json"));
+            Files.writeString(target.resolve("preserved"), "keep");
+            failure = assertThrows(IllegalStateException.class, () -> write(scenario, leaf, List.of()));
+            assertInstanceOf(IOException.class, failure.getCause());
+            assertEquals("keep", Files.readString(target.resolve("preserved")));
+        }
+    }
+
+    private void write(StandardAe2Scenario scenario, String leaf, List<String> screenshots) {
+        if (leaf.equals("badge-background")) {
+            scenario.writeBadgeContinuation(new StandardAe2Scenario.BadgeContinuation(
+                    1, "world", "campaign", "a".repeat(64), List.of(), screenshots));
+        } else {
+            scenario.writeAmountContinuation(new StandardAe2Scenario.AmountContinuation(
+                    1, "world", "campaign", "a".repeat(64), List.of(), screenshots));
+        }
+    }
+
     private JsonObject continuation() {
         var value = new JsonObject();
         value.addProperty("schema", 1);
