@@ -130,6 +130,7 @@ class StandardObservationTest {
         assertEquals(List.of(card), StandardAe2Scenario.cpuCardTotals(frame));
         assertTrue(StandardAe2Scenario.cpuCardTotals(snapshot(List.of(), List.of())).isEmpty());
     }
+
     private UiSnapshot suspensionFrame(List<UiSnapshot.ObservedText> text, List<UiSnapshot.Row> rows) {
         return new UiSnapshot("appeng.client.gui.me.crafting.CraftingCPUScreen", "menu", cell,
                 100, 100, 1, 1, 0, rows, text, List.of(), List.of(), List.of(), List.of());
@@ -148,4 +149,3 @@ class StandardObservationTest {
                 List.of(row(0)), text, badges, List.of(), List.of(), List.of());
     }
 }
-

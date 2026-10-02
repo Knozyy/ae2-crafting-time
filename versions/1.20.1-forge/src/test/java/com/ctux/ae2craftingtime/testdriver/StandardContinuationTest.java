@@ -136,6 +136,7 @@ class StandardContinuationTest {
             });
         }
     }
+
     private void write(StandardAe2Scenario scenario, String leaf, List<String> screenshots) {
         if (leaf.equals("badge-background")) {
             scenario.writeBadgeContinuation(new StandardAe2Scenario.BadgeContinuation(
@@ -178,4 +179,3 @@ class StandardContinuationTest {
         }
     }
 }
-
