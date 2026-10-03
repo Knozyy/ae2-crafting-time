@@ -63,6 +63,14 @@ public record UiSnapshot(
         }
     }
 
+    static ObservedText matchingRenderedText(java.util.stream.Stream<ObservedText> descriptions,
+            String rendered, boolean warningPrefix) {
+        return descriptions.filter(line -> line.key().startsWith("text.ae2craftingtime.")
+                        && (line.rendered().equals(rendered)
+                                || warningPrefix && rendered.equals("⚠ " + line.rendered())))
+                .findFirst().orElse(null);
+    }
+
     public record Widget(String type, String state, Rect bounds, List<ObservedText> tooltip) {
         public Widget {
             tooltip = List.copyOf(tooltip);
