@@ -54,6 +54,8 @@ public final class NativeOptionsBoundaryMod {
                 org.lwjgl.glfw.GLFW.glfwMaximizeWindow(minecraft.getWindow().getWindow());
             }
             assertTrue(System.nanoTime() - started < 60_000_000_000L, "Native options checks exceeded 60 seconds");
+            var runtime = Class.forName("com.ctux.ae2craftingtime.testdriver.TestDriverRuntime");
+            set(runtime, "renderedFrames", null, (long) field(runtime, "renderedFrames", null) + 1);
             switch (stage) {
                 case 0 -> {
                     var config = new ClientConfig();
@@ -99,9 +101,7 @@ public final class NativeOptionsBoundaryMod {
                     stage++;
                 }
                 case 3 -> {
-                    // Advance only on actual completed render callbacks as the driver does.
-                    var runtime = Class.forName("com.ctux.ae2craftingtime.testdriver.TestDriverRuntime");
-                    set(runtime, "renderedFrames", null, (long) field(runtime, "renderedFrames", null) + 1);
+                    // Search only on actual completed render callbacks as the driver does.
                     try {
                         assertNull(call("seekOptionButton", new Class<?>[]{Minecraft.class, String.class},
                                 minecraft, "native-boundary-missing"));
@@ -114,6 +114,62 @@ public final class NativeOptionsBoundaryMod {
                 }
                 case 4 -> {
                     capture(minecraft, "native-options-after-search.png");
+                    minecraft.setScreen(new TitleScreen());
+                    stage++;
+                }
+                case 5 -> {
+                    set(scenarioType, "amountResumeChecksRestored", scenario, true);
+                    set(scenarioType, "amountResumeSaving", scenario, true);
+                    ClientOptionsRuntime.apply(new ClientConfig());
+                    reject("statusRelaunchTick", new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                            "Compact amounts did not restore after relaunch", minecraft, Map.of(),
+                            (java.util.function.Consumer<String>) name -> fail("Invalid restoration must not capture success"));
+                    var config = new ClientConfig();
+                    config.features().setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, true);
+                    ClientOptionsRuntime.apply(config);
+                    var captures = new ArrayList<String>();
+                    assertEquals(true, call("statusRelaunchTick",
+                            new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                            minecraft, Map.of(), (java.util.function.Consumer<String>) captures::add));
+                    assertEquals(java.util.List.of("status-relaunch-restored.png"), captures);
+                    passed.add("Rejected lost compact-amount restoration; accepted restored value with exact success checkpoint");
+                    config.features().setEnabled(OptionFeature.BADGE_BACKGROUND, true);
+                    ClientOptionsRuntime.apply(config);
+                    minecraft.setScreen(new OptionsScreen(null));
+                    call("clickOptionButton", new Class<?>[]{Minecraft.class, String.class}, minecraft,
+                            net.minecraft.client.resources.language.I18n.get("config.ae2craftingtime.group.appearance"));
+                    stage++;
+                }
+                case 6 -> {
+                    set(scenarioType, "badgeResumeStep", scenario, 7);
+                    set(scenarioType, "badgeResetCheckPhase", scenario, 0);
+                    reject("badgeRelaunchTick", new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                            "Reset did not restore badge Off", minecraft, Map.of(),
+                            (java.util.function.Consumer<String>) name -> fail("Invalid reset must not capture success"));
+                    passed.add("Rejected native reset retaining badge background On");
+                    var config = new ClientConfig();
+                    config.features().setEnabled(OptionFeature.TEXT_SHADOW, true);
+                    ClientOptionsRuntime.apply(config);
+                    minecraft.setScreen(new OptionsScreen(null));
+                    call("clickOptionButton", new Class<?>[]{Minecraft.class, String.class}, minecraft,
+                            net.minecraft.client.resources.language.I18n.get("config.ae2craftingtime.group.appearance"));
+                    stage++;
+                }
+                case 7 -> {
+                    set(scenarioType, "badgeResetCheckPhase", scenario, 1);
+                    reject("badgeRelaunchTick", new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                            "Reset did not restore text shadow Off", minecraft, Map.of(),
+                            (java.util.function.Consumer<String>) name -> fail("Invalid shadow reset must not capture success"));
+                    passed.add("Rejected native reset retaining text shadow On");
+                    set(scenarioType, "badgeResumeStep", scenario, -1);
+                    reject("badgeRelaunchTick", new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                            "Unexpected badge relaunch step -1", minecraft, Map.of(),
+                            (java.util.function.Consumer<String>) name -> fail("Unknown stage must not capture success"));
+                    passed.add("Rejected invalid native relaunch stage without changing saved options");
+                    capture(minecraft, "native-options-rejected-reset.png");
+                    stage++;
+                }
+                case 8 -> {
                     restore();
                     Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(
                             Map.of("result", "PASS", "checks", passed, "runtimeClassSha256", runtimeHash())));

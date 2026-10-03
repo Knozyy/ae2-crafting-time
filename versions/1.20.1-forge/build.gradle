@@ -83,6 +83,7 @@ sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
 
 // Optional real-client fault checks; neither dist nor the ordinary driver depends on this artifact.
 def nativeOptionsMetadata = layout.buildDirectory.file('native-options-boundary/META-INF/mods.toml')
+def nativeOptionsPackMetadata = layout.buildDirectory.file('native-options-boundary/pack.mcmeta')
 def nativeOptionsBoundaryUnmapped = tasks.register('nativeOptionsBoundaryUnmappedJar', Jar) {
     from(sourceSets.test.output) { include '**/NativeOptionsBoundaryMod*.class' }
     from({ configurations.testRuntimeClasspath.findAll {
@@ -90,6 +91,7 @@ def nativeOptionsBoundaryUnmapped = tasks.register('nativeOptionsBoundaryUnmappe
                 || it.name.startsWith('opentest4j-') || it.name.startsWith('apiguardian-api-')
     }.collect { zipTree(it) } }) { exclude 'META-INF/**', 'module-info.class' }
     from(nativeOptionsMetadata) { into 'META-INF' }
+    from(nativeOptionsPackMetadata)
     archiveFileName = 'ae2ct-native-options-boundary-unmapped.jar'
     destinationDirectory = layout.buildDirectory.dir('native-options-boundary')
     doFirst {
@@ -103,6 +105,7 @@ modId="ae2ct_native_options_boundary"
 version="1"
 displayName="AE2CT Native Options Boundary Tests"
 '''
+        nativeOptionsPackMetadata.get().asFile.text = '{"pack":{"pack_format":15,"description":"Native options boundary tests"}}'
     }
 }
 def nativeOptionsBoundaryRemapped = obfuscation.reobfuscate(nativeOptionsBoundaryUnmapped, sourceSets.testDriver) {
