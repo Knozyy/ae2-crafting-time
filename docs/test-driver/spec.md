@@ -119,10 +119,23 @@ At `3d539dae`, the focused test passes locally and against the packaged Forge
 bytecode in CodexVM, without skips or failures. Codecov confirms 94.21%; the
 overall coverage gate remains unfinished.
 
-Pending Options extension: wrong native screens must preserve pending badge,
+At `a33773d4`, all 24 native Options assertion groups pass with JVM exit 0,
+twelve original captures reviewed, local checks and both current-head CI checks
+green. Codecov confirms 94.26%; the overall coverage gate remains unfinished.
+Wrong native screens must preserve pending badge,
 scale and status restoration. Before the required redraw callbacks, badge edits
 and both relaunch flows must wait without capture, configuration writes or
 changed checks. A pending badge save must also block repeated edits.
+
+Pending profiling-Off extension: retain eight unmodified, stable compact frames
+from actual native rendering while profiling is On. After actual server metadata
+reports Off, replay those older observations into a separate status flow and
+require the missing native category descriptions to keep it pending. Restore
+the current observation, remove the actual status payload, and require the
+ordinary Off flow to wait for its row after eight stable frames. Preserve saved
+bytes and checks, restore the payload, then require the full ordinary PASS.
+The replay frames are historical native observations; its checkpoint image shows
+the current Off screen, not a newly rendered stale compact screen.
 
 ## Plan readiness with optional backgrounds (#585)
 

@@ -44,6 +44,7 @@ final class NativeCraftBoundaryRunner {
     private boolean finished;
     private long started;
     private NativeStartBoundary startBoundary;
+    private final NativeStaleStatusBoundary staleStatus = new NativeStaleStatusBoundary();
 
     NativeCraftBoundaryRunner() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -104,7 +105,10 @@ final class NativeCraftBoundaryRunner {
                 }
                 return;
             }
-            if (pending == null) beginFault(minecraft);
+            if (pending == null) {
+                staleStatus.observe(minecraft);
+                beginFault(minecraft);
+            }
             if (pending != null) {
                 set(TestDriverRuntime.class, "renderedFrames", null,
                         (long) field(TestDriverRuntime.class, "renderedFrames", null) + 1);
@@ -116,7 +120,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 11 : 10,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 13 : 12,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();
@@ -156,6 +160,21 @@ final class NativeCraftBoundaryRunner {
         var phase = field(standardType, "phase", standard).toString();
         var snapshot = UiObservationStore.latest();
         if (snapshot == null) return;
+        if (phase.equals("STATUS_SERVER_OFF") && minecraft.screen instanceof CraftingStatusScreen
+                && !com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.profilingEnabled()
+                && (boolean) field(standardType, "amountServerOffApplied", standard)
+                && !passed.contains("profile-off-stale-frame")) {
+            staleStatus.verify(minecraft, standardType, field(flow.getClass(), "marker", flow),
+                    (Map<?, ?>) field(flow.getClass(), "checks", flow), output);
+            begin(minecraft, "profile-off-stale-frame", snapshot.frame());
+            finishFault(minecraft);
+            begin(minecraft, "profile-off-missing-row", snapshot.frame());
+            statusBefore = ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$status();
+            assertFalse(statusBefore.getEntries().isEmpty());
+            ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$setStatus(
+                    new CraftingStatus(true, 0, 0, 0, List.of()));
+            return;
+        }
         if ((phase.equals("STATUS_AMOUNTS") && (int) field(standardType, "quantityCase", standard) == 0
                 || phase.equals("STATUS_ADDON_AMOUNTS") && Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows")
                 && (int) field(standardType, "addonQuantityCase", standard) == 0
@@ -290,6 +309,14 @@ final class NativeCraftBoundaryRunner {
                     ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$setStatus(
                             new CraftingStatus(true, 0, 0, 0, List.of()));
                 }
+            } else if (pending.equals("profile-off-missing-row")) {
+                var stability = field(standardType, "frames", standard);
+                if ((int) field(stability.getClass(), "count", stability)
+                        < (int) field(stability.getClass(), "required", stability)) return;
+                assertTrue(snapshot.rows().isEmpty());
+                assertFalse((boolean) field(standardType, "amountServerOffCaptured", standard));
+                finishFault(minecraft);
+                ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$setStatus(statusBefore);
             } else if (pending.equals("missing-font-pack")) {
                 assertEquals(0, scaleCaptures, "Valid scale capture must reach the missing-pack rejection");
             } else if (!pending.equals("cancel-before-save")) {

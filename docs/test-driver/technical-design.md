@@ -57,6 +57,14 @@ original incomplete ordinary check map, with deliberately saved custom Off
 appearance. Its guard must capture only the expected saved-Off checkpoint,
 reject the incomplete map, preserve saved bytes and write no continuation.
 Restore the original configuration before resuming the ordinary scenario.
+For profiling-Off readiness, retain eight immutable `UiSnapshot` records from
+real compact rendering with matching readiness keys and distinct native frame
+IDs. After the real profiling metadata changes to Off, replay those exact older
+records into a separate status flow. Assert no success capture, server work,
+configuration write or changed check after its actual stability threshold. Restore
+the current observation in `finally`; record the source frames separately from
+the screenshot of the current Off screen. Then remove and restore the actual
+native status payload while asserting that the ordinary Off flow stays pending.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same
