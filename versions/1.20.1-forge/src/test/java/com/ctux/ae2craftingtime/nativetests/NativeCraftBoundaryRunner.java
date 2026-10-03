@@ -83,7 +83,7 @@ final class NativeCraftBoundaryRunner {
                 started = System.nanoTime();
             }
             assertTrue(System.nanoTime() - started < 1_200_000_000_000L, "Native crafting checks exceeded twenty minutes");
-            if (!passed.contains("invalid-participants")) {
+            if (!passed.contains("invalid-participants") && Files.isRegularFile(configPath(minecraft))) {
                 NativeParticipantBoundary.verify(minecraft, standardType, field(flow.getClass(), "marker", flow),
                         (Map<?, ?>) field(flow.getClass(), "checks", flow), output);
                 begin(minecraft, "invalid-participants", 0);

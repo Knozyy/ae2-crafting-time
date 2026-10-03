@@ -21,6 +21,8 @@ final class NativeParticipantBoundary {
         var control = output.resolve("invalid-participants");
         var screen = minecraft.screen;
         var player = minecraft.player;
+        var otherPlayer = new java.util.UUID(0, 0);
+        assertNotEquals(otherPlayer, player.getUUID());
         var menu = player.containerMenu;
         var before = Map.copyOf(checks);
         var config = minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml");
@@ -41,7 +43,7 @@ final class NativeParticipantBoundary {
                     var state = new Properties();
                     state.setProperty("ready", "true");
                     state.setProperty("epoch", "native-participant-boundary");
-                    state.setProperty("player", invalid == 0 ? "different-player" : player.getUUID().toString());
+                    state.setProperty("player", invalid == 0 ? otherPlayer.toString() : player.getUUID().toString());
                     state.setProperty("turn", invalid == 2 ? "" : invalid == 1 ? (role.equals("alpha") ? "beta" : "alpha") : role);
                     try (var stream = Files.newOutputStream(directory.resolve("state.properties"))) { state.store(stream, null); }
                     var flow = constructor.newInstance("recurrent-plan", "native-participant-boundary", output, true);

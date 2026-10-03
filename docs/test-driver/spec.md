@@ -161,6 +161,11 @@ player, the other participant's turn and an empty turn, for both role values.
 Preserve screen, player, menu, checks and saved bytes, write no command, and
 restore the original rendezvous properties before ordinary scenario execution.
 This is invalid-input boundary coverage, not a two-client server scenario.
+The first `04e1cccc` launch failed before these assertions because the ordinary
+fixture had not yet created its saved client configuration. Preserve that failed
+launch and exclude its execution data from passing coverage evidence. Run the
+participant checks only after the actual config file exists; no replacement
+configuration or invented saved bytes may satisfy that prerequisite.
 
 ## Plan readiness with optional backgrounds (#585)
 
