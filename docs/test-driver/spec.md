@@ -157,7 +157,8 @@ require the ordinary scenario to pass after the check.
 Pending extension: matching remembered native row text must still reject an
 incorrect saved background setting after eight stable frames. Also reject
 invalid recurrence rendezvous inputs against the actual native player: another
-player, the other participant's turn and an empty turn, for both role values.
+player, an incorrect turn and an empty turn for Alpha. Reject Beta as an
+unsupported recurrence role; do not extend the production role contract.
 Preserve screen, player, menu, checks and saved bytes, write no command, and
 restore the original rendezvous properties before ordinary scenario execution.
 This is invalid-input boundary coverage, not a two-client server scenario.
@@ -166,6 +167,10 @@ fixture had not yet created its saved client configuration. Preserve that failed
 launch and exclude its execution data from passing coverage evidence. Run the
 participant checks only after the actual config file exists; no replacement
 configuration or invented saved bytes may satisfy that prerequisite.
+The `1bd6cca0` retry exposed the fixture's incorrect assumption that recurrence
+accepted Beta. Preserve and exclude that failed launch too. The corrected test
+requires the existing unsupported-role exception and retains the three invalid
+Alpha-state assertions; native verification is still pending.
 
 ## Plan readiness with optional backgrounds (#585)
 

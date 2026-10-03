@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Properties;
 import net.minecraft.client.Minecraft;
 
-/** Invalid rendezvous data is rejected against the actual connected native player. */
+/** Invalid rendezvous data is rejected against the actual native player. */
 final class NativeParticipantBoundary {
     static void verify(Minecraft minecraft, Class<?> type, Object marker, Map<?, ?> checks, Path output) throws Exception {
         var previous = new HashMap<String, String>();
@@ -39,7 +39,7 @@ final class NativeParticipantBoundary {
             for (var role : new String[]{"alpha", "beta"}) {
                 System.setProperty("ae2craftingtime.test.role", role);
                 var directory = Files.createDirectories(control.resolve(role));
-                for (int invalid = 0; invalid < 3; invalid++) {
+                for (int invalid = 0; invalid < (role.equals("alpha") ? 3 : 1); invalid++) {
                     var state = new Properties();
                     state.setProperty("ready", "true");
                     state.setProperty("epoch", "native-participant-boundary");
@@ -47,9 +47,16 @@ final class NativeParticipantBoundary {
                     state.setProperty("turn", invalid == 2 ? "" : invalid == 1 ? (role.equals("alpha") ? "beta" : "alpha") : role);
                     try (var stream = Files.newOutputStream(directory.resolve("state.properties"))) { state.store(stream, null); }
                     var flow = constructor.newInstance("recurrent-plan", "native-participant-boundary", output, true);
-                    assertEquals(false, tick.invoke(flow, minecraft, marker, checks,
-                            (java.util.function.Consumer<String>) name -> fail("Wrong participant captured success: " + name),
-                            (java.util.function.BiConsumer<Integer, Integer>) (x, y) -> fail("Wrong participant moved the mouse")));
+                    try {
+                        assertEquals(false, tick.invoke(flow, minecraft, marker, checks,
+                                (java.util.function.Consumer<String>) name -> fail("Wrong participant captured success: " + name),
+                                (java.util.function.BiConsumer<Integer, Integer>) (x, y) -> fail("Wrong participant moved the mouse")));
+                        assertEquals("alpha", role, "An unsupported recurrence role must be rejected");
+                    } catch (java.lang.reflect.InvocationTargetException error) {
+                        if (!role.equals("beta")) throw error;
+                        assertInstanceOf(IllegalArgumentException.class, error.getCause());
+                        assertEquals("invalid recurrent role", error.getCause().getMessage());
+                    }
                     assertEquals("PREPARE", field(type, "phase", flow).toString());
                     assertNull(field(type, "operation", flow));
                     assertFalse(Files.exists(directory.resolve("command.properties")));
@@ -61,9 +68,9 @@ final class NativeParticipantBoundary {
                     assertions++;
                 }
             }
-            assertEquals(6, assertions);
+            assertEquals(4, assertions);
             Files.writeString(output.resolve("participant-boundary.json"),
-                    "{\"cases\":6,\"nativePlayer\":\"" + player.getUUID()
+                    "{\"cases\":4,\"nativePlayer\":\"" + player.getUUID()
                             + "\",\"scope\":\"invalid rendezvous inputs; not a two-client server scenario\"}");
         } finally {
             previous.forEach((key, value) -> {
