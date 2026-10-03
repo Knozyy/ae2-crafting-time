@@ -401,6 +401,71 @@ public final class NativeOptionsBoundaryMod {
                 }
                 case 23 -> {
                     NativeObservationBoundary.verify(minecraft, passed);
+                    var before = Files.readAllBytes(output.resolve("client.toml"));
+                    var screen = minecraft.screen;
+                    var checks = Map.of("not-ready", false);
+                    var capture = (java.util.function.Consumer<String>) name -> fail("Wrong screen captured success: " + name);
+                    set(scenarioType, "badgeStep", scenario, 1);
+                    set(scenarioType, "badgeRenderedAfter", scenario, 0L);
+                    assertEquals(false, call("badgeTick",
+                            new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                            minecraft, checks, capture));
+                    assertEquals(1, field(scenarioType, "badgeStep", scenario));
+                    set(scenarioType, "badgeScaleStep", scenario, 2);
+                    assertEquals(false, call("badgeScaleTick",
+                            new Class<?>[]{Minecraft.class, java.util.function.Consumer.class}, minecraft, capture));
+                    assertEquals(2, field(scenarioType, "badgeScaleStep", scenario));
+                    set(scenarioType, "amountResumeChecksRestored", scenario, true);
+                    set(scenarioType, "amountResumeSaving", scenario, false);
+                    set(scenarioType, "amountResumeOpened", scenario, true);
+                    set(scenarioType, "amountOptionRenderedAfter", scenario, 0L);
+                    assertEquals(false, call("statusRelaunchTick",
+                            new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                            minecraft, checks, capture));
+                    assertSame(screen, minecraft.screen);
+                    assertEquals(Map.of("not-ready", false), checks);
+                    assertArrayEquals(before, Files.readAllBytes(output.resolve("client.toml")));
+                    capture(minecraft, "native-options-wrong-screen.png");
+                    passed.add("Wrong native screen preserved pending badge, scale and status restoration");
+                    minecraft.setScreen(new OptionsScreen(null));
+                    stage++;
+                }
+                case 24 -> {
+                    assertInstanceOf(OptionsScreen.class, minecraft.screen);
+                    var before = Files.readAllBytes(output.resolve("client.toml"));
+                    var screen = minecraft.screen;
+                    long deadline = (long) field(runtime, "renderedFrames", null) + 3;
+                    var checks = Map.of("not-ready", false);
+                    var capture = (java.util.function.Consumer<String>) name -> fail("Pending redraw captured success: " + name);
+                    set(scenarioType, "badgeRenderedAfter", scenario, deadline);
+                    assertEquals(false, call("badgeEditTick", new Class<?>[]{Minecraft.class, int.class}, minecraft, 0));
+                    set(scenarioType, "amountOptionRenderedAfter", scenario, deadline);
+                    assertEquals(false, call("statusRelaunchTick",
+                            new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                            minecraft, checks, capture));
+                    set(scenarioType, "badgeResumeStep", scenario, 1);
+                    set(scenarioType, "badgeResumeRenderedAfter", scenario, deadline);
+                    assertEquals(false, call("badgeRelaunchTick",
+                            new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                            minecraft, checks, capture));
+                    assertEquals(1, field(scenarioType, "badgeResumeStep", scenario));
+                    assertSame(screen, minecraft.screen);
+                    assertArrayEquals(before, Files.readAllBytes(output.resolve("client.toml")));
+                    passed.add("Pending native redraw blocked badge edits and both relaunch captures");
+                    set(scenarioType, "badgeRenderedAfter", scenario, 0L);
+                    set(scenarioType, "badgeSaving", scenario, true);
+                    assertEquals(false, call("badgeEditTick", new Class<?>[]{Minecraft.class, int.class}, minecraft, 0));
+                    assertTrue((boolean) field(scenarioType, "badgeSaving", scenario));
+                    assertSame(screen, minecraft.screen);
+                    assertArrayEquals(before, Files.readAllBytes(output.resolve("client.toml")));
+                    assertEquals(Map.of("not-ready", false), checks);
+                    capture(minecraft, "native-options-pending-redraw.png");
+                    passed.add("Pending native save blocked repeated badge edits without changing saved bytes");
+                    minecraft.setScreen(new TitleScreen());
+                    stage++;
+                }
+                case 25 -> {
+                    assertEquals(24, passed.size(), "Every native Options assertion group must execute");
                     restore();
                     Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(
                             Map.of("result", "PASS", "checks", passed, "runtimeClassSha256", runtimeHash())));

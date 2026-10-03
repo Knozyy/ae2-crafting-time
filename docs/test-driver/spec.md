@@ -115,7 +115,14 @@ The separate connected CPU scenario passes all 41 checks across two native Java
 
 The unknown suspension-stage boundary must remain pending without changing the
 stage or check map, capturing success, moving the mouse or starting server work.
-Its focused test is pending verification.
+At `3d539dae`, the focused test passes locally and against the packaged Forge
+bytecode in CodexVM, without skips or failures. Codecov confirms 94.21%; the
+overall coverage gate remains unfinished.
+
+Pending Options extension: wrong native screens must preserve pending badge,
+scale and status restoration. Before the required redraw callbacks, badge edits
+and both relaunch flows must wait without capture, configuration writes or
+changed checks. A pending badge save must also block repeated edits.
 
 ## Plan readiness with optional backgrounds (#585)
 

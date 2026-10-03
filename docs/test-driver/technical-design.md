@@ -13,6 +13,10 @@ Reflection exposes private guards only inside this test artifact. Redirect
 configuration writes to the owned evidence directory, restore the previous
 runtime configuration in `finally`, and capture actual rendered screens.
 Record each assertion and fail the run on any unexpected exception or timeout.
+Use the actual initialized Title and Options screens for transition waits.
+Require the wrong-screen, pending-redraw and pending-save guards to leave the
+native screen, saved bytes and incomplete check map unchanged, without success
+captures. Test these guards separately from normal world/relaunch acceptance.
 For saved-status navigation, keep the real Options screen and the existing
 `STATUS_PERSIST` branch. Exhaust Warnings pages while asserting unchanged saved
 bytes, then reopen Displays with compact amounts On. Verify the actual toggle
