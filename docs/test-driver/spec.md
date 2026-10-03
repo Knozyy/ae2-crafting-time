@@ -29,10 +29,19 @@ configuration. Successful recovery must pass after restoring valid values.
 Keep its JAR out of production and normal driver launches. Run it only in the
 disposable coverage client, with bounded execution and original screenshots.
 
-The next persistence-navigation checks are pending native verification. Exhaust
+At `5a2fde81`, all nineteen native assertion groups pass with JVM exit 0.
+The ten original captures are reviewed; the two new navigation originals are
+also reviewed individually. Exhaust
 the actual wrong group's pages without saving, then recover in Displays by
 turning compact amounts Off and pressing Done. Assert the saved Off value and
 pending persistence state; this Options-only check does not claim a relaunch.
+
+Observation clipping and widget visibility checks are pending. Use real
+registered item keys in native plan DTOs to assert the exact fifteen visible
+cells before and after scrolling. Hide and restore an actual title-screen
+widget and verify its observation follows visibility. Closing the actual screen
+must not publish another snapshot. These assertions check the observation model,
+without claiming a rendered crafting menu for the DTO-only clipping checks.
 
 ## Native crafting fault checks (#378)
 

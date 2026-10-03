@@ -19,6 +19,11 @@ bytes, then reopen Displays with compact amounts On. Verify the actual toggle
 does not save before Done, and Done saves Off and enters pending persistence.
 Stop this Options-only check before any status/relaunch step; no world marker
 or status snapshot is consumed here.
+Observation boundary checks reuse the existing private Frame DTO constructor,
+real registered native item keys and initialized title-screen widgets. Check
+clipped row identities, quantities and cell geometry independently of rendered
+menu claims. Reset observation state after each boundary group and restore the
+actual screen and widget visibility even when an assertion fails.
 
 ## Native crafting fault checks (#378)
 

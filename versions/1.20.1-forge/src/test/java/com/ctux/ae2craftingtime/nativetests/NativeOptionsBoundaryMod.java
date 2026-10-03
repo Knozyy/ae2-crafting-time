@@ -396,6 +396,11 @@ public final class NativeOptionsBoundaryMod {
                     stage++;
                 }
                 case 22 -> {
+                    minecraft.setScreen(new TitleScreen());
+                    stage++;
+                }
+                case 23 -> {
+                    NativeObservationBoundary.verify(minecraft, passed);
                     restore();
                     Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(
                             Map.of("result", "PASS", "checks", passed, "runtimeClassSha256", runtimeHash())));
