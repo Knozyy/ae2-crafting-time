@@ -63,7 +63,7 @@ final class StandardAe2Scenario {
         OVERLAP_REOPEN,
         PUMP, FINISHED, REOPEN, EMPTY, WORLD_POSITION, WORLD_HIGHLIGHT, WORLD_RELEASE, WORLD_FINISHED,
         GALLERY_PARTIAL_PLAN, GALLERY_PROFILED_PLAN, GALLERY_DETAILS, GALLERY_CHAT, GALLERY_NEXT_JOB,
-        CPU_LIST_REOPEN, CPU_LIST_REOPENED, STATUS_SERVER_OFF, STATUS_PERSIST, STATUS_RELAUNCH,
+        STATUS_SERVER_OFF, STATUS_PERSIST, STATUS_RELAUNCH,
         BADGE_PERSIST, BADGE_RELAUNCH }
     private final String leaf;
     private final StandardCraftFixture fixture = new StandardCraftFixture();
@@ -594,18 +594,6 @@ final class StandardAe2Scenario {
             }
             return false;
         }
-        if (phase == Stage.CPU_LIST_REOPEN) {
-            if (minecraft.screen == null) {
-                minecraft.gameMode.useItemOn(minecraft.player, InteractionHand.MAIN_HAND,
-                        new BlockHitResult(Vec3.atCenterOf(fixture.terminal).add(0, 0, -0.5), Direction.NORTH,
-                                fixture.terminal, false));
-            } else if (minecraft.screen instanceof MEStorageScreen<?> screen) {
-                var button = ((MEStorageScreenAccessor) screen).ae2craftingtime_test_driver$statusButton();
-                DriverPlatform.click(minecraft, button.getX() + 4, button.getY() + 4);
-                phase = Stage.CPU_LIST_REOPENED;
-            }
-            return false;
-        }
         var snapshot = UiObservationStore.latest();
         boolean optionsVisible = (phase == Stage.STATUS_OPTIONS || phase == Stage.STATUS_PERSIST)
                 && minecraft.screen instanceof com.ctux.ae2craftingtime.mc1201.OptionsScreen;
@@ -757,8 +745,7 @@ final class StandardAe2Scenario {
             Integer neutralColor = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground()
                     ? com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current()
                             .color(com.ctux.ae2craftingtime.core.ClientConfig.Color.TOTAL) : null;
-            if (expected && (label.bold() || !java.util.Objects.equals(label.color(), neutralColor)))
-                throw new IllegalStateException("Stored-variant label is not normal neutral text");
+            validateStoredVariantLabel(label, expected, neutralColor);
             if (!variantHover) {
                 moveMouse.accept(row.cell().x() + row.cell().width() / 2,
                         row.cell().y() + row.cell().height() / 2);
@@ -781,10 +768,9 @@ final class StandardAe2Scenario {
                 var drawn = snapshot.text().stream().filter(value -> value.key().equals(
                         "text.ae2craftingtime.plan.stored_variant")).toList();
                 if (drawn.size() != 1 || drawn.get(0).bounds() == null) return false;
-                if (!drawn.get(0).bounds().inside(row.cell()))
-                    throw new IllegalStateException("Stored-variant text exceeds its row at narrow layout");
+                validateStoredVariantText(row, drawn.get(0));
             }
-            if (!row.cell().inside(snapshot.gui())) throw new IllegalStateException("Variant row escapes native plan layout");
+            validateStoredVariantRow(snapshot, row);
             mark(checks, "variant-layout", true);
             if (variantStep == 1 && sort < 3) {
                 screenshot.accept("stored-variant-sort-" + sort + ".png");
@@ -847,25 +833,13 @@ final class StandardAe2Scenario {
             var label = row.description().stream().filter(text -> text.key().equals("text.ae2craftingtime.plan.recurrent")).findFirst().orElse(null);
             if (!connectedDedicated && recurrenceFixture.recurrent() && label == null
                     && !RecurrentPlanFixture.CASES.get(recurrenceCase).equals("large")) return false;
-            if (snapshot.text().stream().filter(text -> text.key().equals("text.ae2craftingtime.plan.recurrent"))
-                    .anyMatch(text -> text.bounds() == null || snapshot.rows().stream().noneMatch(value -> text.bounds().inside(value.cell()))))
-                throw new IllegalStateException("Recurrent text escapes its native table cell");
+            validateRecurrenceBounds(snapshot);
             if (connectedDedicated && RecurrentPlanControl.state().recurrent() != (label != null)) return false;
             if (connectedDedicated && label != null
                     && !label.arguments().equals(List.of(Long.toString(RecurrentCampaign.REQUESTED_AMOUNT)))) return false;
-            if (label != null && (label.bold() || !java.util.Objects.equals(label.color(), 0xFF5555)
-                    || label.arguments().size() != 1 || !label.rendered().endsWith(label.arguments().get(0))))
-                throw new IllegalStateException("Recurrence label lost its red warning style or amount");
-            if (label != null && snapshot.text().stream()
-                    .filter(text -> text.key().equals("text.ae2craftingtime.plan.recurrent"))
-                    .noneMatch(text -> !text.bold() && java.util.Objects.equals(text.color(), 0xFF5555)
-                            && text.bounds() != null && recurrentBadgeMatches(snapshot.badges(), text.bounds(),
-                                    com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground())))
-                throw new IllegalStateException("Recurrent label or badge differs from client options");
-            if (!connectedDedicated && recurrenceFixture.reported() && label != null
-                    && !label.arguments().equals(List.of(Long.toString(recurrenceFixture.requestedAmount()))))
-                throw new IllegalStateException("Recurrence label lost requested quantity " + recurrenceFixture.requestedAmount());
-            if (!row.cell().inside(snapshot.gui())) throw new IllegalStateException("Recurrence row escapes plan layout");
+            validateRecurrenceLabel(snapshot, row, label,
+                    com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground(),
+                    connectedDedicated, recurrenceFixture.reported(), recurrenceFixture.requestedAmount());
             mark(checks, "recurrent-row", true);
             mark(checks, "red-warning-style", true);
             mark(checks, "unchanged-quantity", label == null || label.arguments().size() == 1
@@ -2462,6 +2436,45 @@ final class StandardAe2Scenario {
         return false;
     }
 
+    static void validateStoredVariantLabel(UiSnapshot.ObservedText label, boolean expected, Integer neutralColor) {
+        if (expected && (label.bold() || !java.util.Objects.equals(label.color(), neutralColor)))
+            throw new IllegalStateException("Stored-variant label is not normal neutral text");
+    }
+
+    static void validateStoredVariantText(UiSnapshot.Row row, UiSnapshot.ObservedText text) {
+        if (!text.bounds().inside(row.cell()))
+            throw new IllegalStateException("Stored-variant text exceeds its row at narrow layout");
+    }
+
+    static void validateStoredVariantRow(UiSnapshot snapshot, UiSnapshot.Row row) {
+        if (!row.cell().inside(snapshot.gui()))
+            throw new IllegalStateException("Variant row escapes native plan layout");
+    }
+
+    static void validateRecurrenceBounds(UiSnapshot snapshot) {
+        if (snapshot.text().stream().filter(text -> text.key().equals("text.ae2craftingtime.plan.recurrent"))
+                .anyMatch(text -> text.bounds() == null || snapshot.rows().stream().noneMatch(value -> text.bounds().inside(value.cell()))))
+            throw new IllegalStateException("Recurrent text escapes its native table cell");
+    }
+
+    static void validateRecurrenceLabel(UiSnapshot snapshot, UiSnapshot.Row row,
+            UiSnapshot.ObservedText label, boolean background, boolean connectedDedicated,
+            boolean reported, long requested) {
+        if (label != null && (label.bold() || !java.util.Objects.equals(label.color(), 0xFF5555)
+                || label.arguments().size() != 1 || !label.rendered().endsWith(label.arguments().get(0))))
+            throw new IllegalStateException("Recurrence label lost its red warning style or amount");
+        if (label != null && snapshot.text().stream()
+                .filter(text -> text.key().equals("text.ae2craftingtime.plan.recurrent"))
+                .noneMatch(text -> !text.bold() && java.util.Objects.equals(text.color(), 0xFF5555)
+                        && text.bounds() != null && recurrentBadgeMatches(snapshot.badges(), text.bounds(),
+                                background)))
+            throw new IllegalStateException("Recurrent label or badge differs from client options");
+        if (!connectedDedicated && reported && label != null
+                && !label.arguments().equals(List.of(Long.toString(requested))))
+            throw new IllegalStateException("Recurrence label lost requested quantity " + requested);
+        if (!row.cell().inside(snapshot.gui())) throw new IllegalStateException("Recurrence row escapes plan layout");
+    }
+
     static boolean recurrentBadgeMatches(List<Rect> badges, Rect text, boolean enabled) {
         return badges.stream().anyMatch(badge -> text.inside(badge)) == enabled;
     }
@@ -3019,9 +3032,12 @@ final class StandardAe2Scenario {
     }
 
     private static String configHash(Minecraft minecraft) {
+        return configHash(minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml"));
+    }
+
+    static String configHash(java.nio.file.Path path) {
         try {
-            return CaptureEvidence.sha256(java.nio.file.Files.readAllBytes(minecraft.gameDirectory.toPath()
-                    .resolve("config/ae2craftingtime-client.toml")));
+            return CaptureEvidence.sha256(java.nio.file.Files.readAllBytes(path));
         } catch (java.io.IOException error) {
             throw new IllegalStateException("Cannot hash saved client options", error);
         }
@@ -3035,8 +3051,12 @@ final class StandardAe2Scenario {
         var captured = new com.google.gson.JsonArray();
         for (var addon : addonQuantityCases) captured.add(addon.name());
         result.add("captured", captured);
+        writeAddonKeyEvidence(output.resolve("status-addon-keys.json"), result);
+    }
+
+    static void writeAddonKeyEvidence(java.nio.file.Path path, com.google.gson.JsonObject result) {
         try {
-            java.nio.file.Files.writeString(output.resolve("status-addon-keys.json"), result.toString());
+            java.nio.file.Files.writeString(path, result.toString());
         } catch (java.io.IOException error) {
             throw new IllegalStateException("Cannot retain addon status key evidence", error);
         }

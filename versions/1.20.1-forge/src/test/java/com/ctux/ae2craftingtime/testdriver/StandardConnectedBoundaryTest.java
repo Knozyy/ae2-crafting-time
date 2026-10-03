@@ -36,6 +36,40 @@ class StandardConnectedBoundaryTest {
         });
     }
 
+    @Test void savedClientOptionsHashTracksExactBytesAndPreservesReadFailures() throws Exception {
+        var path = directory.resolve("client.toml");
+        Files.writeString(path, "compactAmounts = false\n");
+        var first = StandardAe2Scenario.configHash(path);
+        assertEquals(CaptureEvidence.sha256(Files.readAllBytes(path)), first);
+        Files.writeString(path, "compactAmounts = true\n");
+        assertNotEquals(first, StandardAe2Scenario.configHash(path));
+        for (var unreadable : java.util.List.of(directory, directory.resolve("missing.toml"))) {
+            var failure = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.configHash(unreadable));
+            assertEquals("Cannot hash saved client options", failure.getMessage());
+            assertInstanceOf(java.io.IOException.class, failure.getCause());
+        }
+    }
+
+    @Test void addonEvidenceRetainsTheObservedPayloadAndPreservesWriteFailures() throws Exception {
+        var result = new com.google.gson.JsonObject();
+        result.addProperty("schema", 1);
+        result.addProperty("appbotLoaded", false);
+        result.addProperty("appmekLoaded", true);
+        var captured = new com.google.gson.JsonArray();
+        captured.add("appmek");
+        result.add("captured", captured);
+        var path = directory.resolve("status-addon-keys.json");
+        StandardAe2Scenario.writeAddonKeyEvidence(path, result);
+        assertEquals(result, com.google.gson.JsonParser.parseString(Files.readString(path)));
+        for (var unwritable : java.util.List.of(directory, directory.resolve("missing/keys.json"))) {
+            var failure = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.writeAddonKeyEvidence(unwritable, result));
+            assertEquals("Cannot retain addon status key evidence", failure.getMessage());
+            assertInstanceOf(java.io.IOException.class, failure.getCause());
+        }
+    }
+
     @Test void rejectsAnUnknownParticipantBeforeInteractingWithMinecraft() {
         for (var role : java.util.List.of("", "gamma")) {
             System.setProperty("ae2craftingtime.test.role", role);

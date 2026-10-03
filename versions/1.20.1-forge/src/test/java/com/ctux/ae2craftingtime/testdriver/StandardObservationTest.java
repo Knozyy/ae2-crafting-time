@@ -131,6 +131,95 @@ class StandardObservationTest {
         assertTrue(StandardAe2Scenario.cpuCardTotals(snapshot(List.of(), List.of())).isEmpty());
     }
 
+    @Test void storedVariantLabelsAndGeometryPreserveNeutralNativeRows() {
+        var key = "text.ae2craftingtime.plan.stored_variant";
+        var valid = new UiSnapshot.ObservedText(key, "Stored variant", List.of(), textBounds, 0xE0E0E0, false);
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateStoredVariantLabel(null, false, 0xE0E0E0));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateStoredVariantLabel(valid, true, 0xE0E0E0));
+        var nativeColor = new UiSnapshot.ObservedText(key, "Stored variant", List.of(), textBounds, null, false);
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateStoredVariantLabel(nativeColor, true, null));
+        for (var invalid : List.of(
+                new UiSnapshot.ObservedText(key, "Stored variant", List.of(), textBounds, 0xE0E0E0, true),
+                new UiSnapshot.ObservedText(key, "Stored variant", List.of(), textBounds, null, false),
+                new UiSnapshot.ObservedText(key, "Stored variant", List.of(), textBounds, 0xFF5555, false))) {
+            var failure = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateStoredVariantLabel(invalid, true, 0xE0E0E0));
+            assertEquals("Stored-variant label is not normal neutral text", failure.getMessage());
+        }
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateStoredVariantText(row(1), valid));
+        var outsideText = new UiSnapshot.ObservedText(key, "Stored variant", List.of(), new Rect(90, 90, 5, 5));
+        var failure = assertThrows(IllegalStateException.class,
+                () -> StandardAe2Scenario.validateStoredVariantText(row(1), outsideText));
+        assertEquals("Stored-variant text exceeds its row at narrow layout", failure.getMessage());
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateStoredVariantRow(snapshot(List.of(), List.of()), row(1)));
+        var outsideRow = new UiSnapshot.Row("minecraft:iron_pickaxe", 1, 1, new Rect(90, 90, 5, 5), List.of());
+        failure = assertThrows(IllegalStateException.class,
+                () -> StandardAe2Scenario.validateStoredVariantRow(snapshot(List.of(), List.of()), outsideRow));
+        assertEquals("Variant row escapes native plan layout", failure.getMessage());
+    }
+
+    @Test void recurrenceTextMustStayInsideAnObservedTableCell() {
+        var key = "text.ae2craftingtime.plan.recurrent";
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateRecurrenceBounds(snapshot(List.of(), List.of())));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateRecurrenceBounds(
+                snapshot(List.of(text("unrelated", "other", null)), List.of())));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateRecurrenceBounds(
+                snapshot(List.of(text(key, "Recurrent: 1", textBounds)), List.of())));
+        for (var bounds : new Rect[]{null, new Rect(90, 90, 5, 5)}) {
+            var error = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateRecurrenceBounds(
+                            snapshot(List.of(text(key, "Recurrent: 1", bounds)), List.of())));
+            assertEquals("Recurrent text escapes its native table cell", error.getMessage());
+        }
+        var emptyRows = new UiSnapshot("screen", "menu", cell, 100, 100, 1, 1, 0,
+                List.of(), List.of(text(key, "Recurrent: 1", textBounds)), List.of(), List.of(), List.of(), List.of());
+        assertThrows(IllegalStateException.class, () -> StandardAe2Scenario.validateRecurrenceBounds(emptyRows));
+    }
+
+    @Test void recurrenceLabelsPreserveWarningStyleRequestedQuantityAndVisibleBackgrounds() {
+        var key = "text.ae2craftingtime.plan.recurrent";
+        var valid = new UiSnapshot.ObservedText(key, "Recurrent: 1", List.of("1"), textBounds, 0xFF5555, false);
+        var frame = snapshot(List.of(text("unrelated", "other", null), valid), List.of());
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateRecurrenceLabel(frame, row(1), null, false, false, false, 1));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateRecurrenceLabel(frame, row(1), valid, false, false, false, 1));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateRecurrenceLabel(frame, row(1), valid, false, true, true, 100));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateRecurrenceLabel(frame, row(1), valid, false, false, true, 1));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateRecurrenceLabel(frame, row(1), null, false, false, true, 100));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateRecurrenceLabel(
+                snapshot(List.of(valid), List.of(cell)), row(1), valid, true, false, false, 1));
+        var error = assertThrows(IllegalStateException.class,
+                () -> StandardAe2Scenario.validateRecurrenceLabel(frame, row(1), valid, false, false, true, 100));
+        assertEquals("Recurrence label lost requested quantity 100", error.getMessage());
+        for (var invalid : List.of(
+                new UiSnapshot.ObservedText(key, "Recurrent: 1", List.of("1"), textBounds, 0xFF5555, true),
+                new UiSnapshot.ObservedText(key, "Recurrent: 1", List.of("1"), textBounds, null, false),
+                new UiSnapshot.ObservedText(key, "Recurrent: 1", List.of("1"), textBounds, 0xFFFFFF, false),
+                new UiSnapshot.ObservedText(key, "Recurrent: 1", List.of(), textBounds, 0xFF5555, false),
+                new UiSnapshot.ObservedText(key, "Recurrent: 1", List.of("1", "2"), textBounds, 0xFF5555, false),
+                new UiSnapshot.ObservedText(key, "Recurrent: 2", List.of("1"), textBounds, 0xFF5555, false))) {
+            error = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateRecurrenceLabel(frame, row(1), invalid, false, false, false, 1));
+            assertEquals("Recurrence label lost its red warning style or amount", error.getMessage());
+        }
+        for (var drawn : List.of(
+                new UiSnapshot.ObservedText(key, "Recurrent: 1", List.of("1"), textBounds, 0xFF5555, true),
+                new UiSnapshot.ObservedText(key, "Recurrent: 1", List.of("1"), textBounds, 0xFFFFFF, false),
+                new UiSnapshot.ObservedText(key, "Recurrent: 1", List.of("1"), null, 0xFF5555, false))) {
+            error = assertThrows(IllegalStateException.class, () -> StandardAe2Scenario.validateRecurrenceLabel(
+                    snapshot(List.of(drawn), List.of()), row(1), valid, false, false, false, 1));
+            assertEquals("Recurrent label or badge differs from client options", error.getMessage());
+        }
+        for (var background : List.of(false, true)) {
+            var badges = background ? List.<Rect>of() : List.of(cell);
+            assertThrows(IllegalStateException.class, () -> StandardAe2Scenario.validateRecurrenceLabel(
+                    snapshot(List.of(valid), badges), row(1), valid, background, false, false, 1));
+        }
+        var outside = new UiSnapshot.Row("minecraft:stone", 1, 1, new Rect(90, 90, 5, 5), List.of());
+        error = assertThrows(IllegalStateException.class,
+                () -> StandardAe2Scenario.validateRecurrenceLabel(frame, outside, null, false, false, false, 1));
+        assertEquals("Recurrence row escapes plan layout", error.getMessage());
+    }
+
     private UiSnapshot suspensionFrame(List<UiSnapshot.ObservedText> text, List<UiSnapshot.Row> rows) {
         return new UiSnapshot("appeng.client.gui.me.crafting.CraftingCPUScreen", "menu", cell,
                 100, 100, 1, 1, 0, rows, text, List.of(), List.of(), List.of(), List.of());
