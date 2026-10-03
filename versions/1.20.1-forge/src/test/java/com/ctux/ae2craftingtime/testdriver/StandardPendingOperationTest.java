@@ -60,7 +60,7 @@ class StandardPendingOperationTest {
                 ClientStats.CACHE.accuracy(key), ClientStats.CACHE.stall(key)));
         var language = Language.getInstance();
         var languageFields = Arrays.stream(I18n.class.getDeclaredFields())
-                .filter(field -> field.getType() == ClientLanguage.class).toList();
+                .filter(field -> Language.class.isAssignableFrom(field.getType())).toList();
         assertEquals(1, languageFields.size(), "I18n must retain one client language");
         var i18n = languageFields.get(0);
         i18n.setAccessible(true);
