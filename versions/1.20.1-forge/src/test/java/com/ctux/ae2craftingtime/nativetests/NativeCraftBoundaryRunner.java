@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.Button;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 
@@ -119,10 +118,9 @@ final class NativeCraftBoundaryRunner {
         } else if (phase.equals("STATUS_OPTIONS") && minecraft.screen instanceof OptionsScreen
                 && !(boolean) field(standardType, "amountOptionSaving", standard) && !passed.contains("cancel-before-save")) {
             begin(minecraft, "cancel-before-save", snapshot.frame());
-            var cancel = minecraft.screen.children().stream().filter(Button.class::isInstance).map(Button.class::cast)
-                    .filter(button -> button.getMessage().getString().equals(
-                            net.minecraft.client.resources.language.I18n.get("gui.cancel"))).findFirst().orElseThrow();
-            click(minecraft, cancel);
+            var click = standardType.getDeclaredMethod("clickOptionButton", Minecraft.class, String.class);
+            click.setAccessible(true);
+            click.invoke(standard, minecraft, net.minecraft.client.resources.language.I18n.get("gui.cancel"));
             assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
         }
     }
@@ -187,10 +185,4 @@ final class NativeCraftBoundaryRunner {
         return minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml");
     }
 
-    private static void click(Minecraft minecraft, Button button) throws Exception {
-        var platform = Class.forName("com.ctux.ae2craftingtime.testdriver.DriverPlatform");
-        var click = platform.getDeclaredMethod("click", Minecraft.class, int.class, int.class);
-        click.setAccessible(true);
-        click.invoke(null, minecraft, button.getX() + 4, button.getY() + 4);
-    }
 }
