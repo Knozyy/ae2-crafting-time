@@ -14,6 +14,19 @@ configuration writes to the owned evidence directory, restore the previous
 runtime configuration in `finally`, and capture actual rendered screens.
 Record each assertion and fail the run on any unexpected exception or timeout.
 
+## Native crafting fault checks (#378)
+
+See the [scope and remaining gate](spec.md#native-crafting-fault-checks-378).
+The optional native fixture owns a `TestDriverRuntime` while the ordinary driver
+entrypoint is in observation mode. Forward actual screen render events to the
+runtime. Pause normal advancement only while checking a fault, and count each
+completed render callback once. Keep the initialized Minecraft client, server,
+player, menus and original fixture marker. Use the native status payload setter
+already used by amount fixtures; never replace a game object. After each assertion,
+restore the actual Options flow or expected status row and resume the ordinary
+scenario. Write separate fault evidence, and require the original runtime result
+to pass before reporting the combined run as successful.
+
 ## Plan readiness with optional backgrounds (#585)
 
 See the [criteria](spec.md#plan-readiness-with-optional-backgrounds-585).

@@ -13,10 +13,10 @@ Stored-variant and resource-icon sections inherit their linked feature status.
 Status: in-progress.
 
 Implementation: [draft PR #643](https://github.com/cTux/ae2-crafting-time/pull/643).
-At `9c4ad02c`, thirteen native assertion groups pass unattended in CodexVM;
-the native JVM exits successfully and four original screenshots are reviewed.
-The full reported-code 100% gate remains incomplete. Additional Cancel-file
-integrity and paginated compact-amount checks still need runtime verification.
+At `2a03582e`, seventeen native assertion groups pass unattended in CodexVM;
+the native JVM exits successfully and eight original screenshots are reviewed.
+Cancel-file integrity, page recovery and the save deadline pass. The full
+reported-code 100% gate remains incomplete.
 
 The test-only Forge fixture uses the initialized Minecraft client and real
 Options screen to check rejected saves, incorrect reset values and missing
@@ -28,6 +28,19 @@ fail on callback 101. Each fault must assert the exact rejection and preserve th
 configuration. Successful recovery must pass after restoring valid values.
 Keep its JAR out of production and normal driver launches. Run it only in the
 disposable coverage client, with bounded execution and original screenshots.
+
+## Native crafting fault checks (#378)
+
+Status: in-progress; implementation and runtime verification pending in
+[draft PR #643](https://github.com/cTux/ae2-crafting-time/pull/643).
+
+Use the ordinary runtime and standard-status-controls flow in a marked disposable
+world. Remove a native status payload during amount and scale checks, and assert
+that the driver restores its expected row without advancing the case or changing
+saved options. Close actual Options with Cancel before saving and assert the exact
+rejection; reopen Options and let the normal flow recover. Require all three fault
+checks and the ordinary scenario's full PASS result. Preserve original native
+captures and keep deliberate fault assertions separate from the normal result.
 
 ## Plan readiness with optional backgrounds (#585)
 

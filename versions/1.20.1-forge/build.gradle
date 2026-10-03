@@ -85,7 +85,7 @@ sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
 def nativeOptionsMetadata = layout.buildDirectory.file('native-options-boundary/META-INF/mods.toml')
 def nativeOptionsPackMetadata = layout.buildDirectory.file('native-options-boundary/pack.mcmeta')
 def nativeOptionsBoundaryUnmapped = tasks.register('nativeOptionsBoundaryUnmappedJar', Jar) {
-    from(sourceSets.test.output) { include '**/NativeOptionsBoundaryMod*.class' }
+    from(sourceSets.test.output) { include '**/nativetests/Native*.class' }
     from({ configurations.testRuntimeClasspath.findAll {
         it.name.startsWith('junit-jupiter-api-') || it.name.startsWith('junit-platform-commons-')
                 || it.name.startsWith('opentest4j-') || it.name.startsWith('apiguardian-api-')

@@ -33,6 +33,10 @@ public final class NativeOptionsBoundaryMod {
     private int originalScale;
 
     public NativeOptionsBoundaryMod() {
+        if (System.getProperty("ae2craftingtime.test.nativeCraftOutput") != null) {
+            new NativeCraftBoundaryRunner();
+            return;
+        }
         MinecraftForge.EVENT_BUS.addListener(this::tick);
     }
 
@@ -403,11 +407,11 @@ public final class NativeOptionsBoundaryMod {
         }
     }
 
-    private static Object field(Class<?> owner, String name, Object instance) throws Exception {
+    static Object field(Class<?> owner, String name, Object instance) throws Exception {
         var field = owner.getDeclaredField(name); field.setAccessible(true); return field.get(instance);
     }
 
-    private static void set(Class<?> owner, String name, Object instance, Object value) throws Exception {
+    static void set(Class<?> owner, String name, Object instance, Object value) throws Exception {
         var field = owner.getDeclaredField(name); field.setAccessible(true); field.set(instance, value);
     }
 
@@ -426,7 +430,7 @@ public final class NativeOptionsBoundaryMod {
         }
     }
 
-    private static String runtimeHash() throws Exception {
+    static String runtimeHash() throws Exception {
         var scenarioType = Class.forName("com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario");
         try (var stream = scenarioType.getResourceAsStream("StandardAe2Scenario.class")) {
             return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
