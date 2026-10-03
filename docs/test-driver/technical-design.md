@@ -72,8 +72,9 @@ pending after eight stable frames, preserving checks, saved bytes and screen,
 with no server operation or success capture. Retain those original snapshots;
 do not manufacture text, bounds, frame IDs or rendered badge success.
 The matching-text boundary remembers the actual native row text and quantities,
-then requires the unchanged guard to reject the actual saved background setting
-while it remains On. It must reach its real stable threshold before throwing,
+then requires the unchanged guard to reject the actual saved default appearance
+(background Off, black, opacity 176) where the custom appearance is required.
+Verify those real prerequisites. It must reach its real stable threshold before throwing,
 without capture or changed state. Recurrence participant boundaries write
 invalid file-rendezvous inputs in an owned evidence directory and compare them
 against the actual player UUID and role. Restore the role, campaign and control

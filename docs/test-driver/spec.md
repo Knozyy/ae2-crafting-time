@@ -155,7 +155,9 @@ configuration writes or server work. Retain the native source frames, then
 require the ordinary scenario to pass after the check.
 
 Pending extension: matching remembered native row text must still reject an
-incorrect saved background setting after eight stable frames. Also reject
+incorrect saved custom appearance after eight stable frames. Verify the actual
+default Off/black/176 settings before expecting the custom-appearance rejection.
+Also reject
 invalid recurrence rendezvous inputs against the actual native player: another
 player, an incorrect turn and an empty turn for Alpha. Reject Beta as an
 unsupported recurrence role; do not extend the production role contract.
@@ -171,6 +173,11 @@ The `1bd6cca0` retry exposed the fixture's incorrect assumption that recurrence
 accepted Beta. Preserve and exclude that failed launch too. The corrected test
 requires the existing unsupported-role exception and retains the three invalid
 Alpha-state assertions; native verification is still pending.
+At `47e0dcb6`, all four participant assertions passed, but the matching-text
+check failed on its incorrect On-background prerequisite. Preserve and exclude
+that launch. The actual saved default is Off, black and opacity 176; use that
+verified incorrect custom appearance without changing saved bytes. Runtime
+verification of the corrected expectation is still pending.
 
 ## Plan readiness with optional backgrounds (#585)
 

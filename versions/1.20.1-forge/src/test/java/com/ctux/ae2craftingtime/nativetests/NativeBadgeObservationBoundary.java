@@ -41,7 +41,10 @@ final class NativeBadgeObservationBoundary {
                 // A genuine CPU header is not a remembered row badge; never invent text or bounds.
                 if (variant == 1) set(type, "badgeTextBefore", flow, List.of(header.key() + ":" + header.bounds()));
                 if (variant == 2) {
-                    assertTrue(com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground());
+                    var config = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current();
+                    assertFalse(config.badgeBackground());
+                    assertEquals(0, config.color(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE));
+                    assertEquals(176, config.badgeOpacity());
                     set(type, "badgeRowsBefore", flow, snapshot.rows().stream()
                             .map(row -> row.outputId() + ":" + row.craftAmount()).toList());
                     set(type, "badgeTextBefore", flow, snapshot.text().stream()
@@ -68,7 +71,7 @@ final class NativeBadgeObservationBoundary {
             } catch (InvocationTargetException error) {
                 if (variant != 2) throw error;
                 assertInstanceOf(IllegalStateException.class, error.getCause());
-                assertEquals("Badge background state differs at ACTIVE step 3", error.getCause().getMessage());
+                assertEquals("Custom badge appearance was lost", error.getCause().getMessage());
                 rejectedAppearance = true;
             }
             var stability = field(type, "frames", flow);
