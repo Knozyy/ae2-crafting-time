@@ -341,6 +341,61 @@ public final class NativeOptionsBoundaryMod {
                     } finally { assertArrayEquals(before, Files.readAllBytes(output.resolve("client.toml"))); }
                 }
                 case 17 -> {
+                    var config = new ClientConfig();
+                    config.features().setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, true);
+                    openGroup(minecraft, config, "warnings");
+                    var stageType = Class.forName(scenarioType.getName() + "$Stage");
+                    set(scenarioType, "phase", scenario, java.util.Arrays.stream(stageType.getEnumConstants())
+                            .filter(value -> value.toString().equals("STATUS_PERSIST")).findFirst().orElseThrow());
+                    set(scenarioType, "amountPersistSaving", scenario, false);
+                    seekAttempts = 0;
+                    stage++;
+                }
+                case 18 -> {
+                    var before = Files.readAllBytes(output.resolve("client.toml"));
+                    try {
+                        assertEquals(false, persistenceTick(minecraft));
+                        assertTrue(++seekAttempts < 16, "Persistence navigation did not exhaust native pages");
+                        assertFalse((boolean) field(scenarioType, "amountPersistSaving", scenario));
+                        return;
+                    } catch (IllegalStateException error) {
+                        assertEquals("Option button missing: >", error.getMessage());
+                        assertFalse((boolean) field(scenarioType, "amountPersistSaving", scenario));
+                        assertFalse((boolean) field(scenarioType, "amountContinuationWritten", scenario));
+                        capture(minecraft, "native-options-persistence-wrong-group.png");
+                        passed.add("Persistence exhausted the wrong native group without saving or writing continuation");
+                        stage++;
+                    } finally {
+                        assertArrayEquals(before, Files.readAllBytes(output.resolve("client.toml")));
+                    }
+                }
+                case 19 -> {
+                    var config = new ClientConfig();
+                    config.features().setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, true);
+                    openGroup(minecraft, config, "displays");
+                    stage++;
+                }
+                case 20 -> {
+                    var before = Files.readAllBytes(output.resolve("client.toml"));
+                    assertEquals(false, persistenceTick(minecraft));
+                    assertInstanceOf(OptionsScreen.class, minecraft.screen);
+                    assertFalse((boolean) field(scenarioType, "amountPersistSaving", scenario));
+                    assertArrayEquals(before, Files.readAllBytes(output.resolve("client.toml")), "Toggle saved before Done");
+                    stage++;
+                }
+                case 21 -> {
+                    capture(minecraft, "native-options-persistence-off.png");
+                    assertEquals(false, persistenceTick(minecraft));
+                    assertFalse(minecraft.screen instanceof OptionsScreen);
+                    assertTrue((boolean) field(scenarioType, "amountPersistSaving", scenario));
+                    assertFalse(ClientOptionsRuntime.current().features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS));
+                    assertTrue(Files.readString(output.resolve("client.toml")).contains("compactStatusAmounts = false"));
+                    assertFalse((boolean) field(scenarioType, "amountContinuationWritten", scenario));
+                    assertFalse(Files.exists(output.resolve("status-amounts-continuation.json")));
+                    passed.add("Persistence recovered through native Displays toggle and Done, saving compact amounts Off");
+                    stage++;
+                }
+                case 22 -> {
                     restore();
                     Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(
                             Map.of("result", "PASS", "checks", passed, "runtimeClassSha256", runtimeHash())));
@@ -358,6 +413,16 @@ public final class NativeOptionsBoundaryMod {
             minecraft.stop();
             throw new AssertionError("Native options boundary failed", error);
         }
+    }
+
+    private Object persistenceTick(Minecraft minecraft) throws Exception {
+        // The actual Options branch consumes neither a world marker nor a status snapshot.
+        return call("tick", new Class<?>[]{Minecraft.class,
+                        Class.forName("com.ctux.ae2craftingtime.testdriver.FixtureMarker"), Map.class,
+                        java.util.function.Consumer.class, java.util.function.BiConsumer.class},
+                minecraft, null, Map.of(),
+                (java.util.function.Consumer<String>) name -> fail("Options navigation captured status success"),
+                (java.util.function.BiConsumer<Integer, Integer>) (x, y) -> fail("Options navigation moved hover mouse"));
     }
 
     private void reject(String name, Class<?>[] types, String message, Object... arguments) throws Exception {

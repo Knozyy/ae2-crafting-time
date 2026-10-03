@@ -29,6 +29,11 @@ configuration. Successful recovery must pass after restoring valid values.
 Keep its JAR out of production and normal driver launches. Run it only in the
 disposable coverage client, with bounded execution and original screenshots.
 
+The next persistence-navigation checks are pending native verification. Exhaust
+the actual wrong group's pages without saving, then recover in Displays by
+turning compact amounts Off and pressing Done. Assert the saved Off value and
+pending persistence state; this Options-only check does not claim a relaunch.
+
 ## Native crafting fault checks (#378)
 
 Status: in-progress in [draft PR #643](https://github.com/cTux/ae2-crafting-time/pull/643).
@@ -55,7 +60,10 @@ rejection before intentionally saving the next test setup; the initial setup
 failure is preserved separately.
 In the addon graph, also remove an actual Applied Botanics status row and require
 the same exact native key/amount restoration without advancing the case. This
-extension is pending. Require all six base faults, the seventh addon fault when
+extension passes at `60293867`: seven fault checks, thirteen ordinary checks,
+JVM exit 0 and all 36 ordinary plus seven fault captures reviewed. Codecov
+confirms 93.74%, so the broader 100% gate is still unfinished. Require all six
+base faults, the seventh addon fault when
 requested, and the ordinary scenario's full PASS result. Preserve original native
 captures and keep deliberate fault assertions separate from the normal result.
 

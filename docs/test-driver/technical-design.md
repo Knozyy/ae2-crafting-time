@@ -13,6 +13,12 @@ Reflection exposes private guards only inside this test artifact. Redirect
 configuration writes to the owned evidence directory, restore the previous
 runtime configuration in `finally`, and capture actual rendered screens.
 Record each assertion and fail the run on any unexpected exception or timeout.
+For saved-status navigation, keep the real Options screen and the existing
+`STATUS_PERSIST` branch. Exhaust Warnings pages while asserting unchanged saved
+bytes, then reopen Displays with compact amounts On. Verify the actual toggle
+does not save before Done, and Done saves Off and enters pending persistence.
+Stop this Options-only check before any status/relaunch step; no world marker
+or status snapshot is consumed here.
 
 ## Native crafting fault checks (#378)
 
