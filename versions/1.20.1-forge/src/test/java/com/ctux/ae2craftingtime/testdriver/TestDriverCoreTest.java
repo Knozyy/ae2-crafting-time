@@ -864,6 +864,13 @@ class TestDriverCoreTest {
         assertFalse(StandardAe2Scenario.galleryPlanReady(List.of(profiledStone, smooth), 0));
         assertFalse(StandardAe2Scenario.galleryPlanReady(List.of(
                 new UiSnapshot.Row("minecraft:stone", 0, 0, null, known), smooth), 1));
+        assertFalse(StandardAe2Scenario.galleryPlanReady(List.of(profiledStone, smooth), 2));
+        for (var unresolved : List.of(
+                new UiSnapshot.ObservedText("wrong-key", "Collecting", List.of("text.ae2craftingtime.collecting_data"), null),
+                new UiSnapshot.ObservedText("text.ae2craftingtime.ttc", "Waiting", List.of("other"), null))) {
+            assertFalse(StandardAe2Scenario.galleryPlanReady(List.of(
+                    new UiSnapshot.Row("minecraft:stone", 1, 0, null, List.of(unresolved)), smooth), 0));
+        }
     }
 
     @Test
@@ -878,6 +885,14 @@ class TestDriverCoreTest {
                 2, 1, .75, 0, 0, 1, 10, 20, 20, 1, 2), true));
         assertFalse(StandardAe2Scenario.galleryAccuracyReady(new com.ctux.ae2craftingtime.core.TtcAccuracyStats(
                 1, 1, 1, 0, 0, 1, 7, 0, 0, 2, 2), false));
+        for (var incomplete : List.of(
+                new com.ctux.ae2craftingtime.core.TtcAccuracyStats(1, 1, 1, 0, 0, 1, 7, 20, 20, 1, 2),
+                new com.ctux.ae2craftingtime.core.TtcAccuracyStats(1, 0, .5, 0, 0, 0, 7, 20, 20, 2, 2),
+                new com.ctux.ae2craftingtime.core.TtcAccuracyStats(1, 1, 1, 0, 0, 1, 7, 20, 20, 2, 3),
+                new com.ctux.ae2craftingtime.core.TtcAccuracyStats(1, 1, 1, 0, 0, 1, 0, 20, 20, 2, 2))) {
+            assertFalse(StandardAe2Scenario.galleryAccuracyReady(incomplete,
+                    incomplete.fullyCoveredSampleCount() == 0));
+        }
     }
 
     @TempDir

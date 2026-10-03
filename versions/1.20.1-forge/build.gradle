@@ -301,6 +301,17 @@ tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification).config
     classDirectories.from(coveredTestDriverClasses)
     violationRules.rule {
         element = 'METHOD'
+        includes = ['com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.suspensionPausedJobReady*',
+                    'com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.validateSuspension*',
+                    'com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.focusNativeWindow*',
+                    'com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.galleryPlanReady*',
+                    'com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.lambda$galleryPlanReady*',
+                    'com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.galleryAccuracyReady*']
+        limit { counter = 'LINE'; minimum = 1.0 }
+        limit { counter = 'BRANCH'; minimum = 1.0 }
+    }
+    violationRules.rule {
+        element = 'METHOD'
         includes = ['com.ctux.ae2craftingtime.testdriver.RecurrentPlanFixture.enableDetection*',
                     'com.ctux.ae2craftingtime.testdriver.RecurrentPlanFixture.restoreDetection*']
         limit { counter = 'LINE'; minimum = 1.0 }

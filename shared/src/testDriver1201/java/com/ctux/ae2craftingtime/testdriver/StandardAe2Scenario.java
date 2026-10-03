@@ -1843,13 +1843,11 @@ final class StandardAe2Scenario {
 
     private boolean suspensionPausedStable(ServerPlayer player) {
         var large = fixture.suspensionState(player, 0);
-        if (!large.busy() || !large.suspended() || !large.profilerSuspended()
-                || !large.jobId().equals(suspensionLargeId)) return false;
+        if (!suspensionPausedJobReady(large, suspensionLargeId)) return false;
         var tick = player.level().getGameTime();
         if (suspensionPauseTick == 0) {
             if (suspensionStage == 3) {
-                if (large.waiting() == 0 || large.furnaceInput() + large.furnaceOutput() == 0)
-                    throw new IllegalStateException("No in-flight furnace return at pause acknowledgement");
+                validateSuspensionInFlightReturn(large);
                 suspensionReturned = large.remaining();
             }
             suspensionPauseTick = tick;
@@ -1859,8 +1857,7 @@ final class StandardAe2Scenario {
         }
         fixture.pumpSuspension(player);
         large = fixture.suspensionState(player, 0);
-        if (large.undispatched() != suspensionUndispatched)
-            throw new IllegalStateException("Paused CPU dispatched another pattern");
+        validateSuspensionDispatch(large.undispatched(), suspensionUndispatched);
         return tick - suspensionPauseTick >= 10;
     }
 
@@ -1941,10 +1938,7 @@ final class StandardAe2Scenario {
             if (!server(minecraft, player -> {
                 fixture.pumpSuspension(player);
                 var large = fixture.suspensionState(player, 0);
-                if (!large.busy() || !large.suspended() || !large.profilerSuspended()
-                        || !large.jobId().equals(suspensionLargeId)
-                        || large.undispatched() != suspensionUndispatched)
-                    throw new IllegalStateException("Paused CPU changed before in-flight return");
+                validateSuspensionPausedJob(large, suspensionLargeId, suspensionUndispatched);
                 if (large.remaining() >= suspensionReturned) return false;
                 mark(checks, "in-flight-progress", true);
                 if (!fixture.submitSuspensionSmall(player)) return false;
@@ -1959,8 +1953,7 @@ final class StandardAe2Scenario {
                 fixture.pumpSuspension(player);
                 var large = fixture.suspensionState(player, 0);
                 var small = fixture.suspensionState(player, 1);
-                if (large.undispatched() != suspensionUndispatched)
-                    throw new IllegalStateException("Paused CPU dispatched another pattern");
+                validateSuspensionDispatch(large.undispatched(), suspensionUndispatched);
                 var delayTicks = Math.max(400,
                         com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current()
                                 .minimumNoProgressSeconds() * 20L) + 20;
@@ -1969,10 +1962,9 @@ final class StandardAe2Scenario {
                         com.ctux.ae2craftingtime.mc1201.ProfilerBridge.networkId(
                                 fixture.suspensionCpu(player, 0).getGrid()),
                         appeng.api.stacks.AEItemKey.of(net.minecraft.world.item.Items.IRON_INGOT));
-                if (com.ctux.ae2craftingtime.mc1201.ProfilerBridge.isStillDelayed(key)
-                        || com.ctux.ae2craftingtime.mc1201.ProfilerBridge.remainingJobSeconds(
-                                fixture.suspensionCpu(player, 0)).isPresent())
-                    throw new IllegalStateException("Paused job retained a delayed warning or total estimate");
+                validateSuspensionDiagnostics(com.ctux.ae2craftingtime.mc1201.ProfilerBridge.isStillDelayed(key),
+                        () -> com.ctux.ae2craftingtime.mc1201.ProfilerBridge.remainingJobSeconds(
+                                fixture.suspensionCpu(player, 0)).isPresent());
                 return !small.busy() && large.busy() && large.jobId().equals(suspensionLargeId);
             })) return false;
             mark(checks, "small-completes", true);
@@ -2003,8 +1995,7 @@ final class StandardAe2Scenario {
             if (!server(minecraft, player -> {
                 if (suspensionCycle != 1 || suspensionDelayedObserved) fixture.pumpSuspension(player);
                 var large = fixture.suspensionState(player, 0);
-                if (large.busy() && !large.jobId().equals(suspensionLargeId))
-                    throw new IllegalStateException("Resume replaced the large job");
+                validateSuspensionResumedJob(large, suspensionLargeId);
                 if (large.busy() && !large.suspended()) mark(checks, "same-job-resumed", true);
                 if (suspensionCycle == 1 && !suspensionDelayedObserved) {
                     if (large.suspended()) return false;
@@ -2015,10 +2006,9 @@ final class StandardAe2Scenario {
                                     fixture.suspensionCpu(player, 0).getGrid()),
                             appeng.api.stacks.AEItemKey.of(net.minecraft.world.item.Items.IRON_INGOT));
                     var delayed = com.ctux.ae2craftingtime.mc1201.ProfilerBridge.isStillDelayed(key);
-                    if (delayed && tick - suspensionResumeTick <
-                            com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current()
-                                    .minimumNoProgressSeconds() * 20L - 5)
-                        throw new IllegalStateException("Resume inherited the paused delay timer");
+                    validateSuspensionDelay(delayed, tick - suspensionResumeTick,
+                            () -> com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current()
+                                    .minimumNoProgressSeconds() * 20L - 5);
                     if (!delayed) return false;
                     mark(checks, "resume-delay-rearms", true);
                     suspensionDelayedObserved = true;
@@ -2237,8 +2227,7 @@ final class StandardAe2Scenario {
                 }
                 return false;
             })) return false;
-            if (suspensionLargeId.equals(suspensionPreviousId))
-                throw new IllegalStateException("Replacement job reused the prior UUID");
+            validateSuspensionReplacement(suspensionLargeId, suspensionPreviousId);
             if (!(minecraft.player.containerMenu instanceof appeng.menu.me.crafting.CraftingCPUMenu)) {
                 openSuspensionCpu(minecraft, 0);
                 return false;
@@ -2370,6 +2359,42 @@ final class StandardAe2Scenario {
                     com.ctux.ae2craftingtime.core.OptionFeature.PROFILING));
         }
         return false;
+    }
+
+    static boolean suspensionPausedJobReady(StandardCraftFixture.SuspensionState state, String jobId) {
+        return state.busy() && state.suspended() && state.profilerSuspended() && state.jobId().equals(jobId);
+    }
+
+    static void validateSuspensionInFlightReturn(StandardCraftFixture.SuspensionState state) {
+        if (state.waiting() == 0 || state.furnaceInput() + state.furnaceOutput() == 0)
+            throw new IllegalStateException("No in-flight furnace return at pause acknowledgement");
+    }
+
+    static void validateSuspensionDispatch(long undispatched, long previous) {
+        if (undispatched != previous) throw new IllegalStateException("Paused CPU dispatched another pattern");
+    }
+
+    static void validateSuspensionPausedJob(StandardCraftFixture.SuspensionState state, String jobId, long undispatched) {
+        if (!suspensionPausedJobReady(state, jobId) || state.undispatched() != undispatched)
+            throw new IllegalStateException("Paused CPU changed before in-flight return");
+    }
+
+    static void validateSuspensionDiagnostics(boolean delayed, java.util.function.BooleanSupplier hasEstimate) {
+        if (delayed || hasEstimate.getAsBoolean())
+            throw new IllegalStateException("Paused job retained a delayed warning or total estimate");
+    }
+
+    static void validateSuspensionResumedJob(StandardCraftFixture.SuspensionState state, String jobId) {
+        if (state.busy() && !state.jobId().equals(jobId)) throw new IllegalStateException("Resume replaced the large job");
+    }
+
+    static void validateSuspensionDelay(boolean delayed, long elapsed, java.util.function.LongSupplier threshold) {
+        if (delayed && elapsed < threshold.getAsLong())
+            throw new IllegalStateException("Resume inherited the paused delay timer");
+    }
+
+    static void validateSuspensionReplacement(String jobId, String previous) {
+        if (jobId.equals(previous)) throw new IllegalStateException("Replacement job reused the prior UUID");
     }
 
     static void validateBadgeBeforeRelaunch(com.ctux.ae2craftingtime.core.ClientConfig config) {
@@ -3366,15 +3391,22 @@ final class StandardAe2Scenario {
         var user = User32.INSTANCE;
         var nativeWindow = new com.sun.jna.platform.win32.WinDef.HWND(com.sun.jna.Pointer.createConstant(
                 org.lwjgl.glfw.GLFWNativeWin32.glfwGetWin32Window(window)));
+        return focusNativeWindow(nativeWindow, user,
+                () -> new DWORD(com.sun.jna.platform.win32.Kernel32.INSTANCE.GetCurrentThreadId()),
+                () -> org.lwjgl.glfw.GLFW.glfwFocusWindow(window));
+    }
+
+    static boolean focusNativeWindow(com.sun.jna.platform.win32.WinDef.HWND nativeWindow, User32 user,
+            java.util.function.Supplier<DWORD> threadId, Runnable requestFocus) {
         var foreground = user.GetForegroundWindow();
         if (nativeWindow.equals(foreground)) return true;
         // A scheduled client can be visible while another desktop window still owns input.
-        var currentThread = new DWORD(com.sun.jna.platform.win32.Kernel32.INSTANCE.GetCurrentThreadId());
+        var currentThread = threadId.get();
         var foregroundThread = new DWORD(user.GetWindowThreadProcessId(foreground, null));
         boolean attached = !currentThread.equals(foregroundThread)
                 && user.AttachThreadInput(currentThread, foregroundThread, true);
         try {
-            org.lwjgl.glfw.GLFW.glfwFocusWindow(window);
+            requestFocus.run();
         } finally {
             if (attached) user.AttachThreadInput(currentThread, foregroundThread, false);
         }
