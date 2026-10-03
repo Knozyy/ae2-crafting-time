@@ -17,6 +17,44 @@ import org.junit.jupiter.api.io.TempDir;
 class ResourceFixtureControlTest {
     @TempDir Path directory;
 
+    @Test
+    @org.junit.jupiter.api.condition.EnabledOnOs(org.junit.jupiter.api.condition.OS.WINDOWS)
+    void unreadableRegularCommandPreservesTheNativeIoFailure() throws Exception {
+        writeCommand(command(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 0, 1,
+                ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Case.ITEM, 0));
+        var path = directory.resolve("resource/command.properties");
+        try (var denied = java.nio.channels.FileChannel.open(path, java.nio.file.StandardOpenOption.READ,
+                com.sun.nio.file.ExtendedOpenOption.NOSHARE_READ)) {
+            var error = assertThrows(IllegalStateException.class,
+                    () -> ResourceFixtureControl.readCommand(directory));
+            assertEquals("cannot read resource control file", error.getMessage());
+            assertTrue(error.getCause() instanceof java.io.IOException);
+        }
+        assertEquals(ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.readCommand(directory).action());
+    }
+
+    @Test void linkedAncestorCannotRedirectTheControlDirectory() throws Exception {
+        var real = Files.createDirectories(directory.resolve("real"));
+        Files.createDirectories(real.resolve("resource"));
+        var alias = directory.resolve("alias");
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            var process = new ProcessBuilder("cmd.exe", "/d", "/c", "mklink", "/J",
+                    alias.toString(), real.toString()).redirectErrorStream(true).start();
+            var output = new String(process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            assertEquals(0, process.waitFor(), output);
+        } else {
+            Files.createSymbolicLink(alias, real);
+        }
+        try {
+            assertFalse(Files.isSymbolicLink(alias.resolve("resource")), "The immediate parent is a real directory");
+            var error = assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.readCommand(alias));
+            assertEquals("resource control directory is linked", error.getMessage());
+            assertTrue(Files.notExists(real.resolve("resource/command.properties")), "Rejected reads must not write");
+        } finally {
+            Files.delete(alias);
+        }
+    }
+
     @Test void productionCheckpointsIncludeBoundedLifecycleTransitions() {
         assertEquals(List.of("held", "resource-reloaded", "chunk-reloaded", "rejoined", "completed",
                 "cancel-held", "cancelled"), ResourceFixtureControl.expectedCheckpoints(
