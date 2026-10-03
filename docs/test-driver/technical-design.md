@@ -81,6 +81,15 @@ against the actual player UUID and role. Restore the role, campaign and control
 properties in `finally`; assert no command, server operation or screen/menu
 change. These invalid-input assertions do not represent a real server reply or
 replace the retained two-client connected scenario.
+Invalid badge-observation guards use separate flows against the same real native
+status screen. Copy the current observation only to create deliberately invalid
+DTO inputs: wrong screen identity, missing/empty/one-row observations or the actual
+panel rectangle placed in the badge list. Keep the source frame ID and all other
+native fields; never label these inputs rendered frames. Require all fifteen
+badge/scale guard combinations to reject before stable readiness advances, with
+no capture, server work, changed checks, GUI scale or saved bytes. Restore the
+original store observation in `finally`. Record the invalid inputs separately;
+the screenshot shows the unchanged actual screen, not the injected DTO.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

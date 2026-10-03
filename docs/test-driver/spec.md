@@ -154,7 +154,7 @@ actual stable-frame threshold in both cases without capture, changed checks,
 configuration writes or server work. Retain the native source frames, then
 require the ordinary scenario to pass after the check.
 
-Pending extension: matching remembered native row text must still reject an
+Matching remembered native row text must still reject an
 incorrect saved custom appearance after eight stable frames. Verify the actual
 default Off/black/176 settings before expecting the custom-appearance rejection.
 Also reject
@@ -172,14 +172,14 @@ configuration or invented saved bytes may satisfy that prerequisite.
 The `1bd6cca0` retry exposed the fixture's incorrect assumption that recurrence
 accepted Beta. Preserve and exclude that failed launch too. The corrected test
 requires the existing unsupported-role exception and retains the three invalid
-Alpha-state assertions; native verification is still pending.
+Alpha-state assertions; this failed attempt does not verify them.
 At `47e0dcb6`, all four participant assertions passed, but the matching-text
 check failed on its incorrect On-background prerequisite. Preserve and exclude
 that launch. The actual saved default is Off, black and opacity 176; use that
 verified incorrect custom appearance without changing saved bytes. Runtime
-verification of the corrected expectation is still pending.
+verification of the corrected expectation is recorded below.
 
-Pending packet-observation extension: driver highlight queries must require
+Driver highlight queries must require
 both the requested output and the fixture's provider position. Plate/output
 collections must stay bound to that position; beams additionally require a chat
 locate. Verify empty state, wrong output, wrong position, matching data and
@@ -187,6 +187,23 @@ session cleanup through the actual packet-data APIs and coordinate values.
 Enforce 100% line and branch coverage for these five queries and their predicates.
 Run the assertions against the unchanged packaged native class too; these data
 boundaries do not claim rendered world highlights.
+
+At `89ad1a55`, all fifteen native fault groups, menu closure and thirteen ordinary
+checks pass with JVM exit 0. The actual matching-text and participant boundaries
+pass. All 51 originals are reviewed in contact sheets; the badge checkpoint is
+also viewed individually. Four packaged-native highlight assertions and local
+coverage gates pass without skips. Both current-head CI checks pass. Codecov
+confirms 94.46%; the overall 100% target remains unfinished. The three failed
+attempts above remain preserved and excluded from the passing coverage reports.
+
+Pending invalid-observation extension: missing snapshots, wrong screen identity,
+empty rows, one positive row and an actual panel rectangle used as an invalid
+badge must leave both badge states and scale readiness pending. Verify all fifteen
+combinations against the actual native status screen, preserving stage, zero
+stable-frame count, checks, screen, menu, GUI scale and saved bytes, with no capture
+or server operation. These deliberately invalid observation DTOs are guard inputs,
+not rendered native frames. Restore the original observation in `finally`, keep
+their evidence separate from screenshots, then require the ordinary scenario PASS.
 
 ## Plan readiness with optional backgrounds (#585)
 

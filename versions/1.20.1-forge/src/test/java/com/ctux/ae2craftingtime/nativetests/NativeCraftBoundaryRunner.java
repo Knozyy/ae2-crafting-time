@@ -121,6 +121,13 @@ final class NativeCraftBoundaryRunner {
                     }
                     return;
                 }
+                if (passed.contains("badge-off-unremembered-text") && !passed.contains("invalid-badge-observations")) {
+                    NativeBadgeInputBoundary.verify(minecraft, standardType,
+                            (Map<?, ?>) field(flow.getClass(), "checks", flow), output);
+                    begin(minecraft, "invalid-badge-observations", UiObservationStore.latest().frame());
+                    finishFault(minecraft);
+                    return;
+                }
                 staleStatus.observe(minecraft);
                 beginFault(minecraft);
             }
@@ -135,7 +142,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 15 : 14,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 16 : 15,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();
