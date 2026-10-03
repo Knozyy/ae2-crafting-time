@@ -230,6 +230,10 @@ public final class NativeOptionsBoundaryMod {
                     var config = new ClientConfig();
                     config.setColor(ClientConfig.Color.BADGE, 0x245A7D);
                     config.setBadgeOpacity(96);
+                    var physicalPath = minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml");
+                    set(ClientOptionsRuntime.class, "path", null, physicalPath);
+                    try { ClientOptionsRuntime.apply(config); }
+                    finally { set(ClientOptionsRuntime.class, "path", null, output.resolve("client.toml")); }
                     ClientOptionsRuntime.apply(config);
                     var continuationType = Class.forName(scenarioType.getName() + "$BadgeContinuation");
                     var recordConstructor = continuationType.getDeclaredConstructor(int.class, String.class, String.class,
@@ -255,7 +259,6 @@ public final class NativeOptionsBoundaryMod {
                             net.minecraft.client.resources.language.I18n.get("gui.cancel"));
                     assertInstanceOf(TitleScreen.class, minecraft.screen);
                     set(scenarioType, "badgeResumeStep", scenario, 4);
-                    var physicalPath = minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml");
                     var saved = Files.readAllBytes(physicalPath);
                     try {
                         Files.writeString(physicalPath, "\n# native test: unexpected save after Cancel\n", java.nio.file.StandardOpenOption.APPEND);
