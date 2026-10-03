@@ -46,7 +46,11 @@ rejection; reopen Options and let the normal flow recover. Temporarily move the
 owned uniform-font fixture out of the native pack directory, require the exact
 missing-pack rejection, restore the same files, and retry the interrupted scale
 case. Keep saved options and ordinary checks unchanged during each fault.
-Require all four fault checks and the ordinary scenario's full PASS result. Preserve original native
+Also reject status relaunch while compact amounts are still enabled, and reject
+it when the ordinary check map is incomplete. Use the actual status screen and
+native option values; restore the original configuration before continuing.
+These persistence guard extensions are pending verification. Require all six
+fault checks and the ordinary scenario's full PASS result. Preserve original native
 captures and keep deliberate fault assertions separate from the normal result.
 
 ## Plan readiness with optional backgrounds (#585)

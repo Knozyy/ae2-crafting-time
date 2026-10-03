@@ -38,6 +38,9 @@ final class NativeCraftBoundaryRunner {
     private Path fontPack;
     private Path heldFontPack;
     private int scaleCaptures;
+    private Object persistenceFlow;
+    private com.ctux.ae2craftingtime.core.ClientConfig persistenceConfig;
+    private int persistenceCaptures;
     private boolean finished;
     private long started;
 
@@ -81,7 +84,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(4, passed.size(), "Every required native fault must execute");
+                assertEquals(6, passed.size(), "Every required native fault must execute");
                 Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(Map.of(
                         "result", "PASS", "checks", passed, "normalResult", result,
                         "runtimeClassSha256", runtimeHash())));
@@ -93,6 +96,8 @@ final class NativeCraftBoundaryRunner {
             finished = true;
             try {
                 restoreFontPack();
+                if (persistenceConfig != null)
+                    com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.apply(persistenceConfig);
                 Files.createDirectories(output);
                 var trace = new java.io.StringWriter();
                 error.printStackTrace(new java.io.PrintWriter(trace));
@@ -119,6 +124,21 @@ final class NativeCraftBoundaryRunner {
             caseBefore = (int) field(standardType, phase.equals("STATUS_AMOUNTS") ? "quantityCase" : "quantityScaleCase", standard);
             ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$setStatus(
                     new CraftingStatus(true, 0, 0, 0, List.of()));
+        } else if (phase.equals("STATUS_OPTIONS") && minecraft.screen instanceof CraftingStatusScreen
+                && !passed.contains("persist-compact-on")) {
+            begin(minecraft, "persist-compact-on", snapshot.frame());
+            persistenceConfig = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().copy();
+            assertTrue(persistenceConfig.features().enabled(
+                    com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS));
+            var constructor = standardType.getDeclaredConstructor(String.class, String.class, Path.class, boolean.class);
+            constructor.setAccessible(true);
+            var options = DriverOptions.load();
+            persistenceFlow = constructor.newInstance("standard-status-controls", options.world(), output, false);
+            var stageType = Class.forName(standardType.getName() + "$Stage");
+            var persist = java.util.Arrays.stream(stageType.getEnumConstants())
+                    .filter(value -> value.toString().equals("STATUS_PERSIST")).findFirst().orElseThrow();
+            set(standardType, "phase", persistenceFlow, persist);
+            set(standardType, "amountPersistSaving", persistenceFlow, true);
         } else if (phase.equals("STATUS_OPTIONS") && minecraft.screen instanceof OptionsScreen
                 && !(boolean) field(standardType, "amountOptionSaving", standard) && !passed.contains("cancel-before-save")) {
             begin(minecraft, "cancel-before-save", snapshot.frame());
@@ -161,13 +181,21 @@ final class NativeCraftBoundaryRunner {
         method.setAccessible(true);
         try {
             var capture = (java.util.function.Consumer<String>) name -> {
-                if (!pending.equals("missing-font-pack")) fail("Fault advanced to a success capture: " + name);
-                assertEquals("status-scale-default-auto.png", name);
-                scaleCaptures++;
+                if (pending.equals("persist-incomplete")) {
+                    assertEquals("status-saved-off.png", name);
+                    persistenceCaptures++;
+                } else {
+                    if (!pending.equals("missing-font-pack")) fail("Fault advanced to a success capture: " + name);
+                    assertEquals("status-scale-default-auto.png", name);
+                    scaleCaptures++;
+                }
             };
             var mouse = (java.util.function.BiConsumer<Integer, Integer>) (x, y) -> {};
-            assertEquals(false, method.invoke(standard, minecraft, marker, checks, capture, mouse));
-            if (pending.equals("missing-font-pack")) {
+            assertEquals(false, method.invoke(persistenceFlow == null ? standard : persistenceFlow,
+                    minecraft, marker, checks, capture, mouse));
+            if (pending.startsWith("persist-")) {
+                assertEquals(0, persistenceCaptures, "Incomplete status flow must reject before completing a capture");
+            } else if (pending.equals("missing-font-pack")) {
                 assertEquals(0, scaleCaptures, "Valid scale capture must reach the missing-pack rejection");
             } else if (!pending.equals("cancel-before-save")) {
                 var restored = ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$status();
@@ -186,7 +214,25 @@ final class NativeCraftBoundaryRunner {
             }
         } catch (InvocationTargetException error) {
             assertInstanceOf(IllegalStateException.class, error.getCause());
-            if (pending.equals("missing-font-pack")) {
+            if (pending.equals("persist-compact-on")) {
+                assertEquals("Compact amounts were not saved off before relaunch", error.getCause().getMessage());
+                assertFalse(((Map<?, ?>) checks).values().stream().allMatch(Boolean.TRUE::equals),
+                        "Use the genuinely incomplete ordinary check map");
+                finishFault(minecraft);
+                begin(minecraft, "persist-incomplete", snapshot.frame());
+                var off = persistenceConfig.copy();
+                off.features().setEnabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS, false);
+                com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.apply(off);
+            } else if (pending.equals("persist-incomplete")) {
+                assertEquals("Cannot relaunch with incomplete status checks: " + checks, error.getCause().getMessage());
+                assertEquals(1, persistenceCaptures);
+                assertFalse((boolean) field(standardType, "amountContinuationWritten", persistenceFlow));
+                assertFalse(Files.exists(output.resolve("status-amounts-continuation.json")));
+                finishFault(minecraft);
+                com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.apply(persistenceConfig);
+                persistenceConfig = null;
+                persistenceFlow = null;
+            } else if (pending.equals("missing-font-pack")) {
                 assertEquals("Disposable uniform-font pack was not staged", error.getCause().getMessage());
                 assertEquals(1, scaleCaptures);
                 assertEquals(3, field(standardType, "quantityScaleCase", standard));

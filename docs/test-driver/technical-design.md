@@ -28,6 +28,11 @@ scenario. For the missing-font-pack boundary, move only the owned staged fixture
 outside `resourcepacks`, preserving its bytes. After the actual repository rejects
 the missing pack, restore it and retry the scale case that the failed transition
 had incremented. Restore the fixture on unexpected failures too.
+For persistence rejections, use a separate standard flow against the same actual
+status screen and original incomplete check map. Check compact-On rejection,
+then native compact-Off rendering and incomplete-check rejection. Require no
+continuation file, restore the original runtime configuration, and resume the
+ordinary flow without changing its stage or checks.
 Write separate fault evidence, and require the original runtime result
 to pass before reporting the combined run as successful.
 
