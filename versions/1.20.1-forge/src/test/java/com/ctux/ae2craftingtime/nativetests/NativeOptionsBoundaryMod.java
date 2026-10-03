@@ -1,4 +1,4 @@
-package com.ctux.ae2craftingtime.testdriver;
+package com.ctux.ae2craftingtime.nativetests;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,7 +28,8 @@ public final class NativeOptionsBoundaryMod {
     private int seekAttempts;
     private long started;
     private boolean finished;
-    private StandardAe2Scenario scenario;
+    private Object scenario;
+    private Class<?> scenarioType;
 
     public NativeOptionsBoundaryMod() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -46,7 +47,10 @@ public final class NativeOptionsBoundaryMod {
                 originalConfig = ClientOptionsRuntime.current().copy();
                 set(ClientOptionsRuntime.class, "path", null, output.resolve("client.toml"));
                 started = System.nanoTime();
-                scenario = new StandardAe2Scenario("badge-background", "native-options-boundary", output, false);
+                scenarioType = Class.forName("com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario");
+                var constructor = scenarioType.getDeclaredConstructor(String.class, String.class, Path.class, boolean.class);
+                constructor.setAccessible(true);
+                scenario = constructor.newInstance("badge-background", "native-options-boundary", output, false);
                 org.lwjgl.glfw.GLFW.glfwMaximizeWindow(minecraft.getWindow().getWindow());
             }
             assertTrue(System.nanoTime() - started < 60_000_000_000L, "Native options checks exceeded 60 seconds");
@@ -55,7 +59,7 @@ public final class NativeOptionsBoundaryMod {
                     var config = new ClientConfig();
                     for (int fault = 0; fault < 3; fault++) {
                         ClientOptionsRuntime.apply(config);
-                        set(StandardAe2Scenario.class, "badgeEditOpen", scenario, true);
+                        set(scenarioType, "badgeEditOpen", scenario, true);
                         reject("badgeEditTick", new Class<?>[]{Minecraft.class, int.class},
                                 "Badge option save did not apply", minecraft, 0);
                         config.features().setEnabled(OptionFeature.BADGE_BACKGROUND, true);
@@ -68,7 +72,7 @@ public final class NativeOptionsBoundaryMod {
                     stage++;
                 }
                 case 1 -> {
-                    set(StandardAe2Scenario.class, "badgeResumeStep", scenario, 29);
+                    set(scenarioType, "badgeResumeStep", scenario, 29);
                     for (boolean plan : new boolean[]{true, false}) {
                         var config = new ClientConfig();
                         if (plan) config.setPlanSort(0); else config.setStatusSort(0);
@@ -96,7 +100,8 @@ public final class NativeOptionsBoundaryMod {
                 }
                 case 3 -> {
                     // Advance only on actual completed render callbacks as the driver does.
-                    TestDriverRuntime.renderedFrames++;
+                    var runtime = Class.forName("com.ctux.ae2craftingtime.testdriver.TestDriverRuntime");
+                    set(runtime, "renderedFrames", null, (long) field(runtime, "renderedFrames", null) + 1);
                     try {
                         assertNull(call("seekOptionButton", new Class<?>[]{Minecraft.class, String.class},
                                 minecraft, "native-boundary-missing"));
@@ -136,7 +141,7 @@ public final class NativeOptionsBoundaryMod {
     }
 
     private Object call(String name, Class<?>[] types, Object... arguments) throws Exception {
-        var method = StandardAe2Scenario.class.getDeclaredMethod(name, types);
+        var method = scenarioType.getDeclaredMethod(name, types);
         method.setAccessible(true);
         try { return method.invoke(scenario, arguments); }
         catch (InvocationTargetException error) {
@@ -167,7 +172,8 @@ public final class NativeOptionsBoundaryMod {
     }
 
     private static String runtimeHash() throws Exception {
-        try (var stream = StandardAe2Scenario.class.getResourceAsStream("StandardAe2Scenario.class")) {
+        var scenarioType = Class.forName("com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario");
+        try (var stream = scenarioType.getResourceAsStream("StandardAe2Scenario.class")) {
             return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
                     .digest(stream.readAllBytes()));
         }
