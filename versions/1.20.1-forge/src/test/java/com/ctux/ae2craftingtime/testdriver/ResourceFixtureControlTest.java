@@ -20,7 +20,7 @@ class ResourceFixtureControlTest {
     @Test
     @org.junit.jupiter.api.condition.EnabledOnOs(org.junit.jupiter.api.condition.OS.WINDOWS)
     void unreadableRegularCommandPreservesTheNativeIoFailure() throws Exception {
-        writeCommand(command(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 0, 1,
+        writeCommand(command(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, 1,
                 ResourceFixtureControl.Action.CREATE, ResourceFixtureControl.Case.ITEM, 0));
         var path = directory.resolve("resource/command.properties");
         try (var denied = java.nio.channels.FileChannel.open(path, java.nio.file.StandardOpenOption.READ,
