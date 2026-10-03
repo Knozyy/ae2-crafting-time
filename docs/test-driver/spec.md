@@ -39,8 +39,10 @@ pending persistence state; this Options-only check does not claim a relaunch.
 Observation clipping and widget visibility checks are pending. Use real
 registered item keys in native plan DTOs to assert the exact fifteen visible
 cells before and after scrolling. Hide and restore an actual title-screen
-widget and verify its observation follows visibility. Closing the actual screen
-must not publish another snapshot. These assertions check the observation model,
+widget and verify its observation follows visibility. Closing the actual world menu after ordinary scenario completion
+must not publish another snapshot; use the world fixture because closing a title
+returns another title screen. The initial title-close assertion failed and its
+run is preserved without contributing coverage. These assertions check the observation model,
 without claiming a rendered crafting menu for the DTO-only clipping checks.
 
 ## Native crafting fault checks (#378)
@@ -1045,3 +1047,4 @@ UUID, resumes through Alpha's menu, and finishes the native job. The runner
 records artifact hashes, phase/PID ledgers, server checkpoints, client
 screenshots and sidecars outside the world. Other connected leaves retain their
 one-client launch path.
+

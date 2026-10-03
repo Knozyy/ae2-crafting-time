@@ -90,6 +90,15 @@ final class NativeCraftBoundaryRunner {
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
                 assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 7 : 6,
                         passed.size(), "Every required native fault must execute");
+                assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
+                var observed = UiObservationStore.latest();
+                assertNotNull(observed);
+                UiObservationStore.begin(minecraft);
+                minecraft.player.closeContainer();
+                assertNull(minecraft.screen, "A native world menu must actually close");
+                UiObservationStore.finish(minecraft);
+                assertSame(observed, UiObservationStore.latest(), "Closed menu published a stale observation frame");
+                passed.add("closed-world-observation");
                 Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(Map.of(
                         "result", "PASS", "checks", passed, "normalResult", result,
                         "runtimeClassSha256", runtimeHash())));

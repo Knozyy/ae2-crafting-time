@@ -60,12 +60,6 @@ final class NativeObservationBoundary {
             UiObservationStore.finish(minecraft);
             assertTrue(UiObservationStore.latest().widgets().stream().anyMatch(value -> value.bounds().equals(bounds)));
             passed.add("Actual title widget disappears from observations while hidden and returns after restoring visibility");
-            var before = UiObservationStore.latest();
-            frame(minecraft);
-            minecraft.setScreen(null);
-            UiObservationStore.finish(minecraft);
-            assertSame(before, UiObservationStore.latest(), "Closing the native screen published another frame");
-            passed.add("Closing the actual native screen cannot publish a stale observation frame");
         } finally {
             UiObservationStore.reset();
             minecraft.setScreen(screen);
