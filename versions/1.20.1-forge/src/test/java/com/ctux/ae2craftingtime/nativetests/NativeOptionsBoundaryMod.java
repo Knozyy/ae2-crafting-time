@@ -170,6 +170,61 @@ public final class NativeOptionsBoundaryMod {
                     stage++;
                 }
                 case 8 -> {
+                    for (int fault = 0; fault < 3; fault++) {
+                        var config = new ClientConfig();
+                        config.features().setEnabled(OptionFeature.BADGE_BACKGROUND, fault < 2);
+                        config.features().setEnabled(OptionFeature.TEXT_SHADOW, fault == 1);
+                        openGroup(minecraft, config, "appearance");
+                        set(scenarioType, "badgeResumeStep", scenario, 6);
+                        set(scenarioType, "badgeResetBadgeEdited", scenario, fault == 1);
+                        set(scenarioType, "badgeShadowEdited", scenario, fault == 2);
+                        rejectBadge(minecraft, switch (fault) {
+                            case 0 -> "Unexpected badge value before section reset";
+                            case 1 -> "Text shadow did not start Off";
+                            default -> "Text shadow edit did not apply before reset";
+                        });
+                    }
+                    passed.add("Rejected unexpected badge state and both failed shadow edits before reset");
+                    var config = new ClientConfig();
+                    config.setPlanSort(0);
+                    openGroup(minecraft, config, "controls");
+                    set(scenarioType, "badgeResumeStep", scenario, 21);
+                    stage++;
+                }
+                case 9 -> {
+                    if (!awaitBadgeRejection(minecraft, "Controls sort differs at step 21")) return;
+                    passed.add("Rejected wrong plan sort displayed by the native Controls screen");
+                    var config = new ClientConfig();
+                    config.setStatusSort(0);
+                    openGroup(minecraft, config, "controls");
+                    set(scenarioType, "badgeResumeStep", scenario, 23);
+                    stage++;
+                }
+                case 10 -> {
+                    if (!awaitBadgeRejection(minecraft, "Controls sort differs at step 23")) return;
+                    passed.add("Rejected wrong status sort displayed by the native Controls screen");
+                    openGroup(minecraft, new ClientConfig(), "displays");
+                    set(scenarioType, "badgeResumeStep", scenario, 7);
+                    set(scenarioType, "badgeResetCheckPhase", scenario, 3);
+                    stage++;
+                }
+                case 11 -> {
+                    if (!awaitBadgeRejection(minecraft, "Reset changed another group or Reset All failed")) return;
+                    passed.add("Rejected section reset losing another group's edited colors");
+                    var config = new ClientConfig();
+                    config.features().setEnabled(OptionFeature.TTC_COLORS, true);
+                    openGroup(minecraft, config, "displays");
+                    set(scenarioType, "badgeResumeStep", scenario, 11);
+                    set(scenarioType, "badgeResetCheckPhase", scenario, 3);
+                    stage++;
+                }
+                case 12 -> {
+                    if (!awaitBadgeRejection(minecraft, "Reset changed another group or Reset All failed")) return;
+                    passed.add("Rejected Reset All retaining edited colors");
+                    capture(minecraft, "native-options-rejected-colors.png");
+                    stage++;
+                }
+                case 13 -> {
                     restore();
                     Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(
                             Map.of("result", "PASS", "checks", passed, "runtimeClassSha256", runtimeHash())));
@@ -194,6 +249,35 @@ public final class NativeOptionsBoundaryMod {
         var error = assertThrows(IllegalStateException.class, () -> call(name, types, arguments));
         assertEquals(message, error.getMessage());
         assertArrayEquals(before, Files.readAllBytes(output.resolve("client.toml")), "Rejected action changed saved options");
+    }
+
+    private void openGroup(Minecraft minecraft, ClientConfig config, String group) throws Exception {
+        ClientOptionsRuntime.apply(config);
+        minecraft.setScreen(new OptionsScreen(null));
+        call("clickOptionButton", new Class<?>[]{Minecraft.class, String.class}, minecraft,
+                net.minecraft.client.resources.language.I18n.get("config.ae2craftingtime.group." + group));
+        set(scenarioType, "badgeResumeRenderedAfter", scenario, 0L);
+    }
+
+    private void rejectBadge(Minecraft minecraft, String message) throws Exception {
+        reject("badgeRelaunchTick", new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                message, minecraft, Map.of(),
+                (java.util.function.Consumer<String>) name -> fail("Invalid options must not capture success"));
+    }
+
+    private boolean awaitBadgeRejection(Minecraft minecraft, String message) throws Exception {
+        var before = Files.readAllBytes(output.resolve("client.toml"));
+        try {
+            assertEquals(false, call("badgeRelaunchTick",
+                    new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                    minecraft, Map.of(), (java.util.function.Consumer<String>) name -> fail("Invalid options captured success")));
+            return false;
+        } catch (IllegalStateException error) {
+            assertEquals(message, error.getMessage());
+            return true;
+        } finally {
+            assertArrayEquals(before, Files.readAllBytes(output.resolve("client.toml")), "Rejected action changed saved options");
+        }
     }
 
     private Object call(String name, Class<?>[] types, Object... arguments) throws Exception {
