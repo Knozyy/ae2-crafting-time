@@ -155,6 +155,10 @@ sourceSets.testDriver.runtimeClasspath += sourceSets.testDriver.output + sourceS
 ext.testDriverLoader = 'neoforge'
 tasks.register('testDriverUnmappedJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar)
 apply from: rootProject.file('scripts/test-driver.gradle')
+sourceSets.test.compileClasspath += sourceSets.testDriver.output
+sourceSets.test.runtimeClasspath += sourceSets.testDriver.output
+sourceSets.test.compileClasspath += configurations.testDriverLibraries
+sourceSets.test.runtimeClasspath += configurations.testDriverLibraries
 sourceSets.testDriver.java.exclude { element ->
     element.file.path.replace('\\', '/').contains('/shared/src/testDriver1201/') &&
             element.file.name in ['AppliedBotanicsFixture.java', 'Ae2ThingsFixture.java']
