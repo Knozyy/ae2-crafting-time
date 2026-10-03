@@ -8,6 +8,17 @@ Implementation: [PR #128](https://github.com/cTux/ae2-crafting-time/pull/128), [
 Verification: [prepared-client results](../automated-ui-testing/prepared-clients-2026-09-08.md).
 Stored-variant and resource-icon sections inherit their linked feature status.
 
+## Native options fault checks (#378)
+
+Status: planned; runtime verification pending.
+
+The test-only Forge fixture uses the initialized Minecraft client and real
+Options screen to check rejected saves, incorrect reset values and missing
+controls. Each fault must assert the exact rejection and preserve the saved
+configuration. Successful recovery must pass after restoring valid values.
+Keep its JAR out of production and normal driver launches. Run it only in the
+disposable coverage client, with bounded execution and original screenshots.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.

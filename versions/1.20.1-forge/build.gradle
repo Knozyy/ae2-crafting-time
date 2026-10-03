@@ -81,6 +81,36 @@ sourceSets.test.java.srcDir '../../shared/src/mc1201Test/java'
 sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
 sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
 
+// Optional real-client fault checks; neither dist nor the ordinary driver depends on this artifact.
+def nativeOptionsMetadata = layout.buildDirectory.file('native-options-boundary/META-INF/mods.toml')
+def nativeOptionsBoundaryUnmapped = tasks.register('nativeOptionsBoundaryUnmappedJar', Jar) {
+    from(sourceSets.test.output) { include '**/NativeOptionsBoundaryMod*.class' }
+    from({ configurations.testRuntimeClasspath.findAll {
+        it.name.startsWith('junit-jupiter-api-') || it.name.startsWith('junit-platform-commons-')
+                || it.name.startsWith('opentest4j-') || it.name.startsWith('apiguardian-api-')
+    }.collect { zipTree(it) } }) { exclude 'META-INF/**', 'module-info.class' }
+    from(nativeOptionsMetadata) { into 'META-INF' }
+    archiveFileName = 'ae2ct-native-options-boundary-unmapped.jar'
+    destinationDirectory = layout.buildDirectory.dir('native-options-boundary')
+    doFirst {
+        def metadata = nativeOptionsMetadata.get().asFile
+        metadata.parentFile.mkdirs()
+        metadata.text = '''modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+[[mods]]
+modId="ae2ct_native_options_boundary"
+version="1"
+displayName="AE2CT Native Options Boundary Tests"
+'''
+    }
+}
+def nativeOptionsBoundaryRemapped = obfuscation.reobfuscate(nativeOptionsBoundaryUnmapped, sourceSets.testDriver) {
+    archiveFileName = 'ae2ct-native-options-boundary.jar'
+    destinationDirectory = layout.buildDirectory.dir('native-options-boundary')
+}
+tasks.register('nativeOptionsBoundaryJar') { dependsOn nativeOptionsBoundaryRemapped }
+
 repositories {
     mavenCentral()
     exclusiveContent {

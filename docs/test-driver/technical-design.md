@@ -2,6 +2,17 @@
 
 Lifecycle: see the [scope status and evidence](spec.md).
 
+## Native options fault checks (#378)
+
+The optional `nativeOptionsBoundaryJar` contains test classes and its own Forge
+entrypoint. It runs after the native title screen is ready, on completed client
+render callbacks. It calls the existing driver guards against actual screens,
+widgets and configuration; it provides no replacement Minecraft objects.
+Reflection exposes private guards only inside this test artifact. Redirect
+configuration writes to the owned evidence directory, restore the previous
+runtime configuration in `finally`, and capture actual rendered screens.
+Record each assertion and fail the run on any unexpected exception or timeout.
+
 ## Plan readiness with optional backgrounds (#585)
 
 See the [criteria](spec.md#plan-readiness-with-optional-backgrounds-585).
