@@ -1108,6 +1108,12 @@ first process from authorizing the second. Existing single-client scenarios
 keep their original lock and launch path.
 
 Both connected clients acknowledge the running job before Alpha pauses it.
+During reload, the server accepts Beta's `stale-sent` acknowledgement only
+while the original job remains suspended and the stale request has been
+rejected. Beta consumes that epoch/sequence/action-bound reply even if Alpha
+has already resumed the job; checking the later suspension flag before reading
+the reply would strand Beta in its acknowledgement stage. A file-rendezvous
+regression covers delayed consumption after resume and mismatched replies.
 The server publishes the final acknowledgement and waits for both clients to
 exit before saving/shutting down, avoiding a disconnect before client evidence
 is written. Progress checkpoints contain the actual native job/furnace counts

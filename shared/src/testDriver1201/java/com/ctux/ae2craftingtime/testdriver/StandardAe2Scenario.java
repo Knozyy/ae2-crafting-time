@@ -1751,8 +1751,7 @@ final class StandardAe2Scenario {
             return false;
         }
         if (role.equals("beta") && suspensionStage == 4) {
-            if (!serverJob.suspended() || !CpuListTtcControl.request("stale-sent")) return false;
-            mark(checks, "stale-rejected", true);
+            if (!acknowledgeStaleSuspension(checks)) return false;
             minecraft.player.closeContainer();
             suspensionStage = 5;
             return false;
@@ -1786,6 +1785,14 @@ final class StandardAe2Scenario {
         }
         if (suspensionStage == 7 && CpuListTtcControl.request("resumed")) suspensionStage = 8;
         return false;
+    }
+
+    static boolean acknowledgeStaleSuspension(Map<String, Boolean> checks) {
+        // The server accepts this acknowledgement only while the stale action is rejected
+        // against the paused job. Alpha may resume before Beta consumes that reply.
+        if (!CpuListTtcControl.request("stale-sent")) return false;
+        mark(checks, "stale-rejected", true);
+        return true;
     }
 
     private void openSuspensionCpu(Minecraft minecraft, int index) {

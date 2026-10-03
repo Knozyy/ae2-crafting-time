@@ -311,6 +311,7 @@ tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification).config
     violationRules.rule {
         element = 'METHOD'
         includes = ['com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.suspensionPausedJobReady*',
+                    'com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.acknowledgeStaleSuspension*',
                     'com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.validateSuspension*',
                     'com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.focusNativeWindow*',
                     'com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.galleryPlanReady*',

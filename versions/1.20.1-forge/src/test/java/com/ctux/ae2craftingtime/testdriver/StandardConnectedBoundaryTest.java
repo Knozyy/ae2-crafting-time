@@ -160,4 +160,77 @@ class StandardConnectedBoundaryTest {
             state.store(output, null);
         }
     }
+
+    @Test void consumesTheServersStaleRejectionEvenAfterAlphaResumes() throws Exception {
+        checks.put("stale-rejected", false);
+        var paused = saveReloadState("resume-ready",
+                "{\"jobId\":\"large\",\"suspended\":true}");
+        assertFalse(StandardAe2Scenario.acknowledgeStaleSuspension(checks));
+        assertFalse(checks.get("stale-rejected"));
+        var command = CpuListTtcControl.command(directory);
+        assertEquals("epoch", command.epoch());
+        assertEquals("stale-sent", command.action());
+        paused.setProperty("ack", Long.toString(command.sequence()));
+        paused.setProperty("serverState", "{\"jobId\":\"large\",\"suspended\":false}");
+        paused.setProperty("action", "resumed");
+        saveReloadProperties(paused);
+        assertFalse(StandardAe2Scenario.acknowledgeStaleSuspension(checks));
+        assertFalse(checks.get("stale-rejected"));
+        paused.setProperty("action", "stale-sent");
+        paused.setProperty("epoch", "other");
+        saveReloadProperties(paused);
+        assertFalse(StandardAe2Scenario.acknowledgeStaleSuspension(checks));
+        assertFalse(checks.get("stale-rejected"));
+        paused.setProperty("epoch", "epoch");
+        saveReloadProperties(paused);
+        assertTrue(StandardAe2Scenario.acknowledgeStaleSuspension(checks));
+        assertTrue(checks.get("stale-rejected"));
+        assertEquals(command, CpuListTtcControl.command(directory));
+    }
+
+    @Test void reloadedCompletionWaitsForAllOutputAndTheMatchingServerAcknowledgement() throws Exception {
+        System.setProperty("ae2craftingtime.test.suspensionReload", "true");
+        System.setProperty("ae2craftingtime.test.role", "alpha");
+        var scenario = scenario();
+        var stage = StandardAe2Scenario.class.getDeclaredField("suspensionStage");
+        stage.setAccessible(true);
+        stage.set(scenario, 8);
+        for (var values : new String[][]{
+                {"running", "{\"jobId\":\"large\",\"networkOutput\":64}"},
+                {"completed", "null"},
+                {"completed", "{\"jobId\":\"large\",\"networkOutput\":63}"}}) {
+            saveReloadState(values[0], values[1]);
+            assertFalse(tick(scenario));
+            assertFalse(Files.exists(directory.resolve("command.properties")));
+        }
+        var completed = saveReloadState("completed",
+                "{\"jobId\":\"large\",\"networkOutput\":64}");
+        assertFalse(tick(scenario));
+        var command = CpuListTtcControl.command(directory);
+        assertEquals("epoch", command.epoch());
+        assertEquals("complete-observed", command.action());
+        completed.setProperty("ack", Long.toString(command.sequence()));
+        completed.setProperty("action", "different-action");
+        saveReloadProperties(completed);
+        assertFalse(tick(scenario));
+        completed.setProperty("action", command.action());
+        saveReloadProperties(completed);
+        assertTrue(tick(scenario));
+    }
+
+    private Properties saveReloadState(String phase, String job) throws Exception {
+        var state = new Properties();
+        state.setProperty("ready", "true");
+        state.setProperty("epoch", "epoch");
+        state.setProperty("phase", phase);
+        state.setProperty("serverState", job);
+        saveReloadProperties(state);
+        return state;
+    }
+
+    private void saveReloadProperties(Properties state) throws Exception {
+        try (var output = Files.newOutputStream(directory.resolve("state.properties"))) {
+            state.store(output, "Reloaded suspension boundary");
+        }
+    }
 }
