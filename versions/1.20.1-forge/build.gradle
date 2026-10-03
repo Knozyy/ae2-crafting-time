@@ -303,7 +303,8 @@ tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification).config
     violationRules.rule {
         element = 'METHOD'
         includes = ['com.ctux.ae2craftingtime.testdriver.UiSnapshot.matchingRenderedText*',
-                    'com.ctux.ae2craftingtime.testdriver.UiSnapshot.lambda$matchingRenderedText*']
+                    'com.ctux.ae2craftingtime.testdriver.UiSnapshot.lambda$matchingRenderedText*',
+                    'com.ctux.ae2craftingtime.testdriver.UiSnapshot.nativeStatusTitle*']
         limit { counter = 'LINE'; minimum = 1.0 }
         limit { counter = 'BRANCH'; minimum = 1.0 }
     }

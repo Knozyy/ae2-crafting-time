@@ -24,6 +24,16 @@ public abstract class GuiGraphicsMixin {
                 color);
     }
 
+    @Inject(method = "text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;IIIZ)V",
+            at = @At("HEAD"))
+    private void ae2craftingtime_test_driver$formattedText(Font font, net.minecraft.util.FormattedCharSequence text,
+            int x, int y, int color, boolean shadow, CallbackInfo ci) {
+        var rendered = new StringBuilder();
+        text.accept((index, style, codePoint) -> { rendered.appendCodePoint(codePoint); return true; });
+        UiObservationStore.text((GuiGraphicsExtractor) (Object) this, Component.literal(rendered.toString()),
+                x, y, font.width(text), font.lineHeight, color);
+    }
+
     @Inject(method = "fill(IIIII)V", at = @At("HEAD"))
     private void ae2craftingtime_test_driver$fill(int x1, int y1, int x2, int y2, int color, CallbackInfo ci) {
         UiObservationStore.fill((GuiGraphicsExtractor) (Object) this, x1, y1, x2, y2, color);

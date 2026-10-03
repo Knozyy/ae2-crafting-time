@@ -108,6 +108,11 @@ public final class UiObservationStore {
         var observed = CraftingTreeScenario.nodeTtcText(active.screen,
                 observed(component, transformed(graphics, x, y, x + width, y + height)));
         if (recordStatusText(component.getString(), observed.bounds(), color)) return;
+        var title = UiSnapshot.nativeStatusTitle(active.screen, active.gui, observed);
+        if (title != null) {
+            active.text.add(title);
+            return;
+        }
         if (active.screen.endsWith("CraftConfirmScreen") && observed.bounds().y() == active.gui.y() + 178
                 && observed.rendered().startsWith("TTC:")) {
             active.text.add(new UiSnapshot.ObservedText("text.ae2craftingtime.total_ttc", observed.rendered(),
