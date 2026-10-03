@@ -46,6 +46,13 @@ Use that saved file as the second rejection's baseline, then verify native
 compact-Off rendering and incomplete-check rejection. Require no
 continuation file, restore the original runtime configuration, and resume the
 ordinary flow without changing its stage or checks.
+While the saved-Off persistence flow waits, remove its actual status payload,
+require no capture or continuation, then restore the same payload before the
+incomplete-check rejection. Badge persistence uses the same real world and
+original incomplete ordinary check map, with deliberately saved custom Off
+appearance. Its guard must capture only the expected saved-Off checkpoint,
+reject the incomplete map, preserve saved bytes and write no continuation.
+Restore the original configuration before resuming the ordinary scenario.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

@@ -36,7 +36,7 @@ the actual wrong group's pages without saving, then recover in Displays by
 turning compact amounts Off and pressing Done. Assert the saved Off value and
 pending persistence state; this Options-only check does not claim a relaunch.
 
-Observation clipping and widget visibility checks are pending. Use real
+Observation clipping and widget visibility checks pass at `4dee9921`. Use real
 registered item keys in native plan DTOs to assert the exact fifteen visible
 cells before and after scrolling. Hide and restore an actual title-screen
 widget and verify its observation follows visibility. Closing the actual world menu after ordinary scenario completion
@@ -44,6 +44,10 @@ must not publish another snapshot; use the world fixture because closing a title
 returns another title screen. The initial title-close assertion failed and its
 run is preserved without contributing coverage. These assertions check the observation model,
 without claiming a rendered crafting menu for the DTO-only clipping checks.
+At `4dee9921`, both corrected observation groups pass along with the nineteen
+Options groups, JVM exit 0 and ten reviewed captures. The separate real world
+also passes its close-menu assertion, seven faults and thirteen ordinary checks,
+with JVM exit 0; all 36 normal and seven fault captures are reviewed.
 
 ## Native crafting fault checks (#378)
 
@@ -77,6 +81,12 @@ confirms 93.74%, so the broader 100% gate is still unfinished. Require all six
 base faults, the seventh addon fault when
 requested, and the ordinary scenario's full PASS result. Preserve original native
 captures and keep deliberate fault assertions separate from the normal result.
+
+Pending extensions: saved-Off persistence must wait for a missing native status
+payload before recovering its row, and badge persistence must reject the
+original incomplete ordinary check map after validating saved custom Off
+appearance. Preserve the saved baseline and continuation absence at each guard,
+restore the original payload and configuration, then require the normal PASS.
 
 ## Plan readiness with optional backgrounds (#585)
 
@@ -1047,4 +1057,3 @@ UUID, resumes through Alpha's menu, and finishes the native job. The runner
 records artifact hashes, phase/PID ledgers, server checkpoints, client
 screenshots and sidecars outside the world. Other connected leaves retain their
 one-client launch path.
-

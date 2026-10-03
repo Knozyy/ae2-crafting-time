@@ -88,7 +88,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 7 : 6,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 9 : 8,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();
@@ -161,6 +161,23 @@ final class NativeCraftBoundaryRunner {
                     .filter(value -> value.toString().equals("STATUS_PERSIST")).findFirst().orElseThrow();
             set(standardType, "phase", persistenceFlow, persist);
             set(standardType, "amountPersistSaving", persistenceFlow, true);
+        } else if (phase.equals("STATUS_OPTIONS") && minecraft.screen instanceof CraftingStatusScreen
+                && passed.contains("persist-incomplete") && !passed.contains("persist-badge-incomplete")) {
+            persistenceConfig = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().copy();
+            var config = persistenceConfig.copy();
+            config.features().setEnabled(com.ctux.ae2craftingtime.core.OptionFeature.BADGE_BACKGROUND, false);
+            config.setColor(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE, 0x245A7D);
+            config.setBadgeOpacity(96);
+            com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.apply(config);
+            begin(minecraft, "persist-badge-incomplete", snapshot.frame());
+            var constructor = standardType.getDeclaredConstructor(String.class, String.class, Path.class, boolean.class);
+            constructor.setAccessible(true);
+            persistenceFlow = constructor.newInstance("badge-background", DriverOptions.load().world(), output, false);
+            var stageType = Class.forName(standardType.getName() + "$Stage");
+            set(standardType, "phase", persistenceFlow, java.util.Arrays.stream(stageType.getEnumConstants())
+                    .filter(value -> value.toString().equals("BADGE_PERSIST")).findFirst().orElseThrow());
+            set(standardType, "badgePersistSaving", persistenceFlow, true);
+            persistenceCaptures = 0;
         } else if (phase.equals("STATUS_OPTIONS") && minecraft.screen instanceof OptionsScreen
                 && !(boolean) field(standardType, "amountOptionSaving", standard) && !passed.contains("cancel-before-save")) {
             begin(minecraft, "cancel-before-save", snapshot.frame());
@@ -204,8 +221,8 @@ final class NativeCraftBoundaryRunner {
         com.ctux.ae2craftingtime.core.ClientConfig nextConfig = null;
         try {
             var capture = (java.util.function.Consumer<String>) name -> {
-                if (pending.equals("persist-incomplete")) {
-                    assertEquals("status-saved-off.png", name);
+                if (pending.equals("persist-incomplete") || pending.equals("persist-badge-incomplete")) {
+                    assertEquals(pending.equals("persist-incomplete") ? "status-saved-off.png" : "badge-saved-off.png", name);
                     persistenceCaptures++;
                 } else {
                     if (!pending.equals("missing-font-pack")) fail("Fault advanced to a success capture: " + name);
@@ -218,6 +235,14 @@ final class NativeCraftBoundaryRunner {
                     minecraft, marker, checks, capture, mouse));
             if (pending.startsWith("persist-")) {
                 assertEquals(0, persistenceCaptures, "Incomplete status flow must reject before completing a capture");
+                if (pending.equals("persist-no-row")) {
+                    assertTrue(snapshot.rows().isEmpty(), "Persistence must wait for a genuinely absent rendered row");
+                    assertFalse((boolean) field(standardType, "amountContinuationWritten", persistenceFlow));
+                    assertFalse(Files.exists(output.resolve("status-amounts-continuation.json")));
+                    finishFault(minecraft);
+                    ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$setStatus(statusBefore);
+                    begin(minecraft, "persist-incomplete", snapshot.frame());
+                }
             } else if (pending.equals("missing-font-pack")) {
                 assertEquals(0, scaleCaptures, "Valid scale capture must reach the missing-pack rejection");
             } else if (!pending.equals("cancel-before-save")) {
@@ -241,15 +266,21 @@ final class NativeCraftBoundaryRunner {
                 assertFalse(((Map<?, ?>) checks).values().stream().allMatch(Boolean.TRUE::equals),
                         "Use the genuinely incomplete ordinary check map");
                 finishFault(minecraft);
-                begin(minecraft, "persist-incomplete", snapshot.frame());
+                begin(minecraft, "persist-no-row", snapshot.frame());
+                statusBefore = ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$status();
+                assertFalse(statusBefore.getEntries().isEmpty());
+                ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$setStatus(
+                        new CraftingStatus(true, 0, 0, 0, List.of()));
                 var off = persistenceConfig.copy();
                 off.features().setEnabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS, false);
                 nextConfig = off;
-            } else if (pending.equals("persist-incomplete")) {
-                assertEquals("Cannot relaunch with incomplete status checks: " + checks, error.getCause().getMessage());
+            } else if (pending.equals("persist-incomplete") || pending.equals("persist-badge-incomplete")) {
+                var badge = pending.equals("persist-badge-incomplete");
+                assertEquals("Cannot relaunch with incomplete " + (badge ? "badge" : "status") + " checks: " + checks,
+                        error.getCause().getMessage());
                 assertEquals(1, persistenceCaptures);
-                assertFalse((boolean) field(standardType, "amountContinuationWritten", persistenceFlow));
-                assertFalse(Files.exists(output.resolve("status-amounts-continuation.json")));
+                assertFalse((boolean) field(standardType, badge ? "badgeContinuationWritten" : "amountContinuationWritten", persistenceFlow));
+                assertFalse(Files.exists(output.resolve(badge ? "badge-background-continuation.json" : "status-amounts-continuation.json")));
                 finishFault(minecraft);
                 nextConfig = persistenceConfig;
                 persistenceFlow = null;
