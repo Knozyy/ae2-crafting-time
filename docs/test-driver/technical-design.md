@@ -65,6 +65,12 @@ configuration write or changed check after its actual stability threshold. Resto
 the current observation in `finally`; record the source frames separately from
 the screenshot of the current Off screen. Then remove and restore the actual
 native status payload while asserting that the ordinary Off flow stays pending.
+Use the restored two-row Off screen for separate badge flows with absent prior
+text or a prior list containing only the genuine CPU header. Poll each actual
+native observation through the unchanged badge guard. Both flows must remain
+pending after eight stable frames, preserving checks, saved bytes and screen,
+with no server operation or success capture. Retain those original snapshots;
+do not manufacture text, bounds, frame IDs or rendered badge success.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

@@ -127,7 +127,12 @@ scale and status restoration. Before the required redraw callbacks, badge edits
 and both relaunch flows must wait without capture, configuration writes or
 changed checks. A pending badge save must also block repeated edits.
 
-Pending profiling-Off extension: retain eight unmodified, stable compact frames
+At `ca770773`, thirteen native faults, menu closure and all thirteen ordinary
+checks pass with JVM exit 0. The 36 normal and thirteen fault originals are
+reviewed in contact sheets; the stale profiling-Off checkpoint is also reviewed
+individually. Local checks and both current-head CI checks pass. Codecov confirms
+94.33%; the overall coverage gate remains unfinished.
+For profiling-Off readiness, retain eight unmodified, stable compact frames
 from actual native rendering while profiling is On. After actual server metadata
 reports Off, replay those older observations into a separate status flow and
 require the missing native category descriptions to keep it pending. Restore
@@ -136,6 +141,13 @@ ordinary Off flow to wait for its row after eight stable frames. Preserve saved
 bytes and checks, restore the payload, then require the full ordinary PASS.
 The replay frames are historical native observations; its checkpoint image shows
 the current Off screen, not a newly rendered stale compact screen.
+
+Pending badge observation extension: with the actual two-row profiling-Off
+screen, a separate badge flow must reject native row text when its pre-toggle
+text observation is absent or contains only a genuine CPU header. Reach the
+actual stable-frame threshold in both cases without capture, changed checks,
+configuration writes or server work. Retain the native source frames, then
+require the ordinary scenario to pass after the check.
 
 ## Plan readiness with optional backgrounds (#585)
 

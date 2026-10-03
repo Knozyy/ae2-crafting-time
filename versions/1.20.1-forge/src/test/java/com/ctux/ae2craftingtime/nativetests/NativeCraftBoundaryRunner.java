@@ -45,6 +45,7 @@ final class NativeCraftBoundaryRunner {
     private long started;
     private NativeStartBoundary startBoundary;
     private final NativeStaleStatusBoundary staleStatus = new NativeStaleStatusBoundary();
+    private final NativeBadgeObservationBoundary badgeObservation = new NativeBadgeObservationBoundary();
 
     NativeCraftBoundaryRunner() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -106,6 +107,14 @@ final class NativeCraftBoundaryRunner {
                 return;
             }
             if (pending == null) {
+                if (passed.contains("profile-off-missing-row") && !passed.contains("badge-off-unremembered-text")) {
+                    if (badgeObservation.tick(minecraft, standardType,
+                            (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
+                        begin(minecraft, "badge-off-unremembered-text", UiObservationStore.latest().frame());
+                        finishFault(minecraft);
+                    }
+                    return;
+                }
                 staleStatus.observe(minecraft);
                 beginFault(minecraft);
             }
@@ -120,7 +129,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 13 : 12,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 14 : 13,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();
