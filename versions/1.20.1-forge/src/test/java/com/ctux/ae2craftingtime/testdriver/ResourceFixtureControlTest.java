@@ -55,6 +55,23 @@ class ResourceFixtureControlTest {
         }
     }
 
+    @Test
+    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "ae2craftingtime.test.nativeSymbolicLinks", matches = "true")
+    void symbolicControlDirectoryCannotRedirectReads() throws Exception {
+        // Run in the native boundary JVM with directory-symlink permission.
+        var real = Files.createDirectories(directory.resolve("real"));
+        var alias = directory.resolve("resource");
+        Files.createSymbolicLink(alias, real);
+        try {
+            assertTrue(Files.isSymbolicLink(alias));
+            var error = assertThrows(IllegalArgumentException.class, () -> ResourceFixtureControl.readCommand(directory));
+            assertEquals("resource control directory is linked", error.getMessage());
+            assertTrue(Files.notExists(real.resolve("command.properties")), "Rejected reads must not write");
+        } finally {
+            Files.delete(alias);
+        }
+    }
+
     @Test void productionCheckpointsIncludeBoundedLifecycleTransitions() {
         assertEquals(List.of("held", "resource-reloaded", "chunk-reloaded", "rejoined", "completed",
                 "cancel-held", "cancelled"), ResourceFixtureControl.expectedCheckpoints(

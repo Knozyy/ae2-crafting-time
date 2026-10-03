@@ -35,7 +35,8 @@ Status: in-progress in [draft PR #643](https://github.com/cTux/ae2-crafting-time
 At `82711af0`, all three row/Cancel fault assertions and all thirteen ordinary
 checks pass in the native disposable client, with JVM exit 0. Original captures
 were reviewed with tiny-text and tooltip-occlusion qualifications. The broader
-100% coverage gate remains unfinished; the missing-font-pack extension is pending.
+100% coverage gate remains unfinished. At `358341d3`, the missing-font-pack
+extension also passes, followed by all thirteen ordinary checks and JVM exit 0.
 
 Use the ordinary runtime and standard-status-controls flow in a marked disposable
 world. Remove a native status payload during amount and scale checks, and assert

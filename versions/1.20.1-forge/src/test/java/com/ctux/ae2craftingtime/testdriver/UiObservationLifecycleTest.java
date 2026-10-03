@@ -58,4 +58,15 @@ class UiObservationLifecycleTest {
         assertEquals(List.of(text), UiObservationStore.rowDescription(
                 java.util.Map.of("output", List.of()), List.of(text), "output", cell));
     }
+
+    @Test void fallbackDescriptionsIgnoreTextWithoutGeometryAndTextOutsideTheRow() {
+        var cell = new Rect(10, 20, 60, 22);
+        var inside = new UiSnapshot.ObservedText("literal", "1s", List.of(), new Rect(12, 22, 8, 6));
+        var outside = new UiSnapshot.ObservedText("literal", "other row", List.of(), new Rect(80, 22, 8, 6));
+        var unlocated = new UiSnapshot.ObservedText("literal", "unknown row", List.of(), null);
+        assertEquals(List.of(inside), UiObservationStore.rowDescription(
+                java.util.Map.of(), List.of(unlocated, outside, inside), "output", cell));
+        assertEquals(List.of(), UiObservationStore.rowDescription(
+                java.util.Map.of("output", List.of()), List.of(unlocated, outside), "output", cell));
+    }
 }
