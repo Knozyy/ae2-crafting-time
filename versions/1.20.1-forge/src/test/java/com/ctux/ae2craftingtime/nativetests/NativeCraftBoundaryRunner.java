@@ -179,6 +179,7 @@ final class NativeCraftBoundaryRunner {
         var method = standardType.getDeclaredMethod("tick", Minecraft.class, marker.getClass(), Map.class,
                 java.util.function.Consumer.class, java.util.function.BiConsumer.class);
         method.setAccessible(true);
+        com.ctux.ae2craftingtime.core.ClientConfig nextConfig = null;
         try {
             var capture = (java.util.function.Consumer<String>) name -> {
                 if (pending.equals("persist-incomplete")) {
@@ -222,15 +223,14 @@ final class NativeCraftBoundaryRunner {
                 begin(minecraft, "persist-incomplete", snapshot.frame());
                 var off = persistenceConfig.copy();
                 off.features().setEnabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS, false);
-                com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.apply(off);
+                nextConfig = off;
             } else if (pending.equals("persist-incomplete")) {
                 assertEquals("Cannot relaunch with incomplete status checks: " + checks, error.getCause().getMessage());
                 assertEquals(1, persistenceCaptures);
                 assertFalse((boolean) field(standardType, "amountContinuationWritten", persistenceFlow));
                 assertFalse(Files.exists(output.resolve("status-amounts-continuation.json")));
                 finishFault(minecraft);
-                com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.apply(persistenceConfig);
-                persistenceConfig = null;
+                nextConfig = persistenceConfig;
                 persistenceFlow = null;
             } else if (pending.equals("missing-font-pack")) {
                 assertEquals("Disposable uniform-font pack was not staged", error.getCause().getMessage());
@@ -253,6 +253,12 @@ final class NativeCraftBoundaryRunner {
         } finally {
             assertArrayEquals(configBefore, Files.readAllBytes(configPath(minecraft)), "Fault changed saved options");
             assertEquals(checksBefore, checks, "Fault prematurely marked normal checks");
+        }
+        if (nextConfig != null) {
+            // Verify the rejection before intentionally saving the next native setup.
+            com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.apply(nextConfig);
+            configBefore = Files.readAllBytes(configPath(minecraft));
+            if (pending == null) persistenceConfig = null;
         }
     }
 
