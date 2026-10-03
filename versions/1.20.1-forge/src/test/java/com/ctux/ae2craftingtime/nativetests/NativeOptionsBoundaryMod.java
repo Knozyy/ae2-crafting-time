@@ -269,17 +269,27 @@ public final class NativeOptionsBoundaryMod {
                             minecraft, Map.of(), (java.util.function.Consumer<String>) name -> fail("Cancel recovery captured success")));
                     assertEquals(5, field(scenarioType, "badgeResumeStep", scenario));
                     passed.add("Rejected changed physical options after native Cancel; accepted restored file hash");
-                    ClientOptionsRuntime.apply(new ClientConfig());
-                    minecraft.options.guiScale().set(6);
-                    minecraft.resizeDisplay();
-                    minecraft.setScreen(new OptionsScreen(new TitleScreen()));
+                    openGroup(minecraft, new ClientConfig(), "warnings");
                     set(scenarioType, "amountResumeChecksRestored", scenario, true);
                     set(scenarioType, "amountResumeOpened", scenario, true);
                     set(scenarioType, "amountOptionRenderedAfter", scenario, 0L);
-                    assertTrue(minecraft.screen.height < 229, "Compact option must require a real second page");
                     stage++;
                 }
                 case 14 -> {
+                    var before = Files.readAllBytes(output.resolve("client.toml"));
+                    try {
+                        assertEquals(false, call("statusRelaunchTick",
+                                new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                                minecraft, Map.of(), (java.util.function.Consumer<String>) name -> fail("Wrong group captured success")));
+                    } catch (IllegalStateException error) {
+                        assertEquals("Option button missing: >", error.getMessage());
+                        passed.add("Rejected compact restoration after exhausting the wrong native settings group's pages");
+                        minecraft.setScreen(new OptionsScreen(new TitleScreen()));
+                        set(scenarioType, "amountOptionRenderedAfter", scenario, 0L);
+                        stage++;
+                    } finally { assertArrayEquals(before, Files.readAllBytes(output.resolve("client.toml"))); }
+                }
+                case 15 -> {
                     var captures = new ArrayList<String>();
                     var complete = (boolean) call("statusRelaunchTick",
                             new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
@@ -288,12 +298,45 @@ public final class NativeOptionsBoundaryMod {
                     if (!complete) return;
                     assertTrue(ClientOptionsRuntime.current().features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS));
                     assertFalse(minecraft.screen instanceof OptionsScreen);
-                    passed.add("Restored compact amounts through actual paginated native controls and saved Done");
-                    minecraft.options.guiScale().set(originalScale);
-                    minecraft.resizeDisplay();
+                    passed.add("Recovered compact restoration in Displays through native controls and saved Done");
+                    minecraft.setScreen(new OptionsScreen(new TitleScreen()));
+                    var stageType = Class.forName(scenarioType.getName() + "$Stage");
+                    var optionsStage = java.util.Arrays.stream(stageType.getEnumConstants())
+                            .filter(value -> value.toString().equals("STATUS_OPTIONS")).findFirst().orElseThrow();
+                    set(scenarioType, "phase", scenario, optionsStage);
+                    set(scenarioType, "amountOptionSaving", scenario, true);
+                    set(scenarioType, "amountOptionSavingTicks", scenario, 0);
+                    set(scenarioType, "amountOptionRenderedAfter", scenario, 0L);
                     stage++;
                 }
-                case 15 -> {
+                case 16 -> {
+                    var before = Files.readAllBytes(output.resolve("client.toml"));
+                    int callbacks = (int) field(scenarioType, "amountOptionSavingTicks", scenario);
+                    var arguments = new Class<?>[]{Minecraft.class,
+                            Class.forName("com.ctux.ae2craftingtime.testdriver.FixtureMarker"), Map.class,
+                            java.util.function.Consumer.class, java.util.function.BiConsumer.class};
+                    try {
+                        var consumer = (java.util.function.Consumer<String>) name -> fail("Stuck save captured success");
+                        var mouse = (java.util.function.BiConsumer<Integer, Integer>) (x, y) -> fail("Stuck save moved mouse");
+                        if (callbacks < 100) {
+                            // This Options-only guard does not consume a world marker or native player.
+                            assertEquals(false, call("tick", arguments, minecraft, null, Map.of(), consumer, mouse));
+                            assertEquals(callbacks + 1, field(scenarioType, "amountOptionSavingTicks", scenario));
+                            return;
+                        }
+                        var controls = minecraft.screen.children().stream()
+                                .filter(net.minecraft.client.gui.components.Button.class::isInstance)
+                                .map(net.minecraft.client.gui.components.Button.class::cast)
+                                .map(button -> button.getMessage().getString() + " active=" + button.active).toList();
+                        var error = assertThrows(IllegalStateException.class,
+                                () -> call("tick", arguments, minecraft, null, Map.of(), consumer, mouse));
+                        assertEquals("Amount option save did not close screen: case=0 controls=" + controls, error.getMessage());
+                        passed.add("Stuck native save remained pending for 100 completed callbacks and failed on callback 101");
+                        capture(minecraft, "native-options-stuck-save.png");
+                        stage++;
+                    } finally { assertArrayEquals(before, Files.readAllBytes(output.resolve("client.toml"))); }
+                }
+                case 17 -> {
                     restore();
                     Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(
                             Map.of("result", "PASS", "checks", passed, "runtimeClassSha256", runtimeHash())));

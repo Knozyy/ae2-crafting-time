@@ -21,8 +21,10 @@ integrity and paginated compact-amount checks still need runtime verification.
 The test-only Forge fixture uses the initialized Minecraft client and real
 Options screen to check rejected saves, incorrect reset values and missing
 controls, including sort values and changes leaking across reset groups.
-Check Cancel against the physical saved-file hash, and restore compact amounts
-through actual paginated controls and Done. Each fault must assert the exact rejection and preserve the saved
+Check Cancel against the physical saved-file hash. Reject compact restoration
+after exhausting the wrong settings group's pages, then recover through Displays
+and Done. A stuck native save must remain pending for 100 completed callbacks and
+fail on callback 101. Each fault must assert the exact rejection and preserve the saved
 configuration. Successful recovery must pass after restoring valid values.
 Keep its JAR out of production and normal driver launches. Run it only in the
 disposable coverage client, with bounded execution and original screenshots.
