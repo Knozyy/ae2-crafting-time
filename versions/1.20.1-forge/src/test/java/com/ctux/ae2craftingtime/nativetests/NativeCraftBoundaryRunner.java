@@ -35,6 +35,9 @@ final class NativeCraftBoundaryRunner {
     private Map<?, ?> checksBefore;
     private byte[] configBefore;
     private CraftingStatus statusBefore;
+    private Path fontPack;
+    private Path heldFontPack;
+    private int scaleCaptures;
     private boolean finished;
     private long started;
 
@@ -78,7 +81,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(3, passed.size(), "Every required native fault must execute");
+                assertEquals(4, passed.size(), "Every required native fault must execute");
                 Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(Map.of(
                         "result", "PASS", "checks", passed, "normalResult", result,
                         "runtimeClassSha256", runtimeHash())));
@@ -89,6 +92,7 @@ final class NativeCraftBoundaryRunner {
         } catch (Throwable error) {
             finished = true;
             try {
+                restoreFontPack();
                 Files.createDirectories(output);
                 var trace = new java.io.StringWriter();
                 error.printStackTrace(new java.io.PrintWriter(trace));
@@ -122,6 +126,19 @@ final class NativeCraftBoundaryRunner {
             click.setAccessible(true);
             click.invoke(standard, minecraft, net.minecraft.client.resources.language.I18n.get("gui.cancel"));
             assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
+        } else if (phase.equals("STATUS_SCALES") && minecraft.screen instanceof CraftingStatusScreen
+                && (int) field(standardType, "amountFontMode", standard) == 0
+                && (int) field(standardType, "quantityScaleCase", standard) == 2
+                && (boolean) field(standardType, "quantityScaleSet", standard)
+                && field(standardType, "amountFontReload", standard) == null
+                && !passed.contains("missing-font-pack")) {
+            begin(minecraft, "missing-font-pack", snapshot.frame());
+            caseBefore = 2;
+            fontPack = minecraft.gameDirectory.toPath().resolve("resourcepacks/ae2ct-status-wide");
+            heldFontPack = output.resolve("held-font-pack");
+            assertTrue(Files.isDirectory(fontPack), "Native font fixture must exist before its removal");
+            assertFalse(Files.exists(heldFontPack));
+            Files.move(fontPack, heldFontPack);
         }
     }
 
@@ -143,10 +160,16 @@ final class NativeCraftBoundaryRunner {
                 java.util.function.Consumer.class, java.util.function.BiConsumer.class);
         method.setAccessible(true);
         try {
-            var capture = (java.util.function.Consumer<String>) name -> fail("Fault advanced to a success capture: " + name);
+            var capture = (java.util.function.Consumer<String>) name -> {
+                if (!pending.equals("missing-font-pack")) fail("Fault advanced to a success capture: " + name);
+                assertEquals("status-scale-default-auto.png", name);
+                scaleCaptures++;
+            };
             var mouse = (java.util.function.BiConsumer<Integer, Integer>) (x, y) -> {};
             assertEquals(false, method.invoke(standard, minecraft, marker, checks, capture, mouse));
-            if (!pending.equals("cancel-before-save")) {
+            if (pending.equals("missing-font-pack")) {
+                assertEquals(0, scaleCaptures, "Valid scale capture must reach the missing-pack rejection");
+            } else if (!pending.equals("cancel-before-save")) {
                 var restored = ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$status();
                 if (!restored.getEntries().isEmpty()) {
                     assertTrue(snapshot.rows().isEmpty(), "Driver must restore a genuinely missing rendered row");
@@ -162,11 +185,25 @@ final class NativeCraftBoundaryRunner {
                 }
             }
         } catch (InvocationTargetException error) {
-            assertEquals("cancel-before-save", pending);
             assertInstanceOf(IllegalStateException.class, error.getCause());
-            assertEquals("Amount options screen closed before save: case=0", error.getCause().getMessage());
-            finishFault(minecraft);
-            minecraft.setScreen(new OptionsScreen(minecraft.screen));
+            if (pending.equals("missing-font-pack")) {
+                assertEquals("Disposable uniform-font pack was not staged", error.getCause().getMessage());
+                assertEquals(1, scaleCaptures);
+                assertEquals(3, field(standardType, "quantityScaleCase", standard));
+                assertEquals(0, field(standardType, "amountFontMode", standard));
+                assertNull(field(standardType, "amountFontReload", standard));
+                assertFalse(minecraft.getResourcePackRepository().getAvailableIds().contains("file/ae2ct-status-wide"));
+                restoreFontPack();
+                minecraft.getResourcePackRepository().reload();
+                assertTrue(minecraft.getResourcePackRepository().getAvailableIds().contains("file/ae2ct-status-wide"));
+                set(standardType, "quantityScaleCase", standard, caseBefore);
+                finishFault(minecraft);
+            } else {
+                assertEquals("cancel-before-save", pending);
+                assertEquals("Amount options screen closed before save: case=0", error.getCause().getMessage());
+                finishFault(minecraft);
+                minecraft.setScreen(new OptionsScreen(minecraft.screen));
+            }
         } finally {
             assertArrayEquals(configBefore, Files.readAllBytes(configPath(minecraft)), "Fault changed saved options");
             assertEquals(checksBefore, checks, "Fault prematurely marked normal checks");
@@ -183,6 +220,10 @@ final class NativeCraftBoundaryRunner {
 
     private static Path configPath(Minecraft minecraft) {
         return minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml");
+    }
+
+    private void restoreFontPack() throws java.io.IOException {
+        if (heldFontPack != null && Files.exists(heldFontPack)) Files.move(heldFontPack, fontPack);
     }
 
 }

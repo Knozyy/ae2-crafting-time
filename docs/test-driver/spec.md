@@ -31,15 +31,21 @@ disposable coverage client, with bounded execution and original screenshots.
 
 ## Native crafting fault checks (#378)
 
-Status: in-progress; implementation and runtime verification pending in
-[draft PR #643](https://github.com/cTux/ae2-crafting-time/pull/643).
+Status: in-progress in [draft PR #643](https://github.com/cTux/ae2-crafting-time/pull/643).
+At `82711af0`, all three row/Cancel fault assertions and all thirteen ordinary
+checks pass in the native disposable client, with JVM exit 0. Original captures
+were reviewed with tiny-text and tooltip-occlusion qualifications. The broader
+100% coverage gate remains unfinished; the missing-font-pack extension is pending.
 
 Use the ordinary runtime and standard-status-controls flow in a marked disposable
 world. Remove a native status payload during amount and scale checks, and assert
 that the driver restores its expected row without advancing the case or changing
 saved options. Close actual Options with Cancel before saving and assert the exact
-rejection; reopen Options and let the normal flow recover. Require all three fault
-checks and the ordinary scenario's full PASS result. Preserve original native
+rejection; reopen Options and let the normal flow recover. Temporarily move the
+owned uniform-font fixture out of the native pack directory, require the exact
+missing-pack rejection, restore the same files, and retry the interrupted scale
+case. Keep saved options and ordinary checks unchanged during each fault.
+Require all four fault checks and the ordinary scenario's full PASS result. Preserve original native
 captures and keep deliberate fault assertions separate from the normal result.
 
 ## Plan readiness with optional backgrounds (#585)

@@ -24,7 +24,11 @@ completed render callback once. Keep the initialized Minecraft client, server,
 player, menus and original fixture marker. Use the native status payload setter
 already used by amount fixtures; never replace a game object. After each assertion,
 restore the actual Options flow or expected status row and resume the ordinary
-scenario. Write separate fault evidence, and require the original runtime result
+scenario. For the missing-font-pack boundary, move only the owned staged fixture
+outside `resourcepacks`, preserving its bytes. After the actual repository rejects
+the missing pack, restore it and retry the scale case that the failed transition
+had incremented. Restore the fixture on unexpected failures too.
+Write separate fault evidence, and require the original runtime result
 to pass before reporting the combined run as successful.
 
 ## Plan readiness with optional backgrounds (#585)
