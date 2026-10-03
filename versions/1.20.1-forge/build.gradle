@@ -355,6 +355,15 @@ tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification).config
     }
     violationRules.rule {
         element = 'METHOD'
+        includes = ['hasPlate', 'hasEdge', 'plateOutputsAt', 'renderOutputsAt', 'hasBeam'].collectMany { name ->
+            ['com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.' + name + '*',
+             'com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario.lambda$' + name + '*']
+        }
+        limit { counter = 'LINE'; minimum = 1.0 }
+        limit { counter = 'BRANCH'; minimum = 1.0 }
+    }
+    violationRules.rule {
+        element = 'METHOD'
         includes = ['com.ctux.ae2craftingtime.testdriver.RecurrentPlanFixture.enableDetection*',
                     'com.ctux.ae2craftingtime.testdriver.RecurrentPlanFixture.restoreDetection*']
         limit { counter = 'LINE'; minimum = 1.0 }

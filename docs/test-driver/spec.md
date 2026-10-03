@@ -179,6 +179,15 @@ that launch. The actual saved default is Off, black and opacity 176; use that
 verified incorrect custom appearance without changing saved bytes. Runtime
 verification of the corrected expectation is still pending.
 
+Pending packet-observation extension: driver highlight queries must require
+both the requested output and the fixture's provider position. Plate/output
+collections must stay bound to that position; beams additionally require a chat
+locate. Verify empty state, wrong output, wrong position, matching data and
+session cleanup through the actual packet-data APIs and coordinate values.
+Enforce 100% line and branch coverage for these five queries and their predicates.
+Run the assertions against the unchanged packaged native class too; these data
+boundaries do not claim rendered world highlights.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.
