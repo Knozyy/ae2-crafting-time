@@ -71,6 +71,15 @@ native observation through the unchanged badge guard. Both flows must remain
 pending after eight stable frames, preserving checks, saved bytes and screen,
 with no server operation or success capture. Retain those original snapshots;
 do not manufacture text, bounds, frame IDs or rendered badge success.
+The matching-text boundary remembers the actual native row text and quantities,
+then requires the unchanged guard to reject the actual saved background setting
+while it remains On. It must reach its real stable threshold before throwing,
+without capture or changed state. Recurrence participant boundaries write
+invalid file-rendezvous inputs in an owned evidence directory and compare them
+against the actual player UUID and role. Restore the role, campaign and control
+properties in `finally`; assert no command, server operation or screen/menu
+change. These invalid-input assertions do not represent a real server reply or
+replace the retained two-client connected scenario.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

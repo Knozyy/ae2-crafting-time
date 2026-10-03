@@ -142,12 +142,25 @@ bytes and checks, restore the payload, then require the full ordinary PASS.
 The replay frames are historical native observations; its checkpoint image shows
 the current Off screen, not a newly rendered stale compact screen.
 
-Pending badge observation extension: with the actual two-row profiling-Off
+At `81a2870e`, fourteen native faults, menu closure and all thirteen ordinary
+checks pass with JVM exit 0. The 36 normal and fourteen fault originals are
+reviewed in contact sheets; the badge observation checkpoint is also reviewed
+individually. Local checks and both current-head CI checks pass. Codecov confirms
+94.34%; the overall coverage gate remains unfinished.
+With the actual two-row profiling-Off
 screen, a separate badge flow must reject native row text when its pre-toggle
 text observation is absent or contains only a genuine CPU header. Reach the
 actual stable-frame threshold in both cases without capture, changed checks,
 configuration writes or server work. Retain the native source frames, then
 require the ordinary scenario to pass after the check.
+
+Pending extension: matching remembered native row text must still reject an
+incorrect saved background setting after eight stable frames. Also reject
+invalid recurrence rendezvous inputs against the actual native player: another
+player, the other participant's turn and an empty turn, for both role values.
+Preserve screen, player, menu, checks and saved bytes, write no command, and
+restore the original rendezvous properties before ordinary scenario execution.
+This is invalid-input boundary coverage, not a two-client server scenario.
 
 ## Plan readiness with optional backgrounds (#585)
 
