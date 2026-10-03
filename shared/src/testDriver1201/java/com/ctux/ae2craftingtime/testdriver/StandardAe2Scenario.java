@@ -2385,9 +2385,13 @@ final class StandardAe2Scenario {
             throw new IllegalStateException("Badge On/custom appearance did not restore after relaunch");
     }
 
-    static void validateBadgePredecessor(BadgeContinuation continuation, List<String> required, String actualHash) {
-        if (!java.util.Set.copyOf(continuation.checks()).equals(java.util.Set.copyOf(required))
-                || !actualHash.equals(continuation.configSha256()))
+    static void validateBadgePredecessorChecks(BadgeContinuation continuation, List<String> required) {
+        if (!java.util.Set.copyOf(continuation.checks()).equals(java.util.Set.copyOf(required)))
+            throw new IllegalStateException("Badge relaunch predecessor or saved config differs");
+    }
+
+    static void validateBadgePredecessorConfig(BadgeContinuation continuation, String actualHash) {
+        if (!actualHash.equals(continuation.configSha256()))
             throw new IllegalStateException("Badge relaunch predecessor or saved config differs");
     }
 
@@ -2915,7 +2919,8 @@ final class StandardAe2Scenario {
     private boolean badgeRelaunchTick(Minecraft minecraft, Map<String, Boolean> checks,
             Consumer<String> screenshot) {
         if (badgeResumeStep == 0) {
-            validateBadgePredecessor(badgeContinuation, CHECKS.get(leaf), configHash(minecraft));
+            validateBadgePredecessorChecks(badgeContinuation, CHECKS.get(leaf));
+            validateBadgePredecessorConfig(badgeContinuation, configHash(minecraft));
             for (var check : badgeContinuation.checks()) checks.put(check, true);
             validateSavedBadgeOff(com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current());
             minecraft.setScreen(new com.ctux.ae2craftingtime.mc1201.OptionsScreen(null));

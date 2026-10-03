@@ -565,20 +565,21 @@ class StandardObservationTest {
         var required = List.of("header", "layout");
         var badge = new StandardAe2Scenario.BadgeContinuation(1, "world", "campaign", "hash", required, List.of());
         var amount = new StandardAe2Scenario.AmountContinuation(1, "world", "campaign", "hash", required, List.of());
-        assertDoesNotThrow(() -> StandardAe2Scenario.validateBadgePredecessor(badge, required, "hash"));
-        assertDoesNotThrow(() -> StandardAe2Scenario.validateBadgePredecessor(badge, List.of("layout", "header"), "hash"));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateBadgePredecessorChecks(badge, required));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateBadgePredecessorChecks(badge, List.of("layout", "header")));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateBadgePredecessorConfig(badge, "hash"));
         assertDoesNotThrow(() -> StandardAe2Scenario.validateAmountPredecessorChecks(amount, required));
         assertDoesNotThrow(() -> StandardAe2Scenario.validateAmountPredecessorChecks(amount, List.of("layout", "header")));
         for (var invalid : List.of(List.<String>of(), List.of("header"), List.of("header", "layout", "extra"))) {
             var failure = assertThrows(IllegalStateException.class,
-                    () -> StandardAe2Scenario.validateBadgePredecessor(badge, invalid, "hash"));
+                    () -> StandardAe2Scenario.validateBadgePredecessorChecks(badge, invalid));
             assertEquals("Badge relaunch predecessor or saved config differs", failure.getMessage());
             failure = assertThrows(IllegalStateException.class,
                     () -> StandardAe2Scenario.validateAmountPredecessorChecks(amount, invalid));
             assertEquals("Status relaunch predecessor omitted required checks", failure.getMessage());
         }
         assertThrows(IllegalStateException.class,
-                () -> StandardAe2Scenario.validateBadgePredecessor(badge, required, "changed"));
+                () -> StandardAe2Scenario.validateBadgePredecessorConfig(badge, "changed"));
         var features = new com.ctux.ae2craftingtime.core.FeatureOptions(OptionFeature.Owner.CLIENT);
         features.setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, false);
         assertDoesNotThrow(() -> StandardAe2Scenario.validateAmountPredecessorConfig(amount, "hash", features));
