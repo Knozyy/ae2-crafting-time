@@ -65,6 +65,14 @@ do not fabricate CPU state, elapsed time or retry counters. Record each actual
 replan counter increment and monotonic time. After three replans with the native
 ten-second deadline, assert the exact rejection, unchanged ordinary checks and
 saved bytes. Restore the widget on success or failure and resume the normal flow.
+AE2 refreshes the Start state during its render. While the fault is active,
+render the same actual widget inactive in the native post-render callback before
+finishing the observation frame, so the screenshot shows the held state.
+For the compact-description wait, temporarily enable the in-memory compact
+option only during real screen rendering. Restore Off after recording that
+frame, before the guard tick, without saving another file. Assert the observed
+compact description, actual Off setting, unchanged saved bytes and no capture
+or continuation. Resume ordinary rendering before the next persistence fault.
 
 ## Plan readiness with optional backgrounds (#585)
 

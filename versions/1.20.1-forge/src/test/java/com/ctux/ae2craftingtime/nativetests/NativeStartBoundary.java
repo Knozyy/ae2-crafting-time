@@ -49,6 +49,11 @@ final class NativeStartBoundary {
 
     void restore() { start.active = true; }
 
+    void render(net.minecraftforge.client.event.ScreenEvent.Render.Post event) {
+        hold();
+        start.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
+    }
+
     boolean tick(Minecraft minecraft, Object marker, Map<?, ?> checks, Path output) throws Exception {
         assertTrue(System.nanoTime() - begun < 45_000_000_000L, "Start rejection exceeded 45 seconds");
         assertInstanceOf(CraftConfirmScreen.class, minecraft.screen);

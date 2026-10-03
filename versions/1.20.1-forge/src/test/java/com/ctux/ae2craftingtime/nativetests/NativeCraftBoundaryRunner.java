@@ -49,10 +49,13 @@ final class NativeCraftBoundaryRunner {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
         MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.client.event.ScreenEvent.Render.Pre event) -> {
             if (startBoundary != null) startBoundary.hold();
+            if ("persist-stale-compact".equals(pending)) compactRendering(true);
             if (runtime != null) runtime.beforeRender();
         });
         MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.client.event.ScreenEvent.Render.Post event) -> {
+            if (startBoundary != null) startBoundary.render(event);
             if (runtime != null) runtime.afterRender();
+            if ("persist-stale-compact".equals(pending)) compactRendering(false);
         });
     }
 
@@ -113,7 +116,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 10 : 9,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 11 : 10,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();
@@ -261,6 +264,11 @@ final class NativeCraftBoundaryRunner {
                     minecraft, marker, checks, capture, mouse));
             if (pending.startsWith("persist-")) {
                 assertEquals(0, persistenceCaptures, "Incomplete status flow must reject before completing a capture");
+                if (pending.equals("persist-no-row") || pending.equals("persist-stale-compact")) {
+                    var stability = field(standardType, "frames", persistenceFlow);
+                    if ((int) field(stability.getClass(), "count", stability)
+                            < (int) field(stability.getClass(), "required", stability)) return;
+                }
                 if (pending.equals("persist-no-row")) {
                     assertTrue(snapshot.rows().isEmpty(), "Persistence must wait for a genuinely absent rendered row");
                     assertFalse((boolean) field(standardType, "amountContinuationWritten", persistenceFlow));
@@ -268,6 +276,19 @@ final class NativeCraftBoundaryRunner {
                     finishFault(minecraft);
                     ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$setStatus(statusBefore);
                     begin(minecraft, "persist-incomplete", snapshot.frame());
+                } else if (pending.equals("persist-stale-compact")) {
+                    assertFalse(com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features().enabled(
+                            com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS));
+                    assertTrue(snapshot.rows().stream().anyMatch(row -> row.description().stream()
+                            .anyMatch(text -> text.key().equals("text.ae2craftingtime.status.amounts"))));
+                    assertFalse((boolean) field(standardType, "amountContinuationWritten", persistenceFlow));
+                    assertFalse(Files.exists(output.resolve("status-amounts-continuation.json")));
+                    finishFault(minecraft);
+                    begin(minecraft, "persist-no-row", snapshot.frame());
+                    statusBefore = ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$status();
+                    assertFalse(statusBefore.getEntries().isEmpty());
+                    ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$setStatus(
+                            new CraftingStatus(true, 0, 0, 0, List.of()));
                 }
             } else if (pending.equals("missing-font-pack")) {
                 assertEquals(0, scaleCaptures, "Valid scale capture must reach the missing-pack rejection");
@@ -292,11 +313,7 @@ final class NativeCraftBoundaryRunner {
                 assertFalse(((Map<?, ?>) checks).values().stream().allMatch(Boolean.TRUE::equals),
                         "Use the genuinely incomplete ordinary check map");
                 finishFault(minecraft);
-                begin(minecraft, "persist-no-row", snapshot.frame());
-                statusBefore = ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$status();
-                assertFalse(statusBefore.getEntries().isEmpty());
-                ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$setStatus(
-                        new CraftingStatus(true, 0, 0, 0, List.of()));
+                begin(minecraft, "persist-stale-compact", snapshot.frame());
                 var off = persistenceConfig.copy();
                 off.features().setEnabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS, false);
                 nextConfig = off;
@@ -350,6 +367,11 @@ final class NativeCraftBoundaryRunner {
 
     private static Path configPath(Minecraft minecraft) {
         return minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml");
+    }
+
+    private static void compactRendering(boolean enabled) {
+        com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features().setEnabled(
+                com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS, enabled);
     }
 
     private static String caseField(String phase) {

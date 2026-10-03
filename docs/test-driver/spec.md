@@ -90,10 +90,20 @@ original incomplete ordinary check map after validating saved custom Off
 appearance. Preserve the saved baseline and continuation absence at each guard,
 restore the original payload and configuration, then require the normal PASS.
 
-Pending extension: deliberately hold the actual Crafting Plan Start widget
+At `57312de1`, the Start retry guard passes along with ten faults, world closure,
+thirteen ordinary checks and JVM exit 0. All 36 ordinary and ten fault captures
+are reviewed. Codecov confirms 94.07%; the overall gate remains incomplete.
+The guard checks the actual inactive widget, but its original capture shows the
+normal native appearance. Capture correction is pending.
+Deliberately hold the actual Crafting Plan Start widget
 inactive while its real stocked plan remains open. Require three native replans
 with the real ten-second waits, then the exact bounded retry rejection. Preserve
 ordinary checks and saved options, restore the widget, and require normal recovery.
+
+Pending extension: render actual compact status text, then restore the saved Off
+setting before the driver consumes the frame. Require persistence to wait while
+the drawn compact description is stale, without capture or continuation. Restore
+ordinary rendering and require the existing missing-row and incomplete-map guards.
 
 ## Plan readiness with optional backgrounds (#585)
 
