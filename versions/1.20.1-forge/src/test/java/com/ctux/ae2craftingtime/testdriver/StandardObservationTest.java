@@ -131,6 +131,54 @@ class StandardObservationTest {
         assertTrue(StandardAe2Scenario.cpuCardTotals(snapshot(List.of(), List.of())).isEmpty());
     }
 
+    @Test void quantitySummariesRequireExactlyOneNormalAmountLineForNonemptyRows() {
+        var key = "text.ae2craftingtime.status.amounts";
+        var summary = new UiSnapshot.ObservedText(key, "4/10/200", List.of("4/10/200"), textBounds, null, false);
+        var populated = new UiSnapshot.Row("minecraft:stone", 1, 0, cell,
+                List.of(text("unrelated", "other", textBounds), summary));
+        assertEquals(List.of(summary), StandardAe2Scenario.quantityAmountLines(populated, false, 0));
+        assertTrue(StandardAe2Scenario.quantityAmountLines(row(0), true, 7).isEmpty());
+        assertThrows(IllegalStateException.class, () -> StandardAe2Scenario.quantityAmountLines(populated, true, 7));
+        assertThrows(IllegalStateException.class, () -> StandardAe2Scenario.quantityAmountLines(row(0), false, 0));
+        var duplicate = new UiSnapshot.Row("minecraft:stone", 1, 0, cell, List.of(summary, summary));
+        assertThrows(IllegalStateException.class, () -> StandardAe2Scenario.quantityAmountLines(duplicate, false, 0));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateQuantityText(summary, "4/10/200", 0));
+        var bold = new UiSnapshot.ObservedText(key, "4/10/200", List.of("4/10/200"), textBounds, null, true);
+        for (var invalid : List.of(bold, text(key, "4/10/200", textBounds))) {
+            var failure = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateQuantityText(invalid, "4/10/200", 0));
+            assertTrue(failure.getMessage().startsWith("Synthetic native amount case 0 text "));
+        }
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateQuantityLayout(snapshot(List.of(), List.of()), summary, null, 0));
+        assertThrows(IllegalStateException.class,
+                () -> StandardAe2Scenario.validateQuantityLayout(snapshot(List.of(), List.of()), summary, 0xFFFFFF, 0));
+        var failure = assertThrows(IllegalStateException.class,
+                () -> StandardAe2Scenario.validateQuantityLayout(
+                        snapshot(List.of(), List.of(new Rect(90, 90, 5, 5))), summary, null, 0));
+        assertTrue(failure.getMessage().startsWith("Synthetic native amount case 0 color/layout "));
+    }
+
+    @Test void quantityTooltipsRequireTheLegendAndExactNativeFullAmounts() {
+        var legend = text("text.ae2craftingtime.status.amounts_legend", "Stored / crafting / scheduled", null);
+        var irrelevant = text("unrelated", "other", null);
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateQuantityLegend(List.of(irrelevant, legend), false, 0));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateQuantityLegend(List.of(irrelevant), true, 7));
+        assertThrows(IllegalStateException.class, () -> StandardAe2Scenario.validateQuantityLegend(List.of(legend), true, 7));
+        var failure = assertThrows(IllegalStateException.class,
+                () -> StandardAe2Scenario.validateQuantityLegend(List.of(), false, 0));
+        assertEquals("Synthetic native amount case 0 lost tooltip legend", failure.getMessage());
+        var key = "gui.ae2.FromStorage";
+        var nativeAmount = new UiSnapshot.ObservedText(key, "Stored: 4", List.of("4"), null);
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateQuantityTooltipCategory(List.of(irrelevant, nativeAmount), key, "4", 0, 0));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateQuantityTooltipCategory(List.of(nativeAmount), key, null, 0, 7));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateQuantityTooltipCategory(List.of(), key, null, 0, 7));
+        for (var tooltip : List.of(List.<UiSnapshot.ObservedText>of(), List.of(irrelevant), List.of(text(key, "Stored: 4", null)))) {
+            failure = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateQuantityTooltipCategory(tooltip, key, "4", 0, 0));
+            assertEquals("Synthetic native amount case 0 lost full tooltip category 0=4", failure.getMessage());
+        }
+    }
+
     @Test void storedVariantLabelsAndGeometryPreserveNeutralNativeRows() {
         var key = "text.ae2craftingtime.plan.stored_variant";
         var valid = new UiSnapshot.ObservedText(key, "Stored variant", List.of(), textBounds, 0xE0E0E0, false);

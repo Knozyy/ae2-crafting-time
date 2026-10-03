@@ -1121,11 +1121,8 @@ final class StandardAe2Scenario {
                 frames.reset();
                 return false;
             }
-            var amountLines = row.description().stream()
-                    .filter(text -> text.key().equals("text.ae2craftingtime.status.amounts")).toList();
             boolean empty = quantityCase == 7;
-            if (amountLines.size() != (empty ? 0 : 1))
-                throw new IllegalStateException("Synthetic native amount case " + quantityCase + " has " + amountLines);
+            var amountLines = quantityAmountLines(row, empty, quantityCase);
             if (!empty) {
                 var summary = amountLines.get(0);
                 String amount = quantityCase < 8 ? List.of("4/10/200", "-/10/200", "10/-/200", "4/10/-",
@@ -1133,8 +1130,7 @@ final class StandardAe2Scenario {
                         String.join("/", expected.getWhat().formatAmount(expected.getStoredAmount(), appeng.api.stacks.AmountFormat.SLOT),
                                 expected.getWhat().formatAmount(expected.getActiveAmount(), appeng.api.stacks.AmountFormat.SLOT),
                                 expected.getWhat().formatAmount(expected.getPendingAmount(), appeng.api.stacks.AmountFormat.SLOT));
-                if (!summary.arguments().equals(List.of(amount)) || summary.bold())
-                    throw new IllegalStateException("Synthetic native amount case " + quantityCase + " text " + summary);
+                validateQuantityText(summary, amount, quantityCase);
                 var ttc = row.description().stream().filter(text ->
                         com.ctux.ae2craftingtime.core.CraftingRowState.isBadge(text.key())
                         && !text.key().equals("text.ae2craftingtime.status.amounts")).findFirst();
@@ -1142,8 +1138,7 @@ final class StandardAe2Scenario {
                 if (color == null && com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground())
                     color = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current()
                             .color(com.ctux.ae2craftingtime.core.ClientConfig.Color.TOTAL);
-                if (!java.util.Objects.equals(summary.color(), color) || !LayoutValidator.validateBadges(snapshot).isEmpty())
-                    throw new IllegalStateException("Synthetic native amount case " + quantityCase + " color/layout " + summary);
+                validateQuantityLayout(snapshot, summary, color, quantityCase);
             }
             if (!quantityHovered) {
                 moveMouse.accept(row.cell().centerX(), row.cell().centerY());
@@ -1152,8 +1147,7 @@ final class StandardAe2Scenario {
                 return false;
             }
             if (snapshot.tooltip().isEmpty()) return false;
-            if (snapshot.tooltip().stream().anyMatch(text -> text.key().equals("text.ae2craftingtime.status.amounts_legend")) == empty)
-                throw new IllegalStateException("Synthetic native amount case " + quantityCase + " lost tooltip legend");
+            validateQuantityLegend(snapshot.tooltip(), empty, quantityCase);
             var labels = List.of(appeng.core.localization.GuiText.FromStorage,
                     appeng.core.localization.GuiText.Crafting, appeng.core.localization.GuiText.Scheduled);
             long[] raw = {expected.getStoredAmount(), expected.getActiveAmount(), expected.getPendingAmount()};
@@ -1162,11 +1156,7 @@ final class StandardAe2Scenario {
                         labels.get(category).text("").getContents();
                 String full = raw[category] > 0 ? expected.getWhat().formatAmount(raw[category],
                         appeng.api.stacks.AmountFormat.FULL) : null;
-                final int nativeCategory = category;
-                if (snapshot.tooltip().stream().anyMatch(text -> text.key().equals(label.getKey())
-                        && full != null && text.arguments().contains(full)) != (full != null))
-                    throw new IllegalStateException("Synthetic native amount case " + quantityCase
-                            + " lost full tooltip category " + nativeCategory + "=" + full);
+                validateQuantityTooltipCategory(snapshot.tooltip(), label.getKey(), full, category, quantityCase);
             }
             screenshot.accept("status-amounts-" + quantityCase + ".png");
             if (++quantityCase < StandardCraftFixture.QUANTITY_CASES) {
@@ -2434,6 +2424,38 @@ final class StandardAe2Scenario {
                     com.ctux.ae2craftingtime.core.OptionFeature.PROFILING));
         }
         return false;
+    }
+
+    static List<UiSnapshot.ObservedText> quantityAmountLines(UiSnapshot.Row row, boolean empty, int quantityCase) {
+        var amountLines = row.description().stream()
+                .filter(text -> text.key().equals("text.ae2craftingtime.status.amounts")).toList();
+        if (amountLines.size() != (empty ? 0 : 1))
+            throw new IllegalStateException("Synthetic native amount case " + quantityCase + " has " + amountLines);
+        return amountLines;
+    }
+
+    static void validateQuantityText(UiSnapshot.ObservedText summary, String amount, int quantityCase) {
+        if (!summary.arguments().equals(List.of(amount)) || summary.bold())
+            throw new IllegalStateException("Synthetic native amount case " + quantityCase + " text " + summary);
+    }
+
+    static void validateQuantityLayout(UiSnapshot snapshot, UiSnapshot.ObservedText summary,
+            Integer color, int quantityCase) {
+        if (!java.util.Objects.equals(summary.color(), color) || !LayoutValidator.validateBadges(snapshot).isEmpty())
+            throw new IllegalStateException("Synthetic native amount case " + quantityCase + " color/layout " + summary);
+    }
+
+    static void validateQuantityLegend(List<UiSnapshot.ObservedText> tooltip, boolean empty, int quantityCase) {
+        if (tooltip.stream().anyMatch(text -> text.key().equals("text.ae2craftingtime.status.amounts_legend")) == empty)
+            throw new IllegalStateException("Synthetic native amount case " + quantityCase + " lost tooltip legend");
+    }
+
+    static void validateQuantityTooltipCategory(List<UiSnapshot.ObservedText> tooltip, String key,
+            String full, int category, int quantityCase) {
+        if (tooltip.stream().anyMatch(text -> text.key().equals(key)
+                && full != null && text.arguments().contains(full)) != (full != null))
+            throw new IllegalStateException("Synthetic native amount case " + quantityCase
+                    + " lost full tooltip category " + category + "=" + full);
     }
 
     static void validateStoredVariantLabel(UiSnapshot.ObservedText label, boolean expected, Integer neutralColor) {
