@@ -43,10 +43,12 @@ final class NativeCraftBoundaryRunner {
     private int persistenceCaptures;
     private boolean finished;
     private long started;
+    private NativeStartBoundary startBoundary;
 
     NativeCraftBoundaryRunner() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
         MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.client.event.ScreenEvent.Render.Pre event) -> {
+            if (startBoundary != null) startBoundary.hold();
             if (runtime != null) runtime.beforeRender();
         });
         MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.client.event.ScreenEvent.Render.Post event) -> {
@@ -76,6 +78,29 @@ final class NativeCraftBoundaryRunner {
                 started = System.nanoTime();
             }
             assertTrue(System.nanoTime() - started < 1_200_000_000_000L, "Native crafting checks exceeded twenty minutes");
+            if (startBoundary == null && !passed.contains("inactive-start")
+                    && field(standardType, "phase", standard).toString().equals("SUBMIT")
+                    && minecraft.screen instanceof appeng.client.gui.me.crafting.CraftConfirmScreen
+                    && UiObservationStore.latest() != null && !UiObservationStore.latest().rows().isEmpty()
+                    && UiObservationStore.latest().rows().stream().noneMatch(row -> row.missingAmount() > 0)) {
+                var start = minecraft.screen.children().stream()
+                        .filter(net.minecraft.client.gui.components.AbstractWidget.class::isInstance)
+                        .map(net.minecraft.client.gui.components.AbstractWidget.class::cast)
+                        .filter(widget -> widget.active && widget.getMessage().getString().equals("Start"))
+                        .findFirst();
+                if (start.isPresent()) startBoundary = new NativeStartBoundary(minecraft, start.get(), standardType,
+                        (Map<?, ?>) field(flow.getClass(), "checks", flow));
+            }
+            if (startBoundary != null) {
+                set(TestDriverRuntime.class, "renderedFrames", null,
+                        (long) field(TestDriverRuntime.class, "renderedFrames", null) + 1);
+                if (startBoundary.tick(minecraft, field(flow.getClass(), "marker", flow),
+                        (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
+                    passed.add("inactive-start");
+                    startBoundary = null;
+                }
+                return;
+            }
             if (pending == null) beginFault(minecraft);
             if (pending != null) {
                 set(TestDriverRuntime.class, "renderedFrames", null,
@@ -88,7 +113,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 9 : 8,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 10 : 9,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();
@@ -109,6 +134,7 @@ final class NativeCraftBoundaryRunner {
         } catch (Throwable error) {
             finished = true;
             try {
+                if (startBoundary != null) startBoundary.restore();
                 restoreFontPack();
                 if (persistenceConfig != null)
                     com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.apply(persistenceConfig);

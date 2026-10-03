@@ -82,11 +82,18 @@ base faults, the seventh addon fault when
 requested, and the ordinary scenario's full PASS result. Preserve original native
 captures and keep deliberate fault assertions separate from the normal result.
 
-Pending extensions: saved-Off persistence must wait for a missing native status
+At `2c56fb18`, all nine faults and the real world closure assertion pass,
+followed by thirteen ordinary checks and JVM exit 0. All 36 normal captures and
+nine fault originals are reviewed. Saved-Off persistence waits for a missing native status
 payload before recovering its row, and badge persistence must reject the
 original incomplete ordinary check map after validating saved custom Off
 appearance. Preserve the saved baseline and continuation absence at each guard,
 restore the original payload and configuration, then require the normal PASS.
+
+Pending extension: deliberately hold the actual Crafting Plan Start widget
+inactive while its real stocked plan remains open. Require three native replans
+with the real ten-second waits, then the exact bounded retry rejection. Preserve
+ordinary checks and saved options, restore the widget, and require normal recovery.
 
 ## Plan readiness with optional backgrounds (#585)
 

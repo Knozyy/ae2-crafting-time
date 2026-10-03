@@ -59,6 +59,12 @@ do not mistake the previous item/fluid frame for an addon row. Reuse the same
 native recovery assertions, and require the ordinary mana and chemical captures.
 Write separate fault evidence, and require the original runtime result
 to pass before reporting the combined run as successful.
+The Start retry boundary uses a separate badge flow against the actual stocked
+Crafting Plan menu. Hold only its real Start widget inactive before rendering;
+do not fabricate CPU state, elapsed time or retry counters. Record each actual
+replan counter increment and monotonic time. After three replans with the native
+ten-second deadline, assert the exact rejection, unchanged ordinary checks and
+saved bytes. Restore the widget on success or failure and resume the normal flow.
 
 ## Plan readiness with optional backgrounds (#585)
 
