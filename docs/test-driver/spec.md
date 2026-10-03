@@ -49,8 +49,14 @@ case. Keep saved options and ordinary checks unchanged during each fault.
 Also reject status relaunch while compact amounts are still enabled, and reject
 it when the ordinary check map is incomplete. Use the actual status screen and
 native option values; restore the original configuration before continuing.
-These persistence guard extensions are pending verification. Require all six
-fault checks and the ordinary scenario's full PASS result. Preserve original native
+At `b1a3522b`, both persistence guards pass along with all six native faults,
+all thirteen ordinary checks and JVM exit 0. The corrected run checks each
+rejection before intentionally saving the next test setup; the initial setup
+failure is preserved separately.
+In the addon graph, also remove an actual Applied Botanics status row and require
+the same exact native key/amount restoration without advancing the case. This
+extension is pending. Require all six base faults, the seventh addon fault when
+requested, and the ordinary scenario's full PASS result. Preserve original native
 captures and keep deliberate fault assertions separate from the normal result.
 
 ## Plan readiness with optional backgrounds (#585)

@@ -64,6 +64,10 @@ final class NativeCraftBoundaryRunner {
                 assertTrue(Boolean.getBoolean("ae2craftingtime.test.observeConnection"), "Ordinary runtime must be disabled");
                 var options = DriverOptions.load();
                 assertEquals("standard-status-controls", options.scenario());
+                if (Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows")) {
+                    assertTrue(net.minecraftforge.fml.ModList.get().isLoaded("appbot"));
+                    assertTrue(net.minecraftforge.fml.ModList.get().isLoaded("appmek"));
+                }
                 Files.createDirectories(output);
                 runtime = new TestDriverRuntime(options, "ae2-crafting-time-1.2.13-forge-1.20.1-test-driver.jar");
                 flow = field(TestDriverRuntime.class, "scenario", runtime);
@@ -84,7 +88,8 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(6, passed.size(), "Every required native fault must execute");
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 7 : 6,
+                        passed.size(), "Every required native fault must execute");
                 Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(Map.of(
                         "result", "PASS", "checks", passed, "normalResult", result,
                         "runtimeClassSha256", runtimeHash())));
@@ -114,14 +119,22 @@ final class NativeCraftBoundaryRunner {
         var snapshot = UiObservationStore.latest();
         if (snapshot == null) return;
         if ((phase.equals("STATUS_AMOUNTS") && (int) field(standardType, "quantityCase", standard) == 0
+                || phase.equals("STATUS_ADDON_AMOUNTS") && Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows")
+                && (int) field(standardType, "addonQuantityCase", standard) == 0
                 || phase.equals("STATUS_SCALES") && (boolean) field(standardType, "quantityScaleSet", standard)
                 && field(standardType, "amountFontReload", standard) == null)
                 && minecraft.screen instanceof CraftingStatusScreen && !snapshot.rows().isEmpty()
                 && !passed.contains(phase)) {
             statusBefore = ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$status();
             assertFalse(statusBefore.getEntries().isEmpty());
+            if (phase.equals("STATUS_ADDON_AMOUNTS")) {
+                var addons = (List<?>) field(standardType, "addonQuantityCases", standard);
+                assertEquals(2, addons.size(), "Both real mana and chemical key fixtures must be available");
+                var addon = addons.get(0);
+                if (!statusBefore.getEntries().get(0).getWhat().equals(field(addon.getClass(), "key", addon))) return;
+            }
             begin(minecraft, phase, snapshot.frame());
-            caseBefore = (int) field(standardType, phase.equals("STATUS_AMOUNTS") ? "quantityCase" : "quantityScaleCase", standard);
+            caseBefore = (int) field(standardType, caseField(phase), standard);
             ((CraftingStatusAccessor) minecraft.screen).ae2craftingtime_test_driver$setStatus(
                     new CraftingStatus(true, 0, 0, 0, List.of()));
         } else if (phase.equals("STATUS_OPTIONS") && minecraft.screen instanceof CraftingStatusScreen
@@ -208,8 +221,7 @@ final class NativeCraftBoundaryRunner {
                     assertEquals(expected.getStoredAmount(), actual.getStoredAmount());
                     assertEquals(expected.getActiveAmount(), actual.getActiveAmount());
                     assertEquals(expected.getPendingAmount(), actual.getPendingAmount());
-                    assertEquals(caseBefore, field(standardType,
-                            pending.equals("STATUS_AMOUNTS") ? "quantityCase" : "quantityScaleCase", standard));
+                    assertEquals(caseBefore, field(standardType, caseField(pending), standard));
                     finishFault(minecraft);
                 }
             }
@@ -272,6 +284,15 @@ final class NativeCraftBoundaryRunner {
 
     private static Path configPath(Minecraft minecraft) {
         return minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml");
+    }
+
+    private static String caseField(String phase) {
+        return switch (phase) {
+            case "STATUS_AMOUNTS" -> "quantityCase";
+            case "STATUS_ADDON_AMOUNTS" -> "addonQuantityCase";
+            case "STATUS_SCALES" -> "quantityScaleCase";
+            default -> throw new AssertionError("Unknown native amount phase: " + phase);
+        };
     }
 
     private void restoreFontPack() throws java.io.IOException {

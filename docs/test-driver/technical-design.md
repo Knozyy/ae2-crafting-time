@@ -35,6 +35,10 @@ Use that saved file as the second rejection's baseline, then verify native
 compact-Off rendering and incomplete-check rejection. Require no
 continuation file, restore the original runtime configuration, and resume the
 ordinary flow without changing its stage or checks.
+The addon graph explicitly requires both installed mana and chemical mods. Wait
+for the first real addon key payload and its rendered row before removing it;
+do not mistake the previous item/fluid frame for an addon row. Reuse the same
+native recovery assertions, and require the ordinary mana and chemical captures.
 Write separate fault evidence, and require the original runtime result
 to pass before reporting the combined run as successful.
 
