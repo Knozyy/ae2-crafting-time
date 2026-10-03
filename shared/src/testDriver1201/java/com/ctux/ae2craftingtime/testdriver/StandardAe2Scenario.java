@@ -720,11 +720,10 @@ final class StandardAe2Scenario {
                     || ((com.ctux.ae2craftingtime.mc1201.RecurrentPlanMenu) menu)
                             .ae2craftingtime$summaryRevision() != variantRevision)
                 throw new IllegalStateException("Stored-variant transition replaced the native plan");
-            if (!variantAmounts.equals(summary.getEntries().stream().map(value -> List.of(
-                    value.getStoredAmount(), value.getCraftAmount(), value.getMissingAmount())).toList())
-                    || !variantButtons.equals(minecraft.screen.children().stream().filter(AbstractWidget.class::isInstance)
-                            .map(AbstractWidget.class::cast).map(value -> value.active).toList()))
-                throw new IllegalStateException("Stored-variant transition changed quantities or native button state");
+            validateVariantContent(variantAmounts, summary.getEntries().stream().map(value -> List.of(
+                    value.getStoredAmount(), value.getCraftAmount(), value.getMissingAmount())).toList(),
+                    variantButtons, minecraft.screen.children().stream().filter(AbstractWidget.class::isInstance)
+                            .map(AbstractWidget.class::cast).map(value -> value.active).toList());
             for (var control : summary.getEntries()) {
                 if (control == entry) continue;
                 if (((com.ctux.ae2craftingtime.mc1201.RecurrentPlanEntry) control).ae2craftingtime$storedVariant())
@@ -988,19 +987,14 @@ final class StandardAe2Scenario {
         } else if (phase == Stage.PLAN_SORT || phase == Stage.STATUS_SORT) {
             var rows = snapshot.rows().stream().filter(row -> row.craftAmount() > 0).map(UiSnapshot.Row::outputId).toList();
             if (!rows.containsAll(List.of("minecraft:stone", "minecraft:smooth_stone"))) return false;
-            if (plan && !missingFirst(snapshot.rows())) {
-                throw new IllegalStateException("Crafting Plan missing rows are not first: " + snapshot.rows());
-            }
+            validatePlanMissingOrder(snapshot, plan);
             if (sort == 0) {
                 mark(checks, prefix, true);
                 var total = plan ? snapshot.text().stream()
                         .filter(t -> t.key().equals("text.ae2craftingtime.total_ttc")).findFirst().orElse(null) : null;
                 if (plan && total == null) return false;
-                if (plan && (total.bounds() == null || !recurrentBadgeMatches(snapshot.badges(), total.bounds(),
-                        com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground())
-                        || !LayoutValidator.validateBadges(snapshot).isEmpty())) {
-                    throw new IllegalStateException("plan badge layout: " + LayoutValidator.validateBadges(snapshot));
-                }
+                if (plan) validatePlanTotal(snapshot, total,
+                        com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground());
                 if (plan) {
                     mark(checks, "total-ttc", true);
                     mark(checks, "layout", true);
@@ -1011,9 +1005,7 @@ final class StandardAe2Scenario {
             if (sort != 1) {
                 var expected = plan && sort == 2 ? List.of("minecraft:smooth_stone", "minecraft:stone")
                         : List.of("minecraft:stone", "minecraft:smooth_stone");
-                if (!rows.subList(0, 2).equals(expected)) {
-                    throw new IllegalStateException(prefix + " sort " + sort + " row order is " + rows + ", expected " + expected);
-                }
+                validateSortedRows(rows, expected, prefix, sort);
             }
             if (sort > 0) screenshot.accept(prefix + "-sort-" + sort + ".png");
             if (sort++ < 3) {
@@ -1201,9 +1193,7 @@ final class StandardAe2Scenario {
             var key = expected.getWhat();
             var slot = java.util.List.of(addon.stored(), addon.active(), addon.pending()).stream()
                     .map(value -> key.formatAmount(value, appeng.api.stacks.AmountFormat.SLOT)).toList();
-            if (summary == null || !summary.arguments().equals(List.of(String.join("/", slot)))
-                    || summary.bold() || !LayoutValidator.validateBadges(snapshot).isEmpty())
-                throw new IllegalStateException("Addon " + addon.name() + " lost native SLOT amounts or badge bounds");
+            validateAddonSummary(snapshot, summary, slot, addon.name());
             if (!addonQuantityBadgeCaptured) {
                 moveMouse.accept(0, 0);
                 screenshot.accept("status-addon-" + addon.name() + ".png");
@@ -1220,9 +1210,7 @@ final class StandardAe2Scenario {
                 return false;
             }
             if (snapshot.tooltip().isEmpty()) return false;
-            if (snapshot.tooltip().stream().noneMatch(value -> value.key().equals(
-                    "text.ae2craftingtime.status.amounts_legend")))
-                throw new IllegalStateException("Addon " + addon.name() + " lost amount legend");
+            validateAddonLegend(snapshot.tooltip(), addon.name());
             var labels = List.of(appeng.core.localization.GuiText.FromStorage,
                     appeng.core.localization.GuiText.Crafting, appeng.core.localization.GuiText.Scheduled);
             long[] raw = {addon.stored(), addon.active(), addon.pending()};
@@ -1230,9 +1218,7 @@ final class StandardAe2Scenario {
                 String label = ((net.minecraft.network.chat.contents.TranslatableContents)
                         labels.get(category).text("").getContents()).getKey();
                 String full = key.formatAmount(raw[category], appeng.api.stacks.AmountFormat.FULL);
-                if (snapshot.tooltip().stream().noneMatch(value -> value.key().equals(label)
-                        && value.arguments().contains(full)))
-                    throw new IllegalStateException("Addon " + addon.name() + " lost native FULL tooltip " + label);
+                validateAddonTooltip(snapshot.tooltip(), label, full, addon.name());
             }
             screenshot.accept("status-addon-" + addon.name() + "-tooltip.png");
             moveMouse.accept(0, 0);
@@ -1258,9 +1244,8 @@ final class StandardAe2Scenario {
                 amountFontReload.join();
                 amountFontReload = null;
                 frames.reset();
-                if (amountFontMode == 1 && minecraft.font.width(com.ctux.ae2craftingtime.mc1201.TtcText
-                        .statusAmounts("4/10/200")) <= defaultAmountFontWidth)
-                    throw new IllegalStateException("Uniform status font is not wider than the default font");
+                validateAmountFont(amountFontMode, minecraft.font.width(com.ctux.ae2craftingtime.mc1201.TtcText
+                        .statusAmounts("4/10/200")), defaultAmountFontWidth);
                 if (amountFontMode == 2) {
                     minecraft.options.guiScale().set(originalGuiScale);
                     DriverPlatform.resizeDisplay(minecraft);
@@ -1293,9 +1278,7 @@ final class StandardAe2Scenario {
             var amount = row.description().stream().filter(text -> text.key().equals("text.ae2craftingtime.status.amounts"))
                     .findFirst().orElse(null);
             var drawn = rowText(snapshot, row.outputId(), "text.ae2craftingtime.status.amounts");
-            if (amount == null || drawn == null || !amount.rendered().equals(drawn.rendered())
-                    || !LayoutValidator.validateBadges(snapshot).isEmpty())
-                throw new IllegalStateException("Scaled amount badge escapes its native cell: " + amount + " rendered " + drawn);
+            validateScaledAmount(snapshot, amount, drawn);
             screenshot.accept("status-scale-" + (amountFontMode == 0 ? "default" : "wide") + "-"
                     + (requested == 0 ? "auto" : requested) + ".png");
             if (++quantityScaleCase < 3) {
@@ -1327,32 +1310,16 @@ final class StandardAe2Scenario {
             if (minecraft.screen instanceof CraftingStatusScreen statusScreen) {
                 if (amountOptionSaving) {
                     var features = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features();
-                    if (features.enabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS) != compact
-                            || features.enabled(com.ctux.ae2craftingtime.core.OptionFeature.STATUS_ROWS) != time)
-                        throw new IllegalStateException("Saved amount option combination " + amountOptionCase + " differs");
+                    validateAmountOptionFeatures(features, compact, time, amountOptionCase);
                     var row = snapshot.rows().stream().filter(value -> value.storedAmount() > 0
                             || value.activeAmount() > 0 || value.pendingAmount() > 0).findFirst().orElse(null);
                     if (row == null) return false;
-                    boolean hasSummary = row.description().stream().anyMatch(value -> value.key().equals(
-                            "text.ae2craftingtime.status.amounts"));
-                    if (hasSummary != compact)
-                        throw new IllegalStateException("Amount option combination " + amountOptionCase + " rendered " + row.description());
+                    validateAmountOptionSummary(row, compact, amountOptionCase);
                     var nativeKeys = List.of(appeng.core.localization.GuiText.FromStorage,
                             appeng.core.localization.GuiText.Crafting, appeng.core.localization.GuiText.Scheduled)
                             .stream().map(label -> ((net.minecraft.network.chat.contents.TranslatableContents)
                                     label.text("").getContents()).getKey()).toList();
-                    long[] raw = {row.storedAmount(), row.activeAmount(), row.pendingAmount()};
-                    for (int category = 0; category < raw.length; category++) {
-                        String key = nativeKeys.get(category);
-                        int visible = (int) row.description().stream().filter(value -> value.key().equals(key)).count();
-                        if (visible != (!compact && raw[category] > 0 ? 1 : 0))
-                            throw new IllegalStateException("Amount option combination " + amountOptionCase
-                                    + " native category " + key + " count " + visible);
-                    }
-                    if (!time && row.description().stream().anyMatch(value ->
-                            com.ctux.ae2craftingtime.core.CraftingRowState.isBadge(value.key())
-                                    && !value.key().equals("text.ae2craftingtime.status.amounts")))
-                        throw new IllegalStateException("TTC-off amount option rendered a status badge");
+                    validateAmountOptionCategories(row, nativeKeys, compact, time, amountOptionCase);
                     screenshot.accept("status-options-" + amountOptionCase + ".png");
                     amountOptionCase++;
                     amountOptionSaving = false;
@@ -1589,9 +1556,7 @@ final class StandardAe2Scenario {
             stonePlateObserved |= hasPlate("minecraft:stone", 4);
             var warning = rowText(snapshot, "minecraft:stone", "text.ae2craftingtime.ttc_delayed");
             if (warning == null) return false;
-            if (warning.bold() || !Integer.valueOf(0xFF5555).equals(warning.color())) {
-                throw new IllegalStateException("DELAYED must be normal red on the active stone row");
-            }
+            validateDelayedWarning(warning);
             validateLayout(snapshot);
             if (!checks.get("delayed")) {
                 screenshot.accept("status-delayed.png");
@@ -1662,10 +1627,7 @@ final class StandardAe2Scenario {
             var header = snapshot.text().stream().filter(t -> t.bounds() != null && t.bounds().y() < snapshot.gui().y() + 19
                     && t.key().equals("native-title")).findFirst();
             if (leaf.equals("standard-status-controls") && header.isPresent() && !Boolean.TRUE.equals(checks.get("header"))) {
-                if (!header.get().bounds().inside(snapshot.gui()) || !LayoutValidator.validateBadges(snapshot).isEmpty()) {
-                    throw new IllegalStateException("status header " + header.get().bounds() + " GUI " + snapshot.gui()
-                            + " badge layout: " + LayoutValidator.validateBadges(snapshot));
-                }
+                validateStatusHeader(snapshot, header.get());
                 mark(checks, "header", true);
                 mark(checks, "layout", true);
                 screenshot.accept("status-progress.png");
@@ -1681,11 +1643,7 @@ final class StandardAe2Scenario {
         } else if (phase == Stage.FINISHED) {
             // Older AE2 can retain its last incremental row after the CPU becomes idle.
             // Preserve that view, then reopen through the actual return/status buttons.
-            if (leaf.equals("craft-lifecycle") && snapshot.text().stream()
-                    .anyMatch(t -> t.key().equals("text.ae2craftingtime.ttc") && t.bounds() != null
-                            && t.bounds().y() < snapshot.gui().y() + 19)) {
-                throw new IllegalStateException("completed crafting status still shows total TTC");
-            }
+            validateCompletedStatus(snapshot, leaf);
             if (leaf.equals("craft-lifecycle")) mark(checks, "total-cleared", true);
             if (leaf.equals("craft-lifecycle")) screenshot.accept(partialJob ? "status-partial-finished.png" : "status-finished-job.png");
             var button = minecraft.screen.children().stream().filter(appeng.client.gui.widgets.TabButton.class::isInstance)
@@ -2426,6 +2384,128 @@ final class StandardAe2Scenario {
         return false;
     }
 
+    static void validateAmountOptionFeatures(com.ctux.ae2craftingtime.core.FeatureOptions features,
+            boolean compact, boolean time, int amountOptionCase) {
+        if (features.enabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS) != compact
+                || features.enabled(com.ctux.ae2craftingtime.core.OptionFeature.STATUS_ROWS) != time)
+            throw new IllegalStateException("Saved amount option combination " + amountOptionCase + " differs");
+    }
+
+    static void validateAmountOptionSummary(UiSnapshot.Row row, boolean compact, int amountOptionCase) {
+        boolean hasSummary = row.description().stream().anyMatch(value -> value.key().equals(
+                "text.ae2craftingtime.status.amounts"));
+        if (hasSummary != compact)
+            throw new IllegalStateException("Amount option combination " + amountOptionCase + " rendered " + row.description());
+    }
+
+    static void validateAmountOptionCategories(UiSnapshot.Row row, List<String> nativeKeys,
+            boolean compact, boolean time, int amountOptionCase) {
+        long[] raw = {row.storedAmount(), row.activeAmount(), row.pendingAmount()};
+        for (int category = 0; category < raw.length; category++) {
+            String key = nativeKeys.get(category);
+            int visible = (int) row.description().stream().filter(value -> value.key().equals(key)).count();
+            if (visible != (!compact && raw[category] > 0 ? 1 : 0))
+                throw new IllegalStateException("Amount option combination " + amountOptionCase
+                        + " native category " + key + " count " + visible);
+        }
+        if (!time && row.description().stream().anyMatch(value ->
+                com.ctux.ae2craftingtime.core.CraftingRowState.isBadge(value.key())
+                        && !value.key().equals("text.ae2craftingtime.status.amounts")))
+            throw new IllegalStateException("TTC-off amount option rendered a status badge");
+    }
+
+    static void validateBadgeContent(List<String> rows, List<String> text,
+            List<String> expectedRows, List<String> expectedText) {
+        if (!rows.equals(expectedRows) || !text.equals(expectedText))
+            throw new IllegalStateException("Badge switch changed native rows or mod text");
+    }
+
+    static void validateBadgeAppearance(com.ctux.ae2craftingtime.core.ClientConfig config, int step, String phase) {
+        if (config.badgeBackground() != (step != 3))
+            throw new IllegalStateException("Badge background state differs at " + phase + " step " + step);
+        if (config.color(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE) != 0x245A7D
+                || config.badgeOpacity() != 96)
+            throw new IllegalStateException("Custom badge appearance was lost");
+    }
+
+    static void validateAppearanceInput(String label, String expected, String actual) {
+        if (expected == null || !actual.equals(expected))
+            throw new IllegalStateException("Appearance reset value differs: " + label);
+    }
+
+    static void validateAppearanceInputCount(int count) {
+        if (count != com.ctux.ae2craftingtime.core.ClientConfig.appearanceColors().size() + 1)
+            throw new IllegalStateException("Appearance reset did not expose every input");
+    }
+
+    static void validateVariantContent(List<List<Long>> expectedAmounts, List<List<Long>> amounts,
+            List<Boolean> expectedButtons, List<Boolean> buttons) {
+        if (!expectedAmounts.equals(amounts) || !expectedButtons.equals(buttons))
+            throw new IllegalStateException("Stored-variant transition changed quantities or native button state");
+    }
+
+    static void validateDelayedWarning(UiSnapshot.ObservedText warning) {
+        if (warning.bold() || !Integer.valueOf(0xFF5555).equals(warning.color()))
+            throw new IllegalStateException("DELAYED must be normal red on the active stone row");
+    }
+
+    static void validateStatusHeader(UiSnapshot snapshot, UiSnapshot.ObservedText header) {
+        if (!header.bounds().inside(snapshot.gui()) || !LayoutValidator.validateBadges(snapshot).isEmpty())
+            throw new IllegalStateException("status header " + header.bounds() + " GUI " + snapshot.gui()
+                    + " badge layout: " + LayoutValidator.validateBadges(snapshot));
+    }
+
+    static void validateCompletedStatus(UiSnapshot snapshot, String leaf) {
+        if (leaf.equals("craft-lifecycle") && snapshot.text().stream()
+                .anyMatch(t -> t.key().equals("text.ae2craftingtime.ttc") && t.bounds() != null
+                        && t.bounds().y() < snapshot.gui().y() + 19))
+            throw new IllegalStateException("completed crafting status still shows total TTC");
+    }
+
+    static void validatePlanMissingOrder(UiSnapshot snapshot, boolean plan) {
+        if (plan && !missingFirst(snapshot.rows()))
+            throw new IllegalStateException("Crafting Plan missing rows are not first: " + snapshot.rows());
+    }
+
+    static void validatePlanTotal(UiSnapshot snapshot, UiSnapshot.ObservedText total, boolean background) {
+        if (total.bounds() == null || !recurrentBadgeMatches(snapshot.badges(), total.bounds(), background)
+                || !LayoutValidator.validateBadges(snapshot).isEmpty())
+            throw new IllegalStateException("plan badge layout: " + LayoutValidator.validateBadges(snapshot));
+    }
+
+    static void validateSortedRows(List<String> rows, List<String> expected, String prefix, int sort) {
+        if (!rows.subList(0, 2).equals(expected))
+            throw new IllegalStateException(prefix + " sort " + sort + " row order is " + rows + ", expected " + expected);
+    }
+
+    static void validateAddonSummary(UiSnapshot snapshot, UiSnapshot.ObservedText summary,
+            List<String> slot, String addon) {
+        if (summary == null || !summary.arguments().equals(List.of(String.join("/", slot)))
+                || summary.bold() || !LayoutValidator.validateBadges(snapshot).isEmpty())
+            throw new IllegalStateException("Addon " + addon + " lost native SLOT amounts or badge bounds");
+    }
+
+    static void validateAddonLegend(List<UiSnapshot.ObservedText> tooltip, String addon) {
+        if (tooltip.stream().noneMatch(value -> value.key().equals("text.ae2craftingtime.status.amounts_legend")))
+            throw new IllegalStateException("Addon " + addon + " lost amount legend");
+    }
+
+    static void validateAddonTooltip(List<UiSnapshot.ObservedText> tooltip, String label, String full, String addon) {
+        if (tooltip.stream().noneMatch(value -> value.key().equals(label) && value.arguments().contains(full)))
+            throw new IllegalStateException("Addon " + addon + " lost native FULL tooltip " + label);
+    }
+
+    static void validateAmountFont(int mode, int width, int defaultWidth) {
+        if (mode == 1 && width <= defaultWidth)
+            throw new IllegalStateException("Uniform status font is not wider than the default font");
+    }
+
+    static void validateScaledAmount(UiSnapshot snapshot, UiSnapshot.ObservedText amount, UiSnapshot.ObservedText drawn) {
+        if (amount == null || drawn == null || !amount.rendered().equals(drawn.rendered())
+                || !LayoutValidator.validateBadges(snapshot).isEmpty())
+            throw new IllegalStateException("Scaled amount badge escapes its native cell: " + amount + " rendered " + drawn);
+    }
+
     static List<UiSnapshot.ObservedText> quantityAmountLines(UiSnapshot.Row row, boolean empty, int quantityCase) {
         var amountLines = row.description().stream()
                 .filter(text -> text.key().equals("text.ae2craftingtime.status.amounts")).toList();
@@ -2629,15 +2709,10 @@ final class StandardAe2Scenario {
         if (badgeStep == 1 || status && badgeStep == 0) {
             badgeRowsBefore = rows;
             badgeTextBefore = text;
-        } else if (!rows.equals(badgeRowsBefore) || !text.equals(badgeTextBefore))
-            throw new IllegalStateException("Badge switch changed native rows or mod text");
-        boolean enabled = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().badgeBackground();
-        if (enabled != (badgeStep != 3))
-            throw new IllegalStateException("Badge background state differs at " + phase + " step " + badgeStep);
-        var config = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current();
-        if (config.color(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE) != 0x245A7D
-                || config.badgeOpacity() != 96)
-            throw new IllegalStateException("Custom badge appearance was lost");
+        } else {
+            validateBadgeContent(rows, text, badgeRowsBefore, badgeTextBefore);
+        }
+        validateBadgeAppearance(com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current(), badgeStep, phase.toString());
         String name = (status ? "status" : "plan") + "-badge-"
                 + (badgeStep == 3 ? "off" : badgeStep == 5 ? "restored" : "on");
         screenshot.accept(name + ".png");
@@ -3004,8 +3079,7 @@ final class StandardAe2Scenario {
             }
             if (label.equals(net.minecraft.client.resources.language.I18n.get("config.ae2craftingtime.badgeOpacity")))
                 expected = "176";
-            if (expected == null || !input.getValue().equals(expected))
-                throw new IllegalStateException("Appearance reset value differs: " + label);
+            validateAppearanceInput(label, expected, input.getValue());
             badgeResetInputs.add(label);
         }
         if (optionButton(minecraft, ">") != null) {
@@ -3013,8 +3087,7 @@ final class StandardAe2Scenario {
             badgeResumeRenderedAfter = TestDriverRuntime.renderedFrames + 3;
             return false;
         }
-        if (badgeResetInputs.size() != com.ctux.ae2craftingtime.core.ClientConfig.appearanceColors().size() + 1)
-            throw new IllegalStateException("Appearance reset did not expose every input");
+        validateAppearanceInputCount(badgeResetInputs.size());
         badgeResetInputs.clear();
         return true;
     }
