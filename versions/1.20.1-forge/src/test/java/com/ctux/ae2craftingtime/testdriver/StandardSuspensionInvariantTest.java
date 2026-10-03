@@ -5,6 +5,22 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 class StandardSuspensionInvariantTest {
+    @Test void unknownSuspensionStagesPreservePendingStateWithoutStartingWork() throws Exception {
+        var scenario = new StandardAe2Scenario("crafting-suspension", "world", java.nio.file.Path.of("unused"), false);
+        var stage = StandardAe2Scenario.class.getDeclaredField("suspensionStage");
+        stage.setAccessible(true);
+        var checks = new java.util.LinkedHashMap<String, Boolean>();
+        checks.put("same-job-resumed", false);
+        for (int unknown : new int[]{-1, 34, Integer.MAX_VALUE}) {
+            stage.setInt(scenario, unknown);
+            assertFalse(scenario.tick(null, null, checks,
+                    name -> fail("Unknown stage captured success: " + name),
+                    (x, y) -> fail("Unknown stage moved the mouse")));
+            assertEquals(unknown, stage.getInt(scenario));
+            assertEquals(java.util.Map.of("same-job-resumed", false), checks);
+        }
+    }
+
     private static StandardCraftFixture.SuspensionState state(String id, boolean busy, boolean suspended,
             boolean profilerSuspended, long undispatched, long waiting, int input, int output) {
         return new StandardCraftFixture.SuspensionState(id, busy, suspended, profilerSuspended,

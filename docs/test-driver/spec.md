@@ -94,16 +94,28 @@ At `57312de1`, the Start retry guard passes along with ten faults, world closure
 thirteen ordinary checks and JVM exit 0. All 36 ordinary and ten fault captures
 are reviewed. Codecov confirms 94.07%; the overall gate remains incomplete.
 The guard checks the actual inactive widget, but its original capture shows the
-normal native appearance. Capture correction is pending.
+normal native appearance. At `4e487a48`, the corrected post-render capture shows
+the same real widget inactive. All eleven faults, real menu closure, thirteen
+ordinary checks and JVM exit 0 pass; all 36 normal and eleven fault originals
+are reviewed.
 Deliberately hold the actual Crafting Plan Start widget
 inactive while its real stocked plan remains open. Require three native replans
 with the real ten-second waits, then the exact bounded retry rejection. Preserve
 ordinary checks and saved options, restore the widget, and require normal recovery.
 
-Pending extension: render actual compact status text, then restore the saved Off
+At `4e487a48`, render actual compact status text, then restore the saved Off
 setting before the driver consumes the frame. Require persistence to wait while
 the drawn compact description is stale, without capture or continuation. Restore
 ordinary rendering and require the existing missing-row and incomplete-map guards.
+The stale-description and missing-row guards both pass after their actual eight
+stable frames, preserving saved bytes, ordinary checks and continuation absence.
+The separate connected CPU scenario passes all 41 checks across two native Java
+17 launches with exit 0. All 32 original captures are reviewed. Codecov confirms
+94.17%, with 29 misses and 310 partials; the overall 100% gate remains unfinished.
+
+The unknown suspension-stage boundary must remain pending without changing the
+stage or check map, capturing success, moving the mouse or starting server work.
+Its focused test is pending verification.
 
 ## Plan readiness with optional backgrounds (#585)
 
