@@ -30,6 +30,7 @@ public final class NativeOptionsBoundaryMod {
     private boolean finished;
     private Object scenario;
     private Class<?> scenarioType;
+    private int originalScale;
 
     public NativeOptionsBoundaryMod() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -45,6 +46,7 @@ public final class NativeOptionsBoundaryMod {
                 Files.createDirectories(output);
                 originalPath = (Path) field(ClientOptionsRuntime.class, "path", null);
                 originalConfig = ClientOptionsRuntime.current().copy();
+                originalScale = minecraft.options.guiScale().get();
                 set(ClientOptionsRuntime.class, "path", null, output.resolve("client.toml"));
                 started = System.nanoTime();
                 scenarioType = Class.forName("com.ctux.ae2craftingtime.testdriver.StandardAe2Scenario");
@@ -225,6 +227,70 @@ public final class NativeOptionsBoundaryMod {
                     stage++;
                 }
                 case 13 -> {
+                    var config = new ClientConfig();
+                    config.setColor(ClientConfig.Color.BADGE, 0x245A7D);
+                    config.setBadgeOpacity(96);
+                    ClientOptionsRuntime.apply(config);
+                    var continuationType = Class.forName(scenarioType.getName() + "$BadgeContinuation");
+                    var recordConstructor = continuationType.getDeclaredConstructor(int.class, String.class, String.class,
+                            String.class, java.util.List.class, java.util.List.class);
+                    recordConstructor.setAccessible(true);
+                    call("writeBadgeContinuation", new Class<?>[]{continuationType}, recordConstructor.newInstance(
+                            1, "native-options-boundary", "local",
+                            call("configHash", new Class<?>[]{Minecraft.class}, minecraft), java.util.List.of(), java.util.List.of()));
+                    assertNull(System.getProperty("ae2craftingtime.test.badgeRelaunch"));
+                    assertNull(System.getProperty("ae2craftingtime.test.continuation"));
+                    try {
+                        System.setProperty("ae2craftingtime.test.badgeRelaunch", "true");
+                        System.setProperty("ae2craftingtime.test.continuation", output.resolve("badge-background-continuation.json").toString());
+                        var constructor = scenarioType.getDeclaredConstructor(String.class, String.class, Path.class, boolean.class);
+                        constructor.setAccessible(true);
+                        scenario = constructor.newInstance("badge-background", "native-options-boundary", output, false);
+                    } finally {
+                        System.clearProperty("ae2craftingtime.test.badgeRelaunch");
+                        System.clearProperty("ae2craftingtime.test.continuation");
+                    }
+                    minecraft.setScreen(new OptionsScreen(new TitleScreen()));
+                    call("clickOptionButton", new Class<?>[]{Minecraft.class, String.class}, minecraft,
+                            net.minecraft.client.resources.language.I18n.get("gui.cancel"));
+                    assertInstanceOf(TitleScreen.class, minecraft.screen);
+                    set(scenarioType, "badgeResumeStep", scenario, 4);
+                    var physicalPath = minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml");
+                    var saved = Files.readAllBytes(physicalPath);
+                    try {
+                        Files.writeString(physicalPath, "\n# native test: unexpected save after Cancel\n", java.nio.file.StandardOpenOption.APPEND);
+                        rejectBadge(minecraft, "Cancel changed saved badge options");
+                    } finally { Files.write(physicalPath, saved); }
+                    assertEquals(false, call("badgeRelaunchTick",
+                            new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                            minecraft, Map.of(), (java.util.function.Consumer<String>) name -> fail("Cancel recovery captured success")));
+                    assertEquals(5, field(scenarioType, "badgeResumeStep", scenario));
+                    passed.add("Rejected changed physical options after native Cancel; accepted restored file hash");
+                    ClientOptionsRuntime.apply(new ClientConfig());
+                    minecraft.options.guiScale().set(6);
+                    minecraft.resizeDisplay();
+                    minecraft.setScreen(new OptionsScreen(new TitleScreen()));
+                    set(scenarioType, "amountResumeChecksRestored", scenario, true);
+                    set(scenarioType, "amountResumeOpened", scenario, true);
+                    set(scenarioType, "amountOptionRenderedAfter", scenario, 0L);
+                    assertTrue(minecraft.screen.height < 229, "Compact option must require a real second page");
+                    stage++;
+                }
+                case 14 -> {
+                    var captures = new ArrayList<String>();
+                    var complete = (boolean) call("statusRelaunchTick",
+                            new Class<?>[]{Minecraft.class, Map.class, java.util.function.Consumer.class},
+                            minecraft, Map.of(), (java.util.function.Consumer<String>) captures::add);
+                    for (var name : captures) capture(minecraft, name);
+                    if (!complete) return;
+                    assertTrue(ClientOptionsRuntime.current().features().enabled(OptionFeature.COMPACT_STATUS_AMOUNTS));
+                    assertFalse(minecraft.screen instanceof OptionsScreen);
+                    passed.add("Restored compact amounts through actual paginated native controls and saved Done");
+                    minecraft.options.guiScale().set(originalScale);
+                    minecraft.resizeDisplay();
+                    stage++;
+                }
+                case 15 -> {
                     restore();
                     Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(
                             Map.of("result", "PASS", "checks", passed, "runtimeClassSha256", runtimeHash())));
@@ -303,6 +369,9 @@ public final class NativeOptionsBoundaryMod {
         if (originalConfig == null) return;
         ClientOptionsRuntime.apply(originalConfig);
         set(ClientOptionsRuntime.class, "path", null, originalPath);
+        var minecraft = Minecraft.getInstance();
+        minecraft.options.guiScale().set(originalScale);
+        minecraft.resizeDisplay();
     }
 
     private static void capture(Minecraft minecraft, String name) throws Exception {

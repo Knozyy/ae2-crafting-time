@@ -10,11 +10,19 @@ Stored-variant and resource-icon sections inherit their linked feature status.
 
 ## Native options fault checks (#378)
 
-Status: planned; runtime verification pending.
+Status: in-progress.
+
+Implementation: [draft PR #643](https://github.com/cTux/ae2-crafting-time/pull/643).
+At `9c4ad02c`, thirteen native assertion groups pass unattended in CodexVM;
+the native JVM exits successfully and four original screenshots are reviewed.
+The full reported-code 100% gate remains incomplete. Additional Cancel-file
+integrity and paginated compact-amount checks still need runtime verification.
 
 The test-only Forge fixture uses the initialized Minecraft client and real
 Options screen to check rejected saves, incorrect reset values and missing
-controls. Each fault must assert the exact rejection and preserve the saved
+controls, including sort values and changes leaking across reset groups.
+Check Cancel against the physical saved-file hash, and restore compact amounts
+through actual paginated controls and Done. Each fault must assert the exact rejection and preserve the saved
 configuration. Successful recovery must pass after restoring valid values.
 Keep its JAR out of production and normal driver launches. Run it only in the
 disposable coverage client, with bounded execution and original screenshots.
