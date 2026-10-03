@@ -90,6 +90,16 @@ badge/scale guard combinations to reject before stable readiness advances, with
 no capture, server work, changed checks, GUI scale or saved bytes. Restore the
 original store observation in `finally`. Record the invalid inputs separately;
 the screenshot shows the unchanged actual screen, not the injected DTO.
+Persistence quantity boundaries use the existing `CraftingStatus` payload setter
+and real registered key from the current native status. Render a scheduled-only,
+stored-only and zero-quantity entry into the actual screen, polling new native
+observations for each separate `STATUS_PERSIST` flow. Check its real stable-frame
+threshold. Positive cases may reach only the saved-Off capture callback before
+the incomplete-check exception; zero quantities must stay pending without capture.
+Require unchanged checks, screen, menu and saved bytes and no continuation or
+server operation. Capture each actual screen, retain its original observations,
+and restore the original payload on success or any failure before normal recovery.
+These deliberately injected client quantities do not prove server job counts.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

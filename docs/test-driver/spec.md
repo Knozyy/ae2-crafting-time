@@ -196,7 +196,7 @@ coverage gates pass without skips. Both current-head CI checks pass. Codecov
 confirms 94.46%; the overall 100% target remains unfinished. The three failed
 attempts above remain preserved and excluded from the passing coverage reports.
 
-Pending invalid-observation extension: missing snapshots, wrong screen identity,
+Missing snapshots, wrong screen identity,
 empty rows, one positive row and an actual panel rectangle used as an invalid
 badge must leave both badge states and scale readiness pending. Verify all fifteen
 combinations against the actual native status screen, preserving stage, zero
@@ -204,6 +204,22 @@ stable-frame count, checks, screen, menu, GUI scale and saved bytes, with no cap
 or server operation. These deliberately invalid observation DTOs are guard inputs,
 not rendered native frames. Restore the original observation in `finally`, keep
 their evidence separate from screenshots, then require the ordinary scenario PASS.
+
+At `2df7a1cc`, all fifteen invalid-observation combinations pass, alongside sixteen
+native fault groups, menu closure and all thirteen ordinary checks, JVM exit 0.
+All 52 original captures are reviewed in contact sheets; the new unchanged-screen
+checkpoint is also viewed individually. Local checks and both current-head CI
+checks pass. Codecov confirms 94.55%; the requested 100% target remains unfinished.
+
+Pending persistence-quantity extension: render scheduled-only, stored-only and
+all-zero status payloads through the actual native screen. Positive scheduled or
+stored quantities must reach the saved-Off checkpoint after genuine stable frames,
+then reject the incomplete check map before writing any continuation. All-zero
+quantities must remain pending after the same threshold, without capture. Preserve
+checks, menu, screen and saved bytes; restore the original status payload on success
+or failure. Keep one actual screenshot and original observations per quantity case.
+These deliberate client payloads test native rendering and guard behavior, not
+actual server job counts. Require the ordinary scenario to pass after restoration.
 
 ## Plan readiness with optional backgrounds (#585)
 

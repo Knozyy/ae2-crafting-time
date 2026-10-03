@@ -46,6 +46,7 @@ final class NativeCraftBoundaryRunner {
     private NativeStartBoundary startBoundary;
     private final NativeStaleStatusBoundary staleStatus = new NativeStaleStatusBoundary();
     private final NativeBadgeObservationBoundary badgeObservation = new NativeBadgeObservationBoundary();
+    private final NativePersistenceQuantityBoundary persistenceQuantities = new NativePersistenceQuantityBoundary();
 
     NativeCraftBoundaryRunner() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -128,6 +129,12 @@ final class NativeCraftBoundaryRunner {
                     finishFault(minecraft);
                     return;
                 }
+                if (passed.contains("invalid-badge-observations") && !passed.contains("persist-zero-quantities")) {
+                    if (persistenceQuantities.tick(minecraft, standardType, field(flow.getClass(), "marker", flow),
+                            (Map<?, ?>) field(flow.getClass(), "checks", flow), output))
+                        passed.addAll(NativePersistenceQuantityBoundary.CASES);
+                    return;
+                }
                 staleStatus.observe(minecraft);
                 beginFault(minecraft);
             }
@@ -142,7 +149,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 16 : 15,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 19 : 18,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();
