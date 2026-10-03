@@ -1372,27 +1372,20 @@ final class StandardAe2Scenario {
                 var button = seekOptionButton(minecraft, label + ": ");
                 if (button == null) return false;
                 boolean enabled = button.getMessage().getString().endsWith(enabledLabel);
+                validateAmountResetInput(amountOptionCase, amountOptionOperationStep, label, enabled);
                 switch (amountOptionOperationStep) {
                     case 0 -> {
-                        if (enabled != (amountOptionCase != 6))
-                            throw new IllegalStateException("Wrong pre-reset compact value: case=" + amountOptionCase);
                         DriverPlatform.click(minecraft, button.getX() + 4, button.getY() + 4);
                         amountOptionOperationStep = 1;
                     }
                     case 1 -> {
-                        if (enabled != (amountOptionCase == 6))
-                            throw new IllegalStateException("Compact edit did not apply: case=" + amountOptionCase);
                         amountOptionOperationStep = amountOptionCase == 5 ? 2 : 6;
                     }
                     case 2, 4 -> {
-                        if (enabled != (amountOptionOperationStep == 4))
-                            throw new IllegalStateException("Wrong pre-reset option value: " + label);
                         DriverPlatform.click(minecraft, button.getX() + 4, button.getY() + 4);
                         amountOptionOperationStep++;
                     }
                     case 3, 5 -> {
-                        if (enabled != (amountOptionOperationStep == 3))
-                            throw new IllegalStateException("Option edit did not apply: " + label);
                         amountOptionOperationStep++;
                     }
                     case 6 -> {
@@ -1408,19 +1401,14 @@ final class StandardAe2Scenario {
                         if (amountOptionCase == 4) amountOptionSaving = true;
                     }
                     case 7, 8, 9 -> {
-                        if (enabled != (amountOptionOperationStep == 9))
-                            throw new IllegalStateException("Reset did not restore model default: " + label);
                         amountOptionOperationStep = amountOptionCase == 5 ? amountOptionOperationStep + 1 : 10;
                     }
                     case 10 -> {
-                        if (com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features()
-                                .enabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS)
-                                != (amountOptionCase == 5))
-                            throw new IllegalStateException("Reset changed live compact option before Done: case=" + amountOptionCase);
+                        validateAmountResetSaved(com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features(),
+                                amountOptionCase);
                         amountOptionSaving = true;
                         clickOptionButton(minecraft, net.minecraft.client.resources.language.I18n.get("gui.done"));
                     }
-                    default -> throw new IllegalStateException("Unexpected reset step " + amountOptionOperationStep);
                 }
                 amountOptionRenderedAfter = TestDriverRuntime.renderedFrames + 3;
                 frames.reset();
@@ -2384,6 +2372,70 @@ final class StandardAe2Scenario {
         return false;
     }
 
+    static void validateBadgeBeforeRelaunch(com.ctux.ae2craftingtime.core.ClientConfig config) {
+        if (config.badgeBackground() || config.color(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE) != 0x245A7D
+                || config.badgeOpacity() != 96)
+            throw new IllegalStateException("Badge Off/custom appearance was not saved for relaunch");
+    }
+
+    static void validateRestoredBadge(com.ctux.ae2craftingtime.core.ClientConfig config,
+            String actualHash, String priorHash) {
+        if (!config.badgeBackground() || config.color(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE) != 0x245A7D
+                || config.badgeOpacity() != 96 || actualHash.equals(priorHash))
+            throw new IllegalStateException("Badge On/custom appearance did not restore after relaunch");
+    }
+
+    static void validateBadgePredecessor(BadgeContinuation continuation, List<String> required, String actualHash) {
+        if (!java.util.Set.copyOf(continuation.checks()).equals(java.util.Set.copyOf(required))
+                || !actualHash.equals(continuation.configSha256()))
+            throw new IllegalStateException("Badge relaunch predecessor or saved config differs");
+    }
+
+    static void validateAmountPredecessorChecks(AmountContinuation continuation, List<String> required) {
+        if (!java.util.Set.copyOf(continuation.checks()).equals(java.util.Set.copyOf(required)))
+            throw new IllegalStateException("Status relaunch predecessor omitted required checks");
+    }
+
+    static void validateAmountPredecessorConfig(AmountContinuation continuation, String actualHash,
+            com.ctux.ae2craftingtime.core.FeatureOptions features) {
+        if (!actualHash.equals(continuation.configSha256())
+                || features.enabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS))
+            throw new IllegalStateException("Saved compact-off config changed before relaunch check");
+    }
+
+    static void validateAmountResetInput(int amountOptionCase, int step, String label, boolean enabled) {
+        switch (step) {
+            case 0 -> {
+                if (enabled != (amountOptionCase != 6))
+                    throw new IllegalStateException("Wrong pre-reset compact value: case=" + amountOptionCase);
+            }
+            case 1 -> {
+                if (enabled != (amountOptionCase == 6))
+                    throw new IllegalStateException("Compact edit did not apply: case=" + amountOptionCase);
+            }
+            case 2, 4 -> {
+                if (enabled != (step == 4))
+                    throw new IllegalStateException("Wrong pre-reset option value: " + label);
+            }
+            case 3, 5 -> {
+                if (enabled != (step == 3))
+                    throw new IllegalStateException("Option edit did not apply: " + label);
+            }
+            case 7, 8, 9 -> {
+                if (enabled != (step == 9))
+                    throw new IllegalStateException("Reset did not restore model default: " + label);
+            }
+            case 6, 10 -> { }
+            default -> throw new IllegalStateException("Unexpected reset step " + step);
+        }
+    }
+
+    static void validateAmountResetSaved(com.ctux.ae2craftingtime.core.FeatureOptions features, int amountOptionCase) {
+        if (features.enabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS)
+                != (amountOptionCase == 5))
+            throw new IllegalStateException("Reset changed live compact option before Done: case=" + amountOptionCase);
+    }
+
     static void validateAmountOptionFeatures(com.ctux.ae2craftingtime.core.FeatureOptions features,
             boolean compact, boolean time, int amountOptionCase) {
         if (features.enabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS) != compact
@@ -2618,13 +2670,10 @@ final class StandardAe2Scenario {
     private boolean statusRelaunchTick(Minecraft minecraft, Map<String, Boolean> checks,
             Consumer<String> screenshot) {
         if (!amountResumeChecksRestored) {
-            if (!java.util.Set.copyOf(amountContinuation.checks()).equals(java.util.Set.copyOf(CHECKS.get(leaf))))
-                throw new IllegalStateException("Status relaunch predecessor omitted required checks");
+            validateAmountPredecessorChecks(amountContinuation, CHECKS.get(leaf));
             for (var check : amountContinuation.checks()) checks.put(check, true);
-            if (!configHash(minecraft).equals(amountContinuation.configSha256())
-                    || com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features()
-                            .enabled(com.ctux.ae2craftingtime.core.OptionFeature.COMPACT_STATUS_AMOUNTS))
-                throw new IllegalStateException("Saved compact-off config changed before relaunch check");
+            validateAmountPredecessorConfig(amountContinuation, configHash(minecraft),
+                    com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current().features());
             amountResumeChecksRestored = true;
         }
         if (amountResumeSaving && !(minecraft.screen instanceof com.ctux.ae2craftingtime.mc1201.OptionsScreen)) {
@@ -2848,9 +2897,7 @@ final class StandardAe2Scenario {
         }
         if (!(minecraft.screen instanceof CraftingStatusScreen)) return false;
         var config = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current();
-        if (config.badgeBackground() || config.color(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE) != 0x245A7D
-                || config.badgeOpacity() != 96)
-            throw new IllegalStateException("Badge Off/custom appearance was not saved for relaunch");
+        validateBadgeBeforeRelaunch(config);
         screenshot.accept("badge-saved-off.png");
         if (checks.values().stream().anyMatch(value -> !value))
             throw new IllegalStateException("Cannot relaunch with incomplete badge checks: " + checks);
@@ -2868,11 +2915,9 @@ final class StandardAe2Scenario {
     private boolean badgeRelaunchTick(Minecraft minecraft, Map<String, Boolean> checks,
             Consumer<String> screenshot) {
         if (badgeResumeStep == 0) {
-            if (!java.util.Set.copyOf(badgeContinuation.checks()).equals(java.util.Set.copyOf(CHECKS.get(leaf)))
-                    || !configHash(minecraft).equals(badgeContinuation.configSha256()))
-                throw new IllegalStateException("Badge relaunch predecessor or saved config differs");
+            validateBadgePredecessor(badgeContinuation, CHECKS.get(leaf), configHash(minecraft));
             for (var check : badgeContinuation.checks()) checks.put(check, true);
-            badgeAssertSavedOff(minecraft);
+            validateSavedBadgeOff(com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current());
             minecraft.setScreen(new com.ctux.ae2craftingtime.mc1201.OptionsScreen(null));
             badgeResumeStep = 1;
             badgeResumeRenderedAfter = TestDriverRuntime.renderedFrames + 3;
@@ -2918,7 +2963,7 @@ final class StandardAe2Scenario {
                 if (badge == null) return false;
                 if (badge.getMessage().getString().endsWith(net.minecraft.client.resources.language.I18n.get("options.on")))
                     throw new IllegalStateException("Reset did not restore badge Off");
-                badgeAssertSavedOff(minecraft);
+                validateSavedBadgeOff(com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current());
                 badgeResetCheckPhase = 1;
             }
             if (badgeResetCheckPhase == 1) {
@@ -2952,7 +2997,7 @@ final class StandardAe2Scenario {
         }
         if (badgeResumeStep == 4 || badgeResumeStep == 8 || badgeResumeStep == 12) {
             if (minecraft.screen instanceof com.ctux.ae2craftingtime.mc1201.OptionsScreen) return false;
-            badgeAssertSavedOff(minecraft);
+            validateSavedBadgeOff(com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current());
             if (!configHash(minecraft).equals(badgeContinuation.configSha256()))
                 throw new IllegalStateException("Cancel changed saved badge options");
             minecraft.setScreen(new com.ctux.ae2craftingtime.mc1201.OptionsScreen(null));
@@ -2960,9 +3005,7 @@ final class StandardAe2Scenario {
         } else if (badgeResumeStep == 16) {
             if (minecraft.screen instanceof com.ctux.ae2craftingtime.mc1201.OptionsScreen) return false;
             var config = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current();
-            if (!config.badgeBackground() || config.color(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE) != 0x245A7D
-                    || config.badgeOpacity() != 96 || configHash(minecraft).equals(badgeContinuation.configSha256()))
-                throw new IllegalStateException("Badge On/custom appearance did not restore after relaunch");
+            validateRestoredBadge(config, configHash(minecraft), badgeContinuation.configSha256());
             minecraft.setScreen(new com.ctux.ae2craftingtime.mc1201.OptionsScreen(null));
             badgeResumeStep = 17;
         } else if (badgeResumeStep == 19) {
@@ -3060,8 +3103,7 @@ final class StandardAe2Scenario {
         return false;
     }
 
-    private void badgeAssertSavedOff(Minecraft minecraft) {
-        var config = com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.current();
+    static void validateSavedBadgeOff(com.ctux.ae2craftingtime.core.ClientConfig config) {
         if (config.badgeBackground() || config.color(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE) != 0x245A7D
                 || config.badgeOpacity() != 96)
             throw new IllegalStateException("Saved Off/custom badge settings changed after relaunch");

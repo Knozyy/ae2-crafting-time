@@ -479,6 +479,117 @@ class StandardObservationTest {
         assertEquals("plan sort 3 row order is " + wrong + ", expected " + expected, failure.getMessage());
     }
 
+    @Test void amountResetChecksTheNativeInputAtEveryOperation() {
+        for (int optionCase : new int[]{4, 5, 6}) {
+            for (int step = 0; step <= 10; step++) {
+                int operation = step;
+                boolean expected = switch (step) {
+                    case 0 -> optionCase != 6;
+                    case 1 -> optionCase == 6;
+                    case 3, 4, 9 -> true;
+                    default -> false;
+                };
+                assertDoesNotThrow(() -> StandardAe2Scenario.validateAmountResetInput(
+                        optionCase, operation, "Compact amounts", expected));
+                if (step == 6 || step == 10) {
+                    assertDoesNotThrow(() -> StandardAe2Scenario.validateAmountResetInput(
+                            optionCase, operation, "Compact amounts", !expected));
+                } else {
+                    String message = switch (step) {
+                        case 0 -> "Wrong pre-reset compact value: case=" + optionCase;
+                        case 1 -> "Compact edit did not apply: case=" + optionCase;
+                        case 2, 4 -> "Wrong pre-reset option value: Compact amounts";
+                        case 3, 5 -> "Option edit did not apply: Compact amounts";
+                        default -> "Reset did not restore model default: Compact amounts";
+                    };
+                    var failure = assertThrows(IllegalStateException.class,
+                            () -> StandardAe2Scenario.validateAmountResetInput(
+                                    optionCase, operation, "Compact amounts", !expected));
+                    assertEquals(message, failure.getMessage());
+                }
+            }
+        }
+        for (int step : new int[]{-1, 11}) {
+            var failure = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateAmountResetInput(4, step, "Compact amounts", false));
+            assertEquals("Unexpected reset step " + step, failure.getMessage());
+        }
+    }
+
+    @Test void amountResetMustNotChangeSavedConfigBeforeDone() {
+        var features = new com.ctux.ae2craftingtime.core.FeatureOptions(OptionFeature.Owner.CLIENT);
+        for (int optionCase : new int[]{4, 5, 6}) {
+            features.setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, optionCase == 5);
+            assertDoesNotThrow(() -> StandardAe2Scenario.validateAmountResetSaved(features, optionCase));
+            features.setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, optionCase != 5);
+            var failure = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateAmountResetSaved(features, optionCase));
+            assertEquals("Reset changed live compact option before Done: case=" + optionCase, failure.getMessage());
+        }
+    }
+
+    @Test void badgePersistencePreservesCustomAppearanceAndRequiresAChangedSavedFileOnRestore() {
+        var config = new com.ctux.ae2craftingtime.core.ClientConfig();
+        config.features().setEnabled(OptionFeature.BADGE_BACKGROUND, false);
+        config.setColor(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE, 0x245A7D);
+        config.setBadgeOpacity(96);
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateBadgeBeforeRelaunch(config));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateSavedBadgeOff(config));
+        for (int change = 0; change < 3; change++) {
+            var invalid = config.copy();
+            if (change == 0) invalid.features().setEnabled(OptionFeature.BADGE_BACKGROUND, true);
+            if (change == 1) invalid.setColor(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE, 0);
+            if (change == 2) invalid.setBadgeOpacity(176);
+            var before = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateBadgeBeforeRelaunch(invalid));
+            assertEquals("Badge Off/custom appearance was not saved for relaunch", before.getMessage());
+            var after = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateSavedBadgeOff(invalid));
+            assertEquals("Saved Off/custom badge settings changed after relaunch", after.getMessage());
+        }
+        config.features().setEnabled(OptionFeature.BADGE_BACKGROUND, true);
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateRestoredBadge(config, "new-hash", "old-hash"));
+        for (int change = 0; change < 4; change++) {
+            var invalid = config.copy();
+            if (change == 0) invalid.features().setEnabled(OptionFeature.BADGE_BACKGROUND, false);
+            if (change == 1) invalid.setColor(com.ctux.ae2craftingtime.core.ClientConfig.Color.BADGE, 0);
+            if (change == 2) invalid.setBadgeOpacity(176);
+            String hash = change == 3 ? "old-hash" : "new-hash";
+            var failure = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateRestoredBadge(invalid, hash, "old-hash"));
+            assertEquals("Badge On/custom appearance did not restore after relaunch", failure.getMessage());
+        }
+    }
+
+    @Test void relaunchRequiresTheCompletePredecessorChecksAndTheSavedConfig() {
+        var required = List.of("header", "layout");
+        var badge = new StandardAe2Scenario.BadgeContinuation(1, "world", "campaign", "hash", required, List.of());
+        var amount = new StandardAe2Scenario.AmountContinuation(1, "world", "campaign", "hash", required, List.of());
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateBadgePredecessor(badge, required, "hash"));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateBadgePredecessor(badge, List.of("layout", "header"), "hash"));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateAmountPredecessorChecks(amount, required));
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateAmountPredecessorChecks(amount, List.of("layout", "header")));
+        for (var invalid : List.of(List.<String>of(), List.of("header"), List.of("header", "layout", "extra"))) {
+            var failure = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateBadgePredecessor(badge, invalid, "hash"));
+            assertEquals("Badge relaunch predecessor or saved config differs", failure.getMessage());
+            failure = assertThrows(IllegalStateException.class,
+                    () -> StandardAe2Scenario.validateAmountPredecessorChecks(amount, invalid));
+            assertEquals("Status relaunch predecessor omitted required checks", failure.getMessage());
+        }
+        assertThrows(IllegalStateException.class,
+                () -> StandardAe2Scenario.validateBadgePredecessor(badge, required, "changed"));
+        var features = new com.ctux.ae2craftingtime.core.FeatureOptions(OptionFeature.Owner.CLIENT);
+        features.setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, false);
+        assertDoesNotThrow(() -> StandardAe2Scenario.validateAmountPredecessorConfig(amount, "hash", features));
+        var failure = assertThrows(IllegalStateException.class,
+                () -> StandardAe2Scenario.validateAmountPredecessorConfig(amount, "changed", features));
+        assertEquals("Saved compact-off config changed before relaunch check", failure.getMessage());
+        features.setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, true);
+        assertThrows(IllegalStateException.class,
+                () -> StandardAe2Scenario.validateAmountPredecessorConfig(amount, "hash", features));
+    }
+
     private UiSnapshot suspensionFrame(List<UiSnapshot.ObservedText> text, List<UiSnapshot.Row> rows) {
         return new UiSnapshot("appeng.client.gui.me.crafting.CraftingCPUScreen", "menu", cell,
                 100, 100, 1, 1, 0, rows, text, List.of(), List.of(), List.of(), List.of());
