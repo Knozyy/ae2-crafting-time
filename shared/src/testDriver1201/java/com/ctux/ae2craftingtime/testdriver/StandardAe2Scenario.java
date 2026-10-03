@@ -3391,24 +3391,31 @@ final class StandardAe2Scenario {
         var user = User32.INSTANCE;
         var nativeWindow = new com.sun.jna.platform.win32.WinDef.HWND(com.sun.jna.Pointer.createConstant(
                 org.lwjgl.glfw.GLFWNativeWin32.glfwGetWin32Window(window)));
-        return focusNativeWindow(nativeWindow, user,
+        return focusNativeWindow(nativeWindow, user::GetForegroundWindow,
                 () -> new DWORD(com.sun.jna.platform.win32.Kernel32.INSTANCE.GetCurrentThreadId()),
-                () -> org.lwjgl.glfw.GLFW.glfwFocusWindow(window));
+                foreground -> user.GetWindowThreadProcessId(foreground, null),
+                (current, foreground) -> user.AttachThreadInput(current, foreground, true),
+                () -> org.lwjgl.glfw.GLFW.glfwFocusWindow(window),
+                (current, foreground) -> user.AttachThreadInput(current, foreground, false));
     }
 
-    static boolean focusNativeWindow(com.sun.jna.platform.win32.WinDef.HWND nativeWindow, User32 user,
-            java.util.function.Supplier<DWORD> threadId, Runnable requestFocus) {
-        var foreground = user.GetForegroundWindow();
+    static boolean focusNativeWindow(com.sun.jna.platform.win32.WinDef.HWND nativeWindow,
+            java.util.function.Supplier<com.sun.jna.platform.win32.WinDef.HWND> foregroundWindow,
+            java.util.function.Supplier<DWORD> threadId,
+            java.util.function.ToIntFunction<com.sun.jna.platform.win32.WinDef.HWND> windowThread,
+            java.util.function.BiPredicate<DWORD, DWORD> attach, Runnable requestFocus,
+            java.util.function.BiConsumer<DWORD, DWORD> detach) {
+        var foreground = foregroundWindow.get();
         if (nativeWindow.equals(foreground)) return true;
         // A scheduled client can be visible while another desktop window still owns input.
         var currentThread = threadId.get();
-        var foregroundThread = new DWORD(user.GetWindowThreadProcessId(foreground, null));
+        var foregroundThread = new DWORD(windowThread.applyAsInt(foreground));
         boolean attached = !currentThread.equals(foregroundThread)
-                && user.AttachThreadInput(currentThread, foregroundThread, true);
+                && attach.test(currentThread, foregroundThread);
         try {
             requestFocus.run();
         } finally {
-            if (attached) user.AttachThreadInput(currentThread, foregroundThread, false);
+            if (attached) detach.accept(currentThread, foregroundThread);
         }
         return false;
     }
