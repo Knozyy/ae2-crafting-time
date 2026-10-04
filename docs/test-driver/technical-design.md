@@ -179,6 +179,12 @@ operation. AE2 registers simulations and pauses them until a subsequent native
 tick; assert both real futures are still pending. Poll their completion, retain
 the native plan types in the receipt, and cancel only those owned calculations
 if cleanup follows a failure. Keep the original fixture and plan untouched.
+The native badge-text input check also chooses a real text entry whose actual
+bounds lie outside every native badge. Only its independent DTO key changes to
+native-status-text; content and geometry remain native. This exercises rejection
+of non-badge text by the bounds predicate, while the existing inside entries
+continue through appearance validation. Record the chosen original text entry
+separately, restore the native source in finally, and require normal recovery.
 The native badge-text input check holds the actual status menu at Options entry
 while profiling remains enabled. Change only the current in-memory background
 feature, keep its existing appearance values, and wait for actual contained

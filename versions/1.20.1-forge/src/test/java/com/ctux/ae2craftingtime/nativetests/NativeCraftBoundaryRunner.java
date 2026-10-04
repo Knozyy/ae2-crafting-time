@@ -162,10 +162,10 @@ final class NativeCraftBoundaryRunner {
             }
             if (pending == null) {
                 if (field(standardType, "phase", standard).toString().equals("STATUS_OPTIONS")
-                        && !passed.contains("native-text-inside-badge")) {
+                        && !passed.contains("native-text-badge-bounds")) {
                     if (badgeNativeText.tick(minecraft, standardType,
                             (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
-                        begin(minecraft, "native-text-inside-badge", UiObservationStore.latest().frame());
+                        begin(minecraft, "native-text-badge-bounds", UiObservationStore.latest().frame());
                         finishFault(minecraft);
                     }
                     return;

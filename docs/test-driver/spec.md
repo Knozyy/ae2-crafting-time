@@ -415,6 +415,23 @@ server predicate is consumed and the stage remains pending. Restore the original
 observation before the next render. Saved config, native screen and menu remain
 unchanged. Do not present altered DTOs as rendered pixels.
 
+At `9701cc45`, all five supplemental groups and 23 ordinary suspension checks
+pass with JVM exit 0, native interval 528.344802 seconds. The actual four-input
+and one-input server predicates wait false, preserving job UUIDs and restoring
+inputs. Three invalid observation inputs each consume eight real predicate frames.
+All 11 captures reviewed in three contact sheets and four supplemental originals
+individually; all 33 archived hashes match. Both CI jobs pass. Codecov confirms
+95.82%, five misses and 238 partials. The two failed harness attempts remain
+preserved and excluded. Screenshots retain tooltip/chat occlusion and implausible
+fallback time headers; those do not establish prediction accuracy.
+
+Pending badge bounds extension: in addition to actual text inside real badges,
+relabel one actual text entry outside all badge bounds in the independent DTO
+input. Retain its original content and geometry. Require both inside and outside
+native-status entries in that input, while the native source stays unchanged.
+The incorrect saved appearance must still reject at the existing real threshold,
+then restore the original switch, bytes and observation before normal recovery.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.

@@ -447,9 +447,11 @@ with two clean server phases on one disposable world. Fabric and NeoForge
 retain their existing native crafting paths; the new Forge mixin configuration
 must not appear in their artifacts.
 
-Pending supplemental native coverage at issue #378 uses the same prepared base
+Supplemental native coverage at issue #378 uses the same prepared base
 client and standard CPUs. It holds actual furnace inputs and provider patterns,
 checks native menu recovery and rejects separate stale observation DTOs. Client
 Options clicks use the native screen API so enumerating test-platform methods
 does not require absent optional addons. Ordinary output conservation remains
-mandatory; this additional coverage is not yet verified.
+mandatory. At `9701cc45`, all five supplemental groups and 23 ordinary checks
+pass with JVM exit 0; native input counts and job UUIDs restore. Invalid DTOs are
+not rendered frames, and screenshots do not prove server-only inventories.

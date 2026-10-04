@@ -63,12 +63,18 @@ final class NativeBadgeNativeTextBoundary {
                     .filter(value -> value.toString().equals("ACTIVE")).findFirst().orElseThrow());
             set(type, "badgeStep", flow, 1);
         }
-        var text = source.text().stream().map(value -> CraftingRowState.isBadge(value.key())
-                && source.badges().stream().anyMatch(badge -> value.bounds().inside(badge))
+        var outside = source.text().stream().filter(value -> value.bounds() != null
+                && source.badges().stream().noneMatch(badge -> value.bounds().inside(badge)))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Native text outside badge bounds is absent"));
+        var text = source.text().stream().map(value -> value == outside
+                || CraftingRowState.isBadge(value.key())
+                    && source.badges().stream().anyMatch(badge -> value.bounds().inside(badge))
                 ? new UiSnapshot.ObservedText("native-status-text", value.rendered(), value.arguments(),
                         value.bounds(), value.color(), value.bold()) : value).toList();
         assertTrue(text.stream().anyMatch(value -> value.key().equals("native-status-text")
                 && source.badges().stream().anyMatch(badge -> value.bounds().inside(badge))));
+        assertTrue(text.stream().anyMatch(value -> value.key().equals("native-status-text")
+                && source.badges().stream().noneMatch(badge -> value.bounds().inside(badge))));
         var input = new UiSnapshot(source.screen(), source.menu(), source.gui(), source.screenWidth(),
                 source.screenHeight(), source.guiScale(), source.frame(), source.scroll(), source.rows(), text,
                 source.badges(), source.widgets(), source.itemCells(), source.tooltip(), source.cpuCards(), source.rawCpuSerials());
@@ -107,9 +113,9 @@ final class NativeBadgeNativeTextBoundary {
         if (!ready) return false;
         restore();
         assertEquals(backgroundBefore, ClientOptionsRuntime.current().badgeBackground());
-        Files.writeString(output.resolve("native-text-inside-badge-inputs.json"), new com.google.gson.Gson().toJson(Map.of(
+        Files.writeString(output.resolve("native-text-badge-bounds-inputs.json"), new com.google.gson.Gson().toJson(Map.of(
                 "scope", "original native badge renders and separately relabeled DTO inputs; inputs are not rendered frames",
-                "originals", originals, "inputs", inputs, "backgroundRestored", true, "savedBytesUnchanged", true)));
+                "originals", originals, "inputs", inputs, "backgroundRestored", true, "savedBytesUnchanged", true, "outsideNativeText", outside)));
         return true;
     }
 
