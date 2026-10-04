@@ -360,6 +360,22 @@ advancement. Restore the background switch and original observation on success
 or failure, preserve saved bytes and native menu identity, and require ordinary
 scenario recovery. Altered inputs are not native rendered frames.
 
+At `8312c3e3`, the badge-text check and ordinary recovery pass with JVM exit 0.
+All 65 originals are reviewed in nine contact sheets and the new badge checkpoint
+individually; all 134 archived hashes match. Both CI checks pass. Codecov confirms
+95.07%, 24 misses and 263 partials. The requested 100% target remains unfinished.
+
+Pending native stored-variant guards: hold the actual clear and diagnosed plan
+checkpoints and test 28 rejected or pending inputs against separate scenario
+state. Require eight distinct native source frames for every case. Keep altered
+observation DTOs separate from actual rendered frames. Temporary native payload
+and row-flag changes must restore before another render. Missing tooltips,
+recurrent labels, drawn text and fresh revisions must wait without capture or
+case advancement. Incorrect retained summaries, unrelated diagnoses and an
+impossible scale must reject. Restore a temporary scale reduction immediately.
+Preserve the real menu, plan, ordinary checks and saved client bytes, then require
+the complete ordinary stored-variant scenario to recover successfully.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.

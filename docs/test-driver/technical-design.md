@@ -188,6 +188,17 @@ must reach its real stable-frame threshold, then reject the unchanged default
 appearance rather than capture success. Restore the original store snapshot in
 `finally` and the background flag on completion or failure; preserve saved bytes,
 ordinary checks and actual screen/menu. Resume the normal native flow afterward.
+The optional stored-variant runner reuses the original runtime and native plan
+fixture. Hold only the first clear and first diagnosed hover checkpoints. Each
+of 28 independent guard flows uses the real fixture/menu/summary, its own frame
+stability and checks, and no pending server operation. Retain original snapshots
+and deliberately altered DTOs separately. Temporarily clear the actual plan or
+change native entry flags only within a client tick, restoring them in `finally`
+before rendering. A malformed observation may trigger a native GUI scale
+reduction; restore the original scale before the next render. Require exact
+rejection messages or stable readiness waits, unchanged ordinary state and saved
+bytes, two native checkpoint captures, and ordinary scenario completion. Partial
+checks local to a guard flow do not modify or prove ordinary scenario completion.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same
