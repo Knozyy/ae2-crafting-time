@@ -51,6 +51,8 @@ final class NativeCraftBoundaryRunner {
     private final NativeQuantityObservationBoundary addonQuantityObservations = new NativeQuantityObservationBoundary(true);
     private final NativeScreenBoundary wrongStatusMenu = new NativeScreenBoundary(true);
     private final NativeScreenBoundary wrongPlanMenu = new NativeScreenBoundary(false);
+    private final NativeRecurrenceBoundary recurrenceInventory = new NativeRecurrenceBoundary();
+    private final NativeRecurrenceBoundary recurrenceMissingPlans = new NativeRecurrenceBoundary();
 
     NativeCraftBoundaryRunner() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -88,6 +90,14 @@ final class NativeCraftBoundaryRunner {
                 started = System.nanoTime();
             }
             assertTrue(System.nanoTime() - started < 1_200_000_000_000L, "Native crafting checks exceeded twenty minutes");
+            if (!passed.contains("recurrence-non-plan-menu")) {
+                if (recurrenceInventory.tick(minecraft, standardType, standard,
+                        (Map<?, ?>) field(flow.getClass(), "checks", flow), output, true)) {
+                    pending = "recurrence-non-plan-menu";
+                    finishFault(minecraft);
+                }
+                return;
+            }
             if (!passed.contains("invalid-participants") && Files.isRegularFile(configPath(minecraft))) {
                 NativeParticipantBoundary.verify(minecraft, standardType, field(flow.getClass(), "marker", flow),
                         (Map<?, ?>) field(flow.getClass(), "checks", flow), output);
@@ -114,6 +124,14 @@ final class NativeCraftBoundaryRunner {
                 }
             }
             if (startBoundary != null) {
+                if (!passed.contains("recurrence-missing-plan-inputs")) {
+                    if (recurrenceMissingPlans.tick(minecraft, standardType, standard,
+                            (Map<?, ?>) field(flow.getClass(), "checks", flow), output, false)) {
+                        begin(minecraft, "recurrence-missing-plan-inputs", UiObservationStore.latest().frame());
+                        finishFault(minecraft);
+                    }
+                    return;
+                }
                 if (!passed.contains("wrong-status-stage-menu")) {
                     if (wrongStatusMenu.tick(minecraft, standardType, field(flow.getClass(), "marker", flow),
                             (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
@@ -192,7 +210,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 24 : 22,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 26 : 24,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();

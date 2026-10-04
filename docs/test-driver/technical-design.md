@@ -133,6 +133,15 @@ and the status scale guard against the plan. Their early rejection must preserve
 stage and leave stability at zero. Keep a thirty-second bound, separate original
 frame files and a checkpoint per direction. Resume the existing native Start
 retry and ordinary scenario afterward.
+The optional native recurrence boundary calls the existing recurrence fixture
+against the same native player. Before ordinary preparation, submit validation
+on the integrated server's actual inventory menu. During the existing held Start
+checkpoint, temporarily clear the native client summary and call `clientReady`;
+on the server thread separately clear the actual result and summary and call
+`validate`. Restore exact original references in `finally`, never render the
+missing payloads, and preserve lifetime menu/screen, checks and config existence
+and bytes. Send server work once and poll its real future with a thirty-second
+deadline. Keep JSON input evidence separate from restored-screen checkpoints.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

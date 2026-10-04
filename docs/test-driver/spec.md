@@ -272,7 +272,7 @@ addon checkpoint individually. Local and both current-head CI checks pass;
 processed Codecov confirms 94.70%, with full addon quantity predicate coverage.
 All 119 archived file hashes match. The 100% target remains unfinished.
 
-Pending menu mismatch boundaries: require six status stages to wait on the
+Menu mismatch boundaries: require six status stages to wait on the
 actual Crafting Plan screen, and recurrence Plan sort to wait on the actual
 Crafting Status screen. Reach each real stable-frame threshold without advancing
 stage, opening options, issuing server work, moving the mouse or capturing success.
@@ -280,6 +280,21 @@ Both directions also test the three badge observation steps; the plan screen
 additionally tests the status scale guard. Keep original native frames and one
 checkpoint per direction. Preserve checks, native menu/screen and saved bytes,
 then require the ordinary scenario to pass.
+
+At `5678a671`, twenty-four fault groups, menu closure and all thirteen ordinary
+checks pass, JVM exit 0. All 60 captures are reviewed in eight contact sheets and
+both new menu checkpoints individually. Local and both current-head CI checks
+pass. Processed Codecov confirms 94.84%, 25 misses and 275 partials. All 123
+archived file hashes match. The 100% target remains unfinished.
+
+Pending recurrence readiness boundaries: require rejection of the actual server
+inventory menu before ordinary preparation. At the actual Crafting Plan, remove
+the client summary, server result and server summary separately and require
+pending readiness. Restore the exact original payloads in `finally` before any
+render or ordinary action. Preserve actual menu/screen, checks and saved settings
+throughout asynchronous polling. Record input checks separately from screenshots;
+the checkpoint shows the restored native plan, not missing payloads. Require the
+original scenario to pass afterward.
 
 ## Plan readiness with optional backgrounds (#585)
 
