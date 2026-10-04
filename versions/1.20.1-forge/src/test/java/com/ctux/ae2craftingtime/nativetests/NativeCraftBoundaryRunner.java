@@ -49,6 +49,8 @@ final class NativeCraftBoundaryRunner {
     private final NativePersistenceQuantityBoundary persistenceQuantities = new NativePersistenceQuantityBoundary();
     private final NativeQuantityObservationBoundary quantityObservations = new NativeQuantityObservationBoundary();
     private final NativeQuantityObservationBoundary addonQuantityObservations = new NativeQuantityObservationBoundary(true);
+    private final NativeScreenBoundary wrongStatusMenu = new NativeScreenBoundary(true);
+    private final NativeScreenBoundary wrongPlanMenu = new NativeScreenBoundary(false);
 
     NativeCraftBoundaryRunner() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -112,6 +114,14 @@ final class NativeCraftBoundaryRunner {
                 }
             }
             if (startBoundary != null) {
+                if (!passed.contains("wrong-status-stage-menu")) {
+                    if (wrongStatusMenu.tick(minecraft, standardType, field(flow.getClass(), "marker", flow),
+                            (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
+                        begin(minecraft, "wrong-status-stage-menu", UiObservationStore.latest().frame());
+                        finishFault(minecraft);
+                    }
+                    return;
+                }
                 set(TestDriverRuntime.class, "renderedFrames", null,
                         (long) field(TestDriverRuntime.class, "renderedFrames", null) + 1);
                 if (startBoundary.tick(minecraft, field(flow.getClass(), "marker", flow),
@@ -155,6 +165,14 @@ final class NativeCraftBoundaryRunner {
                     return;
                 }
                 if (passed.contains("invalid-badge-observations") && !passed.contains("persist-zero-quantities")) {
+                    if (!passed.contains("wrong-plan-stage-menu")) {
+                        if (wrongPlanMenu.tick(minecraft, standardType, field(flow.getClass(), "marker", flow),
+                                (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
+                            begin(minecraft, "wrong-plan-stage-menu", UiObservationStore.latest().frame());
+                            finishFault(minecraft);
+                        }
+                        return;
+                    }
                     if (persistenceQuantities.tick(minecraft, standardType, field(flow.getClass(), "marker", flow),
                             (Map<?, ?>) field(flow.getClass(), "checks", flow), output))
                         passed.addAll(NativePersistenceQuantityBoundary.CASES);
@@ -174,7 +192,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 22 : 20,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 24 : 22,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();

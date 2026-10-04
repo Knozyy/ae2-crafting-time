@@ -260,10 +260,26 @@ checkpoint individually. Local and both current-head CI checks pass. Processed
 Codecov confirms 94.65%; all four quantity predicates have full branch coverage.
 The 100% target remains unfinished.
 
-Pending addon extension: reuse the quantity-observation boundary against the
+Addon extension: reuse the quantity-observation boundary against the
 actual first addon key and its declared quantities, preserving the same rejection,
 restoration and ordinary recovery contract. Both installed addon fixtures and
 their normal mana/chemical captures remain required.
+
+At `17b62a8a`, four addon quantity cases reject on eight consecutive native
+source frames. Twenty-two fault groups, menu closure and all thirteen ordinary
+checks pass, JVM exit 0. All 58 captures are reviewed in contact sheets and the
+addon checkpoint individually. Local and both current-head CI checks pass;
+processed Codecov confirms 94.70%, with full addon quantity predicate coverage.
+All 119 archived file hashes match. The 100% target remains unfinished.
+
+Pending menu mismatch boundaries: require six status stages to wait on the
+actual Crafting Plan screen, and recurrence Plan sort to wait on the actual
+Crafting Status screen. Reach each real stable-frame threshold without advancing
+stage, opening options, issuing server work, moving the mouse or capturing success.
+Both directions also test the three badge observation steps; the plan screen
+additionally tests the status scale guard. Keep original native frames and one
+checkpoint per direction. Preserve checks, native menu/screen and saved bytes,
+then require the ordinary scenario to pass.
 
 ## Plan readiness with optional backgrounds (#585)
 

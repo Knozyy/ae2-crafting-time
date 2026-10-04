@@ -122,6 +122,17 @@ the actual addon case list into the separate flow and derive the expected identi
 and quantities from its first case. Apply the same four invalid-input variations,
 stability threshold and restoration contract; also require unchanged addon index,
 hover and badge-capture state. Keep its input file and checkpoint separate.
+For native menu mismatch boundaries, hold the existing real Crafting Plan before
+Start and the actual Crafting Status after invalid badge observations. Instantiate
+separate flows at the six status stages or recurrence Plan sort respectively;
+poll distinct original observations through the real stable-frame threshold.
+Require each flow to remain pending with unchanged stage, settings, menu, screen
+and checks, no operation, capture, hover advancement or mouse movement. Also call
+badge observation steps 0, 1 and 3 in the opposite phase against each actual menu,
+and the status scale guard against the plan. Their early rejection must preserve
+stage and leave stability at zero. Keep a thirty-second bound, separate original
+frame files and a checkpoint per direction. Resume the existing native Start
+retry and ordinary scenario afterward.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same
