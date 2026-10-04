@@ -179,6 +179,15 @@ operation. AE2 registers simulations and pauses them until a subsequent native
 tick; assert both real futures are still pending. Poll their completion, retain
 the native plan types in the receipt, and cancel only those owned calculations
 if cleanup follows a failure. Keep the original fixture and plan untouched.
+The native badge-text input check holds the actual status menu at Options entry
+while profiling remains enabled. Change only the current in-memory background
+feature, keep its existing appearance values, and wait for actual contained
+badges. Retain original native snapshots separately from DTO copies that change
+only row badge text keys to `native-status-text`. A separate Active badge flow
+must reach its real stable-frame threshold, then reject the unchanged default
+appearance rather than capture success. Restore the original store snapshot in
+`finally` and the background flag on completion or failure; preserve saved bytes,
+ordinary checks and actual screen/menu. Resume the normal native flow afterward.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

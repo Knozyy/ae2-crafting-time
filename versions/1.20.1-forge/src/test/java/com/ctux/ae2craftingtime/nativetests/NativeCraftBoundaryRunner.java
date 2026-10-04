@@ -55,6 +55,7 @@ final class NativeCraftBoundaryRunner {
     private final NativeRecurrenceBoundary recurrenceInventory = new NativeRecurrenceBoundary();
     private final NativeRecurrenceBoundary recurrenceMissingPlans = new NativeRecurrenceBoundary();
     private final NativeRecurrenceGridBoundary recurrenceGrid = new NativeRecurrenceGridBoundary();
+    private final NativeBadgeNativeTextBoundary badgeNativeText = new NativeBadgeNativeTextBoundary();
 
     NativeCraftBoundaryRunner() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -160,6 +161,15 @@ final class NativeCraftBoundaryRunner {
                 return;
             }
             if (pending == null) {
+                if (field(standardType, "phase", standard).toString().equals("STATUS_OPTIONS")
+                        && !passed.contains("native-text-inside-badge")) {
+                    if (badgeNativeText.tick(minecraft, standardType,
+                            (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
+                        begin(minecraft, "native-text-inside-badge", UiObservationStore.latest().frame());
+                        finishFault(minecraft);
+                    }
+                    return;
+                }
                 if (passed.contains("STATUS_SCALES") && !passed.contains("invalid-scale-observations")) {
                     if (scaleObservations.tick(minecraft, standardType, standard,
                             field(flow.getClass(), "marker", flow), (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
@@ -228,7 +238,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 28 : 26,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 29 : 27,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();
@@ -250,6 +260,7 @@ final class NativeCraftBoundaryRunner {
             finished = true;
             try {
                 if (startBoundary != null) startBoundary.restore();
+                badgeNativeText.restore();
                 try { recurrenceGrid.close(minecraft); }
                 catch (Exception secondary) { error.addSuppressed(secondary); }
                 restoreFontPack();

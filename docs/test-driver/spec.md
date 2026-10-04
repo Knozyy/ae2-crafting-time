@@ -345,6 +345,20 @@ operation, before the next simulation tick. Require pending validation to wait,
 then poll genuine calculation completion and clean up before ordinary recovery.
 Do not substitute future implementations or claim these server-only checks from
 the held-plan screenshot.
+At `eab08c5c`, those native registry and pending-plan boundaries pass with normal
+recovery and JVM exit 0. All 64 originals are reviewed in nine contact sheets and
+the grid checkpoint individually; all 132 archived hashes match. Local and both
+CI checks pass. Codecov confirms 95.05%, 25 misses and 263 partials; the reported
+recurrence fixture is now at 100%. The remaining gaps are in the standard driver.
+
+Pending native badge-text boundary: temporarily enable the actual client-owned
+background switch in memory without saving, await genuine native badge renders,
+and derive a separately recorded DTO input that relabels text inside those real
+bounds as native status text. Reach the existing stable-frame threshold and
+require incorrect custom appearance to reject before success capture or stage
+advancement. Restore the background switch and original observation on success
+or failure, preserve saved bytes and native menu identity, and require ordinary
+scenario recovery. Altered inputs are not native rendered frames.
 
 ## Plan readiness with optional backgrounds (#585)
 
