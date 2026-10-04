@@ -442,7 +442,8 @@ Both CI jobs pass. Codecov confirms 95.84%, five misses and 237 partials.
 
 Pending native NeoForge suspension API boundary: use the prepared 1.21.1 native
 client and original standard status scenario. After its real fixture prepares,
-hold the actual terminal stage and open its actual standard CPU. Await eight
+hold the actual terminal stage and open its actual standard CPU through AE2’s
+server-side MenuOpener and real block-entity locator. Await eight
 native screen render callbacks. The genuine CPU menu must lack the Forge-only
 suspension method; invoking the existing selected-snapshot helper must report
 that missing API with the retained error and NoSuchMethodException cause. Preserve
@@ -459,6 +460,11 @@ At `2811732c`, the actual fixture prepares, but its one CPU interaction does not
 produce a rendered CPU menu within thirty seconds. Preserve and exclude that run.
 Wait for the actual client CPU block entity to be formed and active before sending
 the interaction; keep a bounded wait and record native failure context and pixels.
+At `c40c3ee2`, the genuine client CPU is ready and its block interaction returns
+SUCCESS, but no native menu opens. Preserve and exclude this failed run as well.
+Use AE2’s actual server-side menu-opening API with the real fixture block entity
+and real player; require its successful return and eight client CPU renders. This
+creates native menus through AE2, never replacement menu objects or fake players.
 
 ## Plan readiness with optional backgrounds (#585)
 

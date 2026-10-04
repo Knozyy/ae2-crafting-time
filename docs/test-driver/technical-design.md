@@ -242,7 +242,9 @@ required per invalid input. No replacement futures or menu objects.
 A separate optional NeoForge native artifact owns the missing Forge API check.
 It creates the ordinary runtime and uses real RenderFrame/ScreenRender callbacks.
 Hold the original TERMINAL stage after preparation, open the fixture CPU via its
-native block interaction and wait for eight real CPU screen renders. Reflectively
+actual server-side MenuOpener and MenuLocators.forBlockEntity path, after its
+client block entity is formed and active. Keep the real server submit future,
+require a successful menu open and wait for eight real CPU screen renders. Reflectively
 calling selectedSuspensionSnapshot on that actual menu verifies the absent method
 and retained error cause. Close the actual container before releasing the original
 flow. Keep this helper out of production and ordinary driver artifacts; require

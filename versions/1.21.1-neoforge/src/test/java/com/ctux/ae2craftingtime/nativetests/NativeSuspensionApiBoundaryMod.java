@@ -11,10 +11,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 
@@ -29,7 +25,7 @@ public final class NativeSuspensionApiBoundaryMod {
     private long started;
     private long openedAt;
     private long readinessAt;
-    private String interaction = "not-sent";
+    private java.util.concurrent.CompletableFuture<Boolean> menuOpening;
     private long cpuRenders;
     private boolean opening;
     private boolean guarded;
@@ -76,13 +72,21 @@ public final class NativeSuspensionApiBoundaryMod {
                     assertTrue(System.nanoTime() - readinessAt < 30_000_000_000L, "Native client CPU not ready");
                     if (!(minecraft.level.getBlockEntity(cpu) instanceof appeng.blockentity.crafting.CraftingBlockEntity owner)
                             || !owner.isFormed() || !owner.isActive()) return;
-                    interaction = minecraft.gameMode.useItemOn(minecraft.player, InteractionHand.MAIN_HAND,
-                            new BlockHitResult(Vec3.atCenterOf(cpu).add(0, 0, -0.5), Direction.NORTH, cpu, false)).toString();
+                    var id = minecraft.player.getUUID();
+                    menuOpening = minecraft.getSingleplayerServer().submit(() -> {
+                        var player = minecraft.getSingleplayerServer().getPlayerList().getPlayer(id);
+                        var actual = (appeng.blockentity.crafting.CraftingBlockEntity) player.serverLevel().getBlockEntity(cpu);
+                        assertTrue(actual.isFormed() && actual.isActive());
+                        return appeng.menu.MenuOpener.open(appeng.menu.me.crafting.CraftingCPUMenu.TYPE, player,
+                                appeng.menu.locator.MenuLocators.forBlockEntity(actual));
+                    });
                     opening = true;
                     openedAt = System.nanoTime();
                     return;
                 }
                 assertTrue(System.nanoTime() - openedAt < 30_000_000_000L, "Native CPU menu did not render");
+                if (!menuOpening.isDone()) return;
+                assertTrue(menuOpening.join(), "Native AE2 menu opener rejected the real CPU");
                 if (!(minecraft.screen instanceof appeng.client.gui.me.crafting.CraftingCPUScreen)
                         || cpuRenders < 8) return;
                 var menu = minecraft.player.containerMenu;
@@ -128,7 +132,7 @@ public final class NativeSuspensionApiBoundaryMod {
                 Files.writeString(output.resolve("failure-context.json"), new com.google.gson.Gson().toJson(Map.of(
                         "screen", minecraft.screen == null ? "absent" : minecraft.screen.getClass().getName(),
                         "menu", minecraft.player == null ? "absent" : minecraft.player.containerMenu.getClass().getName(),
-                        "interaction", interaction, "cpuRenderCallbacks", cpuRenders)));
+                        "menuOpenCompleted", menuOpening != null && menuOpening.isDone(), "cpuRenderCallbacks", cpuRenders)));
                 try (var image = net.minecraft.client.Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
                     image.writeToFile(output.resolve("failure.png"));
                 }
