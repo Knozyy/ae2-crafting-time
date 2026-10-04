@@ -94,7 +94,10 @@ final class NativeSuspensionBoundaryRunner {
             if (stage == 14 && !passed.contains("disabled-options-pending")) {
                 var config = minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml");
                 if (optionsParent == null) {
-                    assertInstanceOf(appeng.client.gui.me.crafting.CraftingCPUScreen.class, minecraft.screen);
+                    if (optionsStarted == 0) optionsStarted = System.nanoTime();
+                    assertTrue(System.nanoTime() - optionsStarted < 30_000_000_000L,
+                            "Actual server Options did not finish saving");
+                    if (!(minecraft.screen instanceof appeng.client.gui.me.crafting.CraftingCPUScreen)) return;
                     optionsParent = minecraft.screen;
                     optionsSaved = Files.exists(config) ? Files.readAllBytes(config) : null;
                     optionsStarted = System.nanoTime();
@@ -185,27 +188,27 @@ final class NativeSuspensionBoundaryRunner {
             if (removal == null) {
                 removal = minecraft.getSingleplayerServer().submit(() -> {
                     try {
-                    var player = minecraft.getSingleplayerServer().getPlayerList().getPlayer(minecraft.player.getUUID());
-                    before = stateMethod.invoke(fixture, player, 0);
-                    assertTrue((boolean) field(before.getClass(), "busy", before));
-                    if ((int) field(before.getClass(), "furnaceInput", before) == 0) return false;
-                    for (int offset : new int[]{4, 8}) {
-                        var provider = (PatternProviderBlockEntity) player.serverLevel().getBlockEntity(terminal.east(offset));
-                        var furnace = (FurnaceBlockEntity) player.serverLevel().getBlockEntity(terminal.east(offset).below());
-                        assertNotNull(provider); assertNotNull(furnace);
-                        providers.add(provider); furnaces.add(furnace);
-                        patterns.add(provider.getLogic().getPatternInv().getStackInSlot(0));
-                        inputs.add(furnace.getItem(0));
-                        provider.getLogic().getPatternInv().setItemDirect(0, ItemStack.EMPTY);
-                        provider.getLogic().updatePatterns();
-                        furnace.setItem(0, ItemStack.EMPTY);
-                        furnace.setChanged();
-                    }
-                    held = stateMethod.invoke(fixture, player, 0);
-                    assertEquals(0, field(held.getClass(), "furnaceInput", held));
-                    assertEquals(field(before.getClass(), "jobId", before), field(held.getClass(), "jobId", held));
-                    assertTrue((boolean) field(held.getClass(), "busy", held));
-                    return true;
+                        var player = minecraft.getSingleplayerServer().getPlayerList().getPlayer(minecraft.player.getUUID());
+                        before = stateMethod.invoke(fixture, player, 0);
+                        assertTrue((boolean) field(before.getClass(), "busy", before));
+                        if ((int) field(before.getClass(), "furnaceInput", before) == 0) return false;
+                        for (int offset : new int[]{4, 8}) {
+                            var provider = (PatternProviderBlockEntity) player.serverLevel().getBlockEntity(terminal.east(offset));
+                            var furnace = (FurnaceBlockEntity) player.serverLevel().getBlockEntity(terminal.east(offset).below());
+                            assertNotNull(provider); assertNotNull(furnace);
+                            providers.add(provider); furnaces.add(furnace);
+                            patterns.add(provider.getLogic().getPatternInv().getStackInSlot(0));
+                            inputs.add(furnace.getItem(0));
+                            provider.getLogic().getPatternInv().setItemDirect(0, ItemStack.EMPTY);
+                            provider.getLogic().updatePatterns();
+                            furnace.setItem(0, ItemStack.EMPTY);
+                            furnace.setChanged();
+                        }
+                        held = stateMethod.invoke(fixture, player, 0);
+                        assertEquals(0, field(held.getClass(), "furnaceInput", held));
+                        assertEquals(field(before.getClass(), "jobId", before), field(held.getClass(), "jobId", held));
+                        assertTrue((boolean) field(held.getClass(), "busy", held));
+                        return true;
                     } catch (Exception exception) {
                         throw new IllegalStateException("Native input removal failed", exception);
                     }
@@ -240,21 +243,21 @@ final class NativeSuspensionBoundaryRunner {
         CompletableFuture<Boolean> cleanup(Minecraft minecraft) {
             return minecraft.getSingleplayerServer().submit(() -> {
                 try {
-                for (int i = 0; i < inputs.size(); i++) {
-                    assertTrue(furnaces.get(i).getItem(0).isEmpty(), "Native provider dispatched while its pattern was held");
-                    furnaces.get(i).setItem(0, inputs.get(i));
-                    furnaces.get(i).setChanged();
-                    providers.get(i).getLogic().getPatternInv().setItemDirect(0, patterns.get(i));
-                    providers.get(i).getLogic().updatePatterns();
-                }
-                if (before != null && !inputs.isEmpty()) {
-                    var player = minecraft.getSingleplayerServer().getPlayerList().getPlayer(minecraft.player.getUUID());
-                    restored = stateMethod.invoke(fixture, player, 0);
-                    assertEquals(field(before.getClass(), "furnaceInput", before), field(restored.getClass(), "furnaceInput", restored));
-                    assertEquals(field(before.getClass(), "jobId", before), field(restored.getClass(), "jobId", restored));
-                    inputs.clear(); patterns.clear();
-                }
-                return true;
+                    for (int i = 0; i < inputs.size(); i++) {
+                        assertTrue(furnaces.get(i).getItem(0).isEmpty(), "Native provider dispatched while its pattern was held");
+                        furnaces.get(i).setItem(0, inputs.get(i));
+                        furnaces.get(i).setChanged();
+                        providers.get(i).getLogic().getPatternInv().setItemDirect(0, patterns.get(i));
+                        providers.get(i).getLogic().updatePatterns();
+                    }
+                    if (before != null && !inputs.isEmpty()) {
+                        var player = minecraft.getSingleplayerServer().getPlayerList().getPlayer(minecraft.player.getUUID());
+                        restored = stateMethod.invoke(fixture, player, 0);
+                        assertEquals(field(before.getClass(), "furnaceInput", before), field(restored.getClass(), "furnaceInput", restored));
+                        assertEquals(field(before.getClass(), "jobId", before), field(restored.getClass(), "jobId", restored));
+                        inputs.clear(); patterns.clear();
+                    }
+                    return true;
                 } catch (Exception exception) {
                     throw new IllegalStateException("Native input restoration failed", exception);
                 }

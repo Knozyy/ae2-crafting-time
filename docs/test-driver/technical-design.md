@@ -216,7 +216,9 @@ native inventories and patterns. Require unchanged job UUID and restored counts.
 Cleanup restores owned inputs on failure before stopping the disposable client.
 The replacement-menu case closes a real native container and lets the original
 flow reopen it. The disabled-recovery case temporarily opens actual client Options
-with the current CPU screen as parent; wait on native renders and cancel through
+with the current CPU screen as parent. First wait for the actual asynchronous
+Server Options save to return that CPU screen, without ticking the original
+scenario past its recovery checkpoint; then wait on native renders and cancel through
 its real button. Ordinary native recovery and exact output conservation remain
 mandatory. Keep server-state receipts separate from rendered menu evidence.
 The AE2 observation store does not publish client Options. Count its actual
