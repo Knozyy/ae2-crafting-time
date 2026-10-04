@@ -477,7 +477,29 @@ public final class NativeOptionsBoundaryMod {
                     stage++;
                 }
                 case 25 -> {
-                    assertEquals(24, passed.size(), "Every native Options assertion group must execute");
+                    var config = new ClientConfig();
+                    config.features().setEnabled(OptionFeature.BADGE_BACKGROUND, false);
+                    config.features().setEnabled(OptionFeature.TEXT_SHADOW, false);
+                    openGroup(minecraft, config, "appearance");
+                    stage++;
+                }
+                case 26 -> {
+                    NativeOptionsWidgetBoundary.verify(minecraft, scenarioType, scenario, output, false);
+                    capture(minecraft, "native-widget-off-restored.png");
+                    passed.add("Native Off controls preserve pending stages and reject missing shadow or lost Done value");
+                    var config = new ClientConfig();
+                    config.features().setEnabled(OptionFeature.BADGE_BACKGROUND, true);
+                    openGroup(minecraft, config, "appearance");
+                    stage++;
+                }
+                case 27 -> {
+                    NativeOptionsWidgetBoundary.verify(minecraft, scenarioType, scenario, output, true);
+                    capture(minecraft, "native-widget-on-restored.png");
+                    passed.add("Native On controls reject lost relaunch and Cancel values; actual Options saves remain pending");
+                    stage++;
+                }
+                case 28 -> {
+                    assertEquals(26, passed.size(), "Every native Options assertion group must execute");
                     restore();
                     Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(
                             Map.of("result", "PASS", "checks", passed, "runtimeClassSha256", runtimeHash())));

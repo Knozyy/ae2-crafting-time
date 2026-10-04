@@ -1419,3 +1419,13 @@ separately from the invalid input; captures occur on a subsequent restored frame
 Native menu/screen identity, observation, saved config and ordinary check set must
 remain unchanged. Both guarded errors and normal twelve-check lifecycle recovery
 are mandatory within the existing bounded native runner.
+
+The subsequent native Options extension reuses the existing optional artifact,
+actual OptionsScreen initialization and physical isolated config. Open Appearance
+in one callback and validate its controls after the next actual render. Independent
+driver checkpoints require pending or rejected results for wrong Off/On values.
+Missing controls use temporary labels on the actual native Button objects; restore
+the exact original components in finally before rendering. Check native screen
+identity, stage, check map and saved bytes. Restored Off/On captures are native
+controls; they do not establish process-relaunch provenance. Retain all 24 existing
+Options groups and require both new groups before accepting the run.

@@ -510,6 +510,23 @@ menu, screen, observation, config and ordinary checks. Capture only the restored
 chat/plan and require all twelve ordinary lifecycle checks afterward. Invalid
 inputs are client payload evidence, not rendered chat or invented server history.
 
+At `117ca4cb`, both full/partial chat guards and all twelve ordinary lifecycle
+checks pass, JVM exit 0, native interval 235.688974 seconds. All fifteen originals
+reviewed; all 39 archived hashes match. A copied helper left an incorrect SHA
+suffix in the local archive receipt; it was corrected from the authentic archived
+process receipt and every hash reverified. Native receipts and uploads were
+unchanged. Both CI jobs and both Codecov uploads pass: 95.96%, zero misses and
+235 partials. Restored plans obscure faded chat; visual gates remain REVIEW_REQUIRED.
+
+Pending native Options extension: open actual Appearance controls with Badge
+background Off and On in the isolated test config. Verify pending Off values,
+incorrect relaunch/Cancel/Done values, and pending saves on the real Options
+screen without advancing checks or changing saved bytes. Temporarily relabel
+the actual badge/shadow widgets to exercise missing-control guards, restoring
+their original Component objects before drawing. Require retained errors or
+unchanged pending stages and capture the restored Off/On controls. Do not claim
+these isolated driver expectations prove a real process relaunch.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.
