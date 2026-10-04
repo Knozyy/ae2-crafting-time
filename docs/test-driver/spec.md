@@ -1546,3 +1546,9 @@ UUID, resumes through Alpha's menu, and finishes the native job. The runner
 records artifact hashes, phase/PID ledgers, server checkpoints, client
 screenshots and sidecars outside the world. Other connected leaves retain their
 one-client launch path.
+
+The 292c4e46 native attempt failed at color lookup: Auto scale exposes four
+Display rows per page, so one next-page click does not reach colors. Its PID
+6448 exited -1; preserve the receipt, captures and execution data, excluding
+the failed data from reports. Retry through the original native seek helper
+until the actual color control is present; all thirty groups remain required.

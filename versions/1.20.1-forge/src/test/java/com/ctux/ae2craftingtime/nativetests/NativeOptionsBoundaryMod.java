@@ -520,20 +520,22 @@ public final class NativeOptionsBoundaryMod {
                     var config = new ClientConfig();
                     config.features().setEnabled(OptionFeature.TTC_COLORS, true);
                     openGroup(minecraft, config, "displays");
-                    call("clickOptionButton", new Class<?>[]{Minecraft.class, String.class}, minecraft, ">");
                     stage++;
                 }
                 case 31 -> {
+                    if (call("seekOptionButton", new Class<?>[]{Minecraft.class, String.class}, minecraft,
+                            net.minecraft.client.resources.language.I18n.get("config.ae2craftingtime.ttcColors") + ": ") == null) return;
                     NativeOptionsWidgetBoundary.verifyColors(minecraft, scenarioType, scenario, output, true);
                     capture(minecraft, "native-colors-on.png");
                     passed.add("Actual colors On control rejects an independent initial Off expectation");
                     var config = new ClientConfig();
                     config.features().setEnabled(OptionFeature.TTC_COLORS, false);
                     openGroup(minecraft, config, "displays");
-                    call("clickOptionButton", new Class<?>[]{Minecraft.class, String.class}, minecraft, ">");
                     stage++;
                 }
                 case 32 -> {
+                    if (call("seekOptionButton", new Class<?>[]{Minecraft.class, String.class}, minecraft,
+                            net.minecraft.client.resources.language.I18n.get("config.ae2craftingtime.ttcColors") + ": ") == null) return;
                     NativeOptionsWidgetBoundary.verifyColors(minecraft, scenarioType, scenario, output, false);
                     capture(minecraft, "native-colors-off.png");
                     passed.add("Actual colors Off control rejects an independent completed edit expectation");
