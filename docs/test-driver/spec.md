@@ -378,6 +378,12 @@ the complete ordinary stored-variant scenario to recover successfully.
 The first `aead530a` native attempt failed on the harness assumption that defaults
 already had a saved client config. It is retained and excluded from coverage.
 The guard must preserve both existing saved bytes and a previously absent file.
+At `e1f9d3df`, all 28 guard cases and 17 ordinary checks pass with JVM exit 0.
+Both CI jobs pass. Codecov confirms 95.56%, 11 misses and 247 partials. All 13
+originals are reviewed in three contact sheets and both guard images individually;
+all 34 archived hashes match. The clear guard image is black after native resize
+cleared the framebuffer, so its visual checkpoint remains unverified. The guard
+capture must wait for a subsequent actual native frame after scale restoration.
 
 ## Plan readiness with optional backgrounds (#585)
 

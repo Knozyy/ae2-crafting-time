@@ -34,6 +34,7 @@ final class NativeVariantGuardBoundary {
     private final boolean[] done;
     private long started;
     private long lastFrame = -1;
+    private long completedFrame = -1;
 
     NativeVariantGuardBoundary(boolean diagnosed) {
         this.diagnosed = diagnosed;
@@ -179,14 +180,20 @@ final class NativeVariantGuardBoundary {
         } finally {
             set(UiObservationStore.class, "latest", null, source);
         }
-        originals.add(source);
+        if (completedFrame < 0) originals.add(source);
         for (boolean value : done) if (!value) return false;
+        // Native resize clears the framebuffer. Capture only after a subsequent actual render.
+        if (completedFrame < 0) {
+            completedFrame = source.frame();
+            return false;
+        }
+        assertTrue(source.frame() > completedFrame);
         var prefix = diagnosed ? "variant-diagnosed-guards" : "variant-clear-guards";
         Files.writeString(output.resolve(prefix + "-inputs.json"), new com.google.gson.Gson().toJson(Map.of(
                 "scope", "native frames and separate invalid observation DTOs; native payload edits restored before rendering",
                 "cases", cases, "originals", originals, "inputs", inputs, "savedConfigUnchanged", true,
                 "savedConfigExisted", saved != null,
-                "nativeReferencesRestored", true, "ordinaryChecksUnchanged", true)));
+                "nativeReferencesRestored", true, "ordinaryChecksUnchanged", true, "captureSnapshot", source)));
         try (var image = net.minecraft.client.Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
             image.writeToFile(output.resolve(prefix + ".png"));
         }
