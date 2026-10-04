@@ -105,7 +105,7 @@ final class NativeVariantGuardBoundary {
         method.setAccessible(true);
         var checksBefore = Map.copyOf(ordinaryChecks);
         var config = minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml");
-        var saved = Files.readAllBytes(config);
+        var saved = Files.exists(config) ? Files.readAllBytes(config) : null;
         var screen = minecraft.screen;
         int originalScale = minecraft.options.guiScale().get();
         boolean originalVariant = nativeFlags.ae2craftingtime$storedVariant();
@@ -172,7 +172,8 @@ final class NativeVariantGuardBoundary {
                 assertSame(menu, minecraft.player.containerMenu);
                 assertSame(summary, menu.getPlan());
                 assertEquals(checksBefore, ordinaryChecks);
-                assertArrayEquals(saved, Files.readAllBytes(config));
+                if (saved == null) assertFalse(Files.exists(config), "Guard saved previously absent client options");
+                else assertArrayEquals(saved, Files.readAllBytes(config));
                 if (done[i]) assertTrue(inputs.get(i).size() >= 8, "Guard did not consume eight native source frames: " + name);
             }
         } finally {
@@ -183,7 +184,8 @@ final class NativeVariantGuardBoundary {
         var prefix = diagnosed ? "variant-diagnosed-guards" : "variant-clear-guards";
         Files.writeString(output.resolve(prefix + "-inputs.json"), new com.google.gson.Gson().toJson(Map.of(
                 "scope", "native frames and separate invalid observation DTOs; native payload edits restored before rendering",
-                "cases", cases, "originals", originals, "inputs", inputs, "savedBytesUnchanged", true,
+                "cases", cases, "originals", originals, "inputs", inputs, "savedConfigUnchanged", true,
+                "savedConfigExisted", saved != null,
                 "nativeReferencesRestored", true, "ordinaryChecksUnchanged", true)));
         try (var image = net.minecraft.client.Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
             image.writeToFile(output.resolve(prefix + ".png"));

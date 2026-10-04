@@ -375,6 +375,9 @@ case advancement. Incorrect retained summaries, unrelated diagnoses and an
 impossible scale must reject. Restore a temporary scale reduction immediately.
 Preserve the real menu, plan, ordinary checks and saved client bytes, then require
 the complete ordinary stored-variant scenario to recover successfully.
+The first `aead530a` native attempt failed on the harness assumption that defaults
+already had a saved client config. It is retained and excluded from coverage.
+The guard must preserve both existing saved bytes and a previously absent file.
 
 ## Plan readiness with optional backgrounds (#585)
 
