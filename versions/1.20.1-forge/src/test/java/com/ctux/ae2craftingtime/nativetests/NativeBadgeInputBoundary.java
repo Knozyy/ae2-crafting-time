@@ -18,21 +18,34 @@ final class NativeBadgeInputBoundary {
     private record Input(String name, UiSnapshot value) {}
 
     static void verify(Minecraft minecraft, Class<?> type, Map<?, ?> checks, Path output) throws Exception {
+        verify(minecraft, type, checks, output, false);
+    }
+
+    static void verifyPlan(Minecraft minecraft, Class<?> type, Map<?, ?> checks, Path output) throws Exception {
+        verify(minecraft, type, checks, output, true);
+    }
+
+    private static void verify(Minecraft minecraft, Class<?> type, Map<?, ?> checks, Path output, boolean plan) throws Exception {
         var source = UiObservationStore.latest();
         assertNotNull(source);
-        assertEquals(2, source.rows().size());
-        var inputs = List.of(new Input("missing-observation", null),
+        assertTrue(source.rows().stream().filter(row -> row.craftAmount() > 0).count() >= 2);
+        var positiveRow = source.rows().stream().filter(row -> row.craftAmount() > 0).findFirst().orElseThrow();
+        var inputs = new ArrayList<>(List.of(new Input("missing-observation", null),
                 new Input("wrong-screen-identity", copy(source, "invalid-observation-screen", source.rows(), List.of())),
                 new Input("empty-rows", copy(source, source.screen(), List.of(), List.of())),
-                new Input("one-positive-row", copy(source, source.screen(), source.rows().subList(0, 1), List.of())),
-                new Input("panel-used-as-badge", copy(source, source.screen(), source.rows(), List.of(source.gui()))));
+                new Input("one-positive-row", copy(source, source.screen(), List.of(positiveRow), List.of())),
+                new Input("panel-used-as-badge", copy(source, source.screen(), source.rows(), List.of(source.gui())))));
+        if (plan) {
+            assertTrue(source.rows().stream().noneMatch(row -> row.missingAmount() > 0));
+            inputs.add(new Input("stocked-plan-without-missing-row", source));
+        }
         assertFalse(com.ctux.ae2craftingtime.testdriver.LayoutValidator
                 .validateBadges(inputs.get(4).value()).isEmpty(), "Panel input must actually violate badge layout");
         var constructor = type.getDeclaredConstructor(String.class, String.class, Path.class, boolean.class);
         constructor.setAccessible(true);
         var stageType = Class.forName(type.getName() + "$Stage");
         var active = java.util.Arrays.stream(stageType.getEnumConstants())
-                .filter(value -> value.toString().equals("ACTIVE")).findFirst().orElseThrow();
+                .filter(value -> value.toString().equals(plan ? "PLAN_SORT" : "ACTIVE")).findFirst().orElseThrow();
         var originalChecks = Map.copyOf(checks);
         var screen = minecraft.screen;
         var menu = minecraft.player.containerMenu;
@@ -41,7 +54,7 @@ final class NativeBadgeInputBoundary {
         var scale = minecraft.options.guiScale().get();
         var passed = new ArrayList<String>();
         try {
-            for (var methodName : new String[]{"badgeTick", "badgeScaleTick"}) {
+            for (var methodName : plan ? new String[]{"badgeTick"} : new String[]{"badgeTick", "badgeScaleTick"}) {
                 var method = methodName.equals("badgeTick")
                         ? type.getDeclaredMethod(methodName, Minecraft.class, Map.class, java.util.function.Consumer.class)
                         : type.getDeclaredMethod(methodName, Minecraft.class, java.util.function.Consumer.class);
@@ -71,13 +84,13 @@ final class NativeBadgeInputBoundary {
                     }
                 }
             }
-            assertEquals(15, passed.size());
+            assertEquals(plan ? 12 : 15, passed.size());
             var evidence = new com.google.gson.JsonObject();
-            evidence.addProperty("scope", "deliberately invalid DTO inputs; not native rendered snapshots");
+            evidence.addProperty("scope", "invalid DTO guard inputs plus the original stocked plan; altered inputs are not rendered frames");
             evidence.addProperty("originalFrame", source.frame());
             evidence.add("cases", new com.google.gson.Gson().toJsonTree(passed));
             evidence.add("inputs", new com.google.gson.Gson().toJsonTree(inputs));
-            Files.writeString(output.resolve("invalid-badge-observation-inputs.json"), evidence.toString());
+            Files.writeString(output.resolve(plan ? "invalid-plan-badge-observation-inputs.json" : "invalid-badge-observation-inputs.json"), evidence.toString());
         } finally {
             set(UiObservationStore.class, "latest", null, source);
         }

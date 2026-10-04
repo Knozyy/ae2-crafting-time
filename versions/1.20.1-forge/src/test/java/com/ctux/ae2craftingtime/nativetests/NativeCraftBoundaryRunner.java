@@ -100,8 +100,14 @@ final class NativeCraftBoundaryRunner {
                         .map(net.minecraft.client.gui.components.AbstractWidget.class::cast)
                         .filter(widget -> widget.active && widget.getMessage().getString().equals("Start"))
                         .findFirst();
-                if (start.isPresent()) startBoundary = new NativeStartBoundary(minecraft, start.get(), standardType,
-                        (Map<?, ?>) field(flow.getClass(), "checks", flow));
+                if (start.isPresent()) {
+                    startBoundary = new NativeStartBoundary(minecraft, start.get(), standardType,
+                            (Map<?, ?>) field(flow.getClass(), "checks", flow));
+                    NativeBadgeInputBoundary.verifyPlan(minecraft, standardType,
+                            (Map<?, ?>) field(flow.getClass(), "checks", flow), output);
+                    begin(minecraft, "invalid-plan-badge-observations", UiObservationStore.latest().frame());
+                    finishFault(minecraft);
+                }
             }
             if (startBoundary != null) {
                 set(TestDriverRuntime.class, "renderedFrames", null,
@@ -149,7 +155,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 19 : 18,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 20 : 19,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();

@@ -100,6 +100,14 @@ Require unchanged checks, screen, menu and saved bytes and no continuation or
 server operation. Capture each actual screen, retain its original observations,
 and restore the original payload on success or any failure before normal recovery.
 These deliberately injected client quantities do not prove server job counts.
+Reuse the observation boundary helper against the actual stocked Crafting Plan
+when the ordinary flow reaches Start. Use separate `PLAN_SORT` badge flows and
+the same five invalid-input cases, plus the unchanged stocked native observation
+which has no missing row. Check both badge states without advancing stable
+readiness, changing stage/checks or touching screen, menu, scale or saved bytes.
+Record all twelve cases and their inputs in a separate plan file; preserve the
+original observation in `finally`. The existing native Start fixture creates
+the real config prerequisite before this check and retains its own retry contract.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

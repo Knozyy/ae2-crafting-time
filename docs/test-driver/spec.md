@@ -211,7 +211,7 @@ All 52 original captures are reviewed in contact sheets; the new unchanged-scree
 checkpoint is also viewed individually. Local checks and both current-head CI
 checks pass. Codecov confirms 94.55%; the requested 100% target remains unfinished.
 
-Pending persistence-quantity extension: render scheduled-only, stored-only and
+Render scheduled-only, stored-only and
 all-zero status payloads through the actual native screen. Positive scheduled or
 stored quantities must reach the saved-Off checkpoint after genuine stable frames,
 then reject the incomplete check map before writing any continuation. All-zero
@@ -220,6 +220,23 @@ checks, menu, screen and saved bytes; restore the original status payload on suc
 or failure. Keep one actual screenshot and original observations per quantity case.
 These deliberate client payloads test native rendering and guard behavior, not
 actual server job counts. Require the ordinary scenario to pass after restoration.
+
+At `ed8b1560`, the fresh recovery run passes nineteen fault groups, menu closure
+and all thirteen ordinary checks, JVM exit 0. Each quantity case uses eight
+consecutive original native frames. All 55 captures are reviewed in contact
+sheets, with the three quantity captures also reviewed individually. Local checks
+and both current-head CI checks pass. Codecov confirms 94.58%; the 100% target
+remains unfinished. The interrupted earlier run has no final receipt and a
+zero-byte execution file; preserve it separately and exclude it from coverage.
+
+Pending plan-observation extension: reuse the invalid observation guards in the
+actual stocked Crafting Plan screen. Check missing snapshots, wrong identity,
+empty/one-positive-row inputs, a panel rectangle used as a badge, and the original
+stocked plan without a missing row. Both badge states must stay pending before
+stable readiness advances, preserving stage, checks, native screen/menu, GUI scale
+and saved bytes. Retain the original input separately from the five altered DTOs;
+the screenshot shows the actual screen. Require all twelve plan combinations,
+the existing fifteen status/scale combinations and ordinary recovery to pass.
 
 ## Plan readiness with optional backgrounds (#585)
 
