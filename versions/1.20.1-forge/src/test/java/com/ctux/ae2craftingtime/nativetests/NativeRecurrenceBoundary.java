@@ -51,10 +51,10 @@ final class NativeRecurrenceBoundary {
             var ready=fixtureType.getDeclaredMethod("clientReady",appeng.menu.me.crafting.CraftConfirmMenu.class);
             ready.setAccessible(true);
             try {
-                clientMenu.setPlan(null);
+                set(appeng.menu.me.crafting.CraftConfirmMenu.class,"plan",clientMenu,null);
                 assertNull(clientMenu.getPlan());
                 assertEquals(false,ready.invoke(recurrence,clientMenu));
-            } finally { clientMenu.setPlan(plan); }
+            } finally { set(appeng.menu.me.crafting.CraftConfirmMenu.class,"plan",clientMenu,plan); }
             assertSame(plan,clientMenu.getPlan());
             clientChecked=true;
         }
@@ -81,11 +81,11 @@ final class NativeRecurrenceBoundary {
                         set(appeng.menu.me.crafting.CraftConfirmMenu.class,"result",confirm,null);
                         assertEquals(false,validate.invoke(recurrence,player));
                         set(appeng.menu.me.crafting.CraftConfirmMenu.class,"result",confirm,result);
-                        confirm.setPlan(null);
+                        set(appeng.menu.me.crafting.CraftConfirmMenu.class,"plan",confirm,null);
                         assertEquals(false,validate.invoke(recurrence,player));
                     } finally {
                         set(appeng.menu.me.crafting.CraftConfirmMenu.class,"result",confirm,result);
-                        confirm.setPlan(original);
+                        set(appeng.menu.me.crafting.CraftConfirmMenu.class,"plan",confirm,original);
                     }
                     assertSame(result,field(appeng.menu.me.crafting.CraftConfirmMenu.class,"result",confirm));
                     assertSame(original,confirm.getPlan());

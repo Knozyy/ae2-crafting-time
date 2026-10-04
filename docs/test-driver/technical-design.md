@@ -142,6 +142,11 @@ on the server thread separately clear the actual result and summary and call
 missing payloads, and preserve lifetime menu/screen, checks and config existence
 and bytes. Send server work once and poll its real future with a thirty-second
 deadline. Keep JSON input evidence separate from restored-screen checkpoints.
+Clear the backing summary field for these deliberately absent-input checks;
+the public installer invokes observation hooks whose contract requires a valid
+summary. The failed `e7fabfb9` attempt called that installer with null; its original
+payload was restored in `finally`, and its execution data is preserved and
+excluded from passing reports.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same
