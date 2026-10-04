@@ -28,6 +28,8 @@ public final class NativeSuspensionApiBoundaryMod {
     private Object standard;
     private long started;
     private long openedAt;
+    private long readinessAt;
+    private String interaction = "not-sent";
     private long cpuRenders;
     private boolean opening;
     private boolean guarded;
@@ -70,8 +72,12 @@ public final class NativeSuspensionApiBoundaryMod {
                     var fixture = field(type, "fixture", standard);
                     var terminal = (BlockPos) field(fixture.getClass(), "terminal", fixture);
                     var cpu = terminal.west(2);
-                    minecraft.gameMode.useItemOn(minecraft.player, InteractionHand.MAIN_HAND,
-                            new BlockHitResult(Vec3.atCenterOf(cpu).add(0, 0, -0.5), Direction.NORTH, cpu, false));
+                    if (readinessAt == 0) readinessAt = System.nanoTime();
+                    assertTrue(System.nanoTime() - readinessAt < 30_000_000_000L, "Native client CPU not ready");
+                    if (!(minecraft.level.getBlockEntity(cpu) instanceof appeng.blockentity.crafting.CraftingBlockEntity owner)
+                            || !owner.isFormed() || !owner.isActive()) return;
+                    interaction = minecraft.gameMode.useItemOn(minecraft.player, InteractionHand.MAIN_HAND,
+                            new BlockHitResult(Vec3.atCenterOf(cpu).add(0, 0, -0.5), Direction.NORTH, cpu, false)).toString();
                     opening = true;
                     openedAt = System.nanoTime();
                     return;
@@ -117,7 +123,16 @@ public final class NativeSuspensionApiBoundaryMod {
             }
         } catch (Throwable error) {
             finished = true;
-            try { Files.writeString(output.resolve("failure.txt"), error.toString()); }
+            try {
+                Files.writeString(output.resolve("failure.txt"), error.toString());
+                Files.writeString(output.resolve("failure-context.json"), new com.google.gson.Gson().toJson(Map.of(
+                        "screen", minecraft.screen == null ? "absent" : minecraft.screen.getClass().getName(),
+                        "menu", minecraft.player == null ? "absent" : minecraft.player.containerMenu.getClass().getName(),
+                        "interaction", interaction, "cpuRenderCallbacks", cpuRenders)));
+                try (var image = net.minecraft.client.Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
+                    image.writeToFile(output.resolve("failure.png"));
+                }
+            }
             catch (Exception secondary) { error.addSuppressed(secondary); }
             minecraft.stop();
             throw new AssertionError("Native suspension API boundary failed", error);

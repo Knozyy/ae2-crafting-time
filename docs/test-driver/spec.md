@@ -455,6 +455,10 @@ runtime lacked the prepared FML config. The second used that template but expose
 an extra quote in the optional artifact metadata. Both attempts are preserved and
 their execution data is excluded. Correct the packaged TOML and require an explicit
 8 GiB client heap before retrying. No native menu success is claimed yet.
+At `2811732c`, the actual fixture prepares, but its one CPU interaction does not
+produce a rendered CPU menu within thirty seconds. Preserve and exclude that run.
+Wait for the actual client CPU block entity to be formed and active before sending
+the interaction; keep a bounded wait and record native failure context and pixels.
 
 ## Plan readiness with optional backgrounds (#585)
 
