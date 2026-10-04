@@ -219,6 +219,11 @@ flow reopen it. The disabled-recovery case temporarily opens actual client Optio
 with the current CPU screen as parent; wait on native renders and cancel through
 its real button. Ordinary native recovery and exact output conservation remain
 mandatory. Keep server-state receipts separate from rendered menu evidence.
+The AE2 observation store does not publish client Options. Count its actual
+native `ScreenEvent.Render.Post` callbacks instead of reusing a retained AE2
+snapshot or incrementing a synthetic frame counter. Record that limitation and
+the real render count in the Options checkpoint receipt; bound this wait to
+thirty seconds.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

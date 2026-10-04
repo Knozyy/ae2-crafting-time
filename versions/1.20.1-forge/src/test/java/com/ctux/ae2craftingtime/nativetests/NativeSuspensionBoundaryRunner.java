@@ -7,7 +7,6 @@ import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import com.ctux.ae2craftingtime.mc1201.OptionsScreen;
 import com.ctux.ae2craftingtime.testdriver.DriverOptions;
 import com.ctux.ae2craftingtime.testdriver.TestDriverRuntime;
-import com.ctux.ae2craftingtime.testdriver.UiObservationStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -36,8 +35,8 @@ final class NativeSuspensionBoundaryRunner {
     private boolean finished;
     private Screen optionsParent;
     private byte[] optionsSaved;
-    private long optionsFrame = -1;
-    private int optionsFrames;
+    private long optionsRenders;
+    private long optionsStarted;
     private boolean closeReplacementMenu;
     private InputsHold hold;
 
@@ -48,6 +47,7 @@ final class NativeSuspensionBoundaryRunner {
         });
         MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.client.event.ScreenEvent.Render.Post event) -> {
             if (runtime != null) runtime.afterRender();
+            if (optionsParent != null && Minecraft.getInstance().screen instanceof OptionsScreen) optionsRenders++;
         });
     }
 
@@ -97,20 +97,18 @@ final class NativeSuspensionBoundaryRunner {
                     assertInstanceOf(appeng.client.gui.me.crafting.CraftingCPUScreen.class, minecraft.screen);
                     optionsParent = minecraft.screen;
                     optionsSaved = Files.exists(config) ? Files.readAllBytes(config) : null;
+                    optionsStarted = System.nanoTime();
                     minecraft.setScreen(new OptionsScreen(optionsParent));
                     return;
                 }
                 assertInstanceOf(OptionsScreen.class, minecraft.screen);
+                assertTrue(System.nanoTime() - optionsStarted < 30_000_000_000L, "Native Options redraw exceeded thirty seconds");
                 runtime.tick();
                 assertEquals(14, field(type, "suspensionStage", standard));
-                var snapshot = UiObservationStore.latest();
-                if (snapshot != null && snapshot.screen().equals(minecraft.screen.getClass().getName())
-                        && snapshot.frame() != optionsFrame) {
-                    optionsFrame = snapshot.frame();
-                    optionsFrames++;
-                }
-                if (optionsFrames < 8) return;
-                capture(minecraft, "disabled-options-pending", Map.of("snapshot", snapshot, "stage", stage));
+                if (optionsRenders < 8) return;
+                capture(minecraft, "disabled-options-pending", Map.of("nativeOptionsRenders", optionsRenders,
+                        "screen", minecraft.screen.getClass().getName(), "parent", optionsParent.getClass().getName(),
+                        "stage", stage, "scope", "actual native Options render callbacks; AE2 observer does not publish this screen"));
                 var cancel = minecraft.screen.children().stream().filter(AbstractWidget.class::isInstance)
                         .map(AbstractWidget.class::cast).filter(w -> w.getMessage().getString().equals("Cancel"))
                         .findFirst().orElseThrow();
