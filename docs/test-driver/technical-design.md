@@ -117,6 +117,11 @@ stability counter and no case advancement, capture, mouse movement or server wor
 Preserve checks, settings and screen/menu. Restore the original payload and store
 observation in `finally`. Record source frames separately from altered DTOs; the
 single screenshot shows the unchanged native screen. Use a thirty-second bound.
+Reuse that boundary for the first real addon key after its absence fault. Copy
+the actual addon case list into the separate flow and derive the expected identity
+and quantities from its first case. Apply the same four invalid-input variations,
+stability threshold and restoration contract; also require unchanged addon index,
+hover and badge-capture state. Keep its input file and checkpoint separate.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

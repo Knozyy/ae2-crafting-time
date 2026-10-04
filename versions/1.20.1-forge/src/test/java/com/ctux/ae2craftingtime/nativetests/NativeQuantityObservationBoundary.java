@@ -16,31 +16,44 @@ import net.minecraft.client.Minecraft;
 
 /** Invalid observed quantities must restore the native payload without completing a case. */
 final class NativeQuantityObservationBoundary {
+    private final boolean addon;
     private final ArrayList<UiSnapshot> originals = new ArrayList<>();
     private final ArrayList<List<UiSnapshot>> inputs = new ArrayList<>();
     private final ArrayList<Object> flows = new ArrayList<>();
     private final boolean[] restored = new boolean[4];
     private long started;
 
-    boolean tick(Minecraft minecraft, Class<?> type, Object marker, Map<?, ?> checks, Path output) throws Exception {
+    NativeQuantityObservationBoundary() { this(false); }
+    NativeQuantityObservationBoundary(boolean addon) { this.addon = addon; }
+
+    boolean tick(Minecraft minecraft, Class<?> type, Object template, Object marker, Map<?, ?> checks, Path output) throws Exception {
         if (started == 0) started = System.nanoTime();
         assertTrue(System.nanoTime() - started < 30_000_000_000L,
                 "Invalid quantity observations did not reach their native guards");
         var source = UiObservationStore.latest();
         if (source == null || source.rows().size() != 1) return false;
         var row = source.rows().get(0);
-        if (!row.outputId().equals("minecraft:stone") || row.storedAmount() != 4
-                || row.activeAmount() != 10 || row.pendingAmount() != 200) return false;
+        var addons = addon ? (List<?>) field(type, "addonQuantityCases", template) : List.of();
+        var item = addon ? addons.get(0) : null;
+        var key = addon ? ((appeng.api.stacks.AEKey) field(item.getClass(), "key", item)).getId().toString()
+                : "minecraft:stone";
+        long stored = addon ? (long) field(item.getClass(), "stored", item) : 4;
+        long active = addon ? (long) field(item.getClass(), "active", item) : 10;
+        long pending = addon ? (long) field(item.getClass(), "pending", item) : 200;
+        if (!row.outputId().equals(key) || row.storedAmount() != stored
+                || row.activeAmount() != active || row.pendingAmount() != pending) return false;
         if (!originals.isEmpty() && originals.get(originals.size() - 1).frame() == source.frame()) return false;
         if (flows.isEmpty()) {
             var constructor = type.getDeclaredConstructor(String.class, String.class, Path.class, boolean.class);
             constructor.setAccessible(true);
             var stageType = Class.forName(type.getName() + "$Stage");
             var phase = java.util.Arrays.stream(stageType.getEnumConstants())
-                    .filter(value -> value.toString().equals("STATUS_AMOUNTS")).findFirst().orElseThrow();
+                    .filter(value -> value.toString().equals(addon ? "STATUS_ADDON_AMOUNTS" : "STATUS_AMOUNTS"))
+                    .findFirst().orElseThrow();
             for (int variant = 0; variant < restored.length; variant++) {
                 var flow = constructor.newInstance("standard-status-controls", DriverOptions.load().world(), output, false);
                 set(type, "phase", flow, phase);
+                if (addon) set(type, "addonQuantityCases", flow, addons);
                 flows.add(flow);
                 inputs.add(new ArrayList<>());
             }
@@ -81,14 +94,17 @@ final class NativeQuantityObservationBoundary {
                     assertTrue(inputs.get(variant).size() >= (int) field(stability.getClass(), "required", stability));
                     assertEquals(0, field(stability.getClass(), "count", stability));
                     var expected = after.getEntries().get(0);
-                    assertEquals("minecraft:stone", expected.getWhat().getId().toString());
-                    assertEquals(4, expected.getStoredAmount());
-                    assertEquals(10, expected.getActiveAmount());
-                    assertEquals(200, expected.getPendingAmount());
+                    assertEquals(key, expected.getWhat().getId().toString());
+                    assertEquals(stored, expected.getStoredAmount());
+                    assertEquals(active, expected.getActiveAmount());
+                    assertEquals(pending, expected.getPendingAmount());
                 }
-                assertEquals("STATUS_AMOUNTS", field(type, "phase", flow).toString());
+                assertEquals(addon ? "STATUS_ADDON_AMOUNTS" : "STATUS_AMOUNTS", field(type, "phase", flow).toString());
                 assertEquals(0, field(type, "quantityCase", flow));
+                assertEquals(0, field(type, "addonQuantityCase", flow));
                 assertFalse((boolean) field(type, "quantityHovered", flow));
+                assertFalse((boolean) field(type, "addonQuantityHovered", flow));
+                assertFalse((boolean) field(type, "addonQuantityBadgeCaptured", flow));
                 assertNull(field(type, "operation", flow));
                 assertEquals(before, checks);
                 assertSame(screen, minecraft.screen);
@@ -101,7 +117,8 @@ final class NativeQuantityObservationBoundary {
         }
         originals.add(source);
         for (boolean done : restored) if (!done) return false;
-        Files.writeString(output.resolve("invalid-quantity-observation-inputs.json"), new com.google.gson.Gson().toJson(Map.of(
+        Files.writeString(output.resolve(addon ? "invalid-addon-quantity-observation-inputs.json"
+                : "invalid-quantity-observation-inputs.json"), new com.google.gson.Gson().toJson(Map.of(
                 "scope", "four deliberately invalid DTO quantity inputs; only originals are native rendered frames",
                 "cases", List.of("wrong-output", "wrong-stored", "wrong-active", "wrong-pending"),
                 "originals", originals, "inputs", inputs)));

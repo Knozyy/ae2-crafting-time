@@ -245,13 +245,25 @@ both current-head CI checks pass; processed Codecov remains 94.58%. A OneDrive
 focus interruption was dismissed and the same native run resumed. The launch
 interval includes that pause. All 115 archived file hashes match.
 
-Pending quantity-observation boundary: use the actual first Stone quantity frame
+Quantity-observation boundary: use the actual first Stone quantity frame
 and separate copies with wrong output, stored, active or pending metadata. Each
 flow must reach its real stable-frame threshold before restoring the expected
 native payload without advancing the quantity case, capturing success or moving
 the mouse. Preserve checks, settings and the actual screen/menu; restore the
 original observation and payload on success or failure. Record original native
 frames separately from deliberately invalid DTO inputs. Require normal recovery.
+
+At `9be70e52`, all four quantity cases reject on eight consecutive native source
+frames. Twenty-one fault groups, menu closure and all thirteen ordinary checks
+pass, JVM exit 0. All 57 captures are reviewed in contact sheets and the quantity
+checkpoint individually. Local and both current-head CI checks pass. Processed
+Codecov confirms 94.65%; all four quantity predicates have full branch coverage.
+The 100% target remains unfinished.
+
+Pending addon extension: reuse the quantity-observation boundary against the
+actual first addon key and its declared quantities, preserving the same rejection,
+restoration and ordinary recovery contract. Both installed addon fixtures and
+their normal mana/chemical captures remain required.
 
 ## Plan readiness with optional backgrounds (#585)
 
