@@ -239,6 +239,14 @@ in finally before another render. Count a source frame only when the real server
 future was consumed and the stage did not advance. Preserve actual screen/menu
 identity and saved config bytes or absence; eight consumed source frames are
 required per invalid input. No replacement futures or menu objects.
+A separate optional NeoForge native artifact owns the missing Forge API check.
+It creates the ordinary runtime and uses real RenderFrame/ScreenRender callbacks.
+Hold the original TERMINAL stage after preparation, open the fixture CPU via its
+native block interaction and wait for eight real CPU screen renders. Reflectively
+calling selectedSuspensionSnapshot on that actual menu verifies the absent method
+and retained error cause. Close the actual container before releasing the original
+flow. Keep this helper out of production and ordinary driver artifacts; require
+ordinary standard-status completion and process exit zero before uploading.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

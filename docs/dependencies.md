@@ -455,3 +455,8 @@ does not require absent optional addons. Ordinary output conservation remains
 mandatory. At `9701cc45`, all five supplemental groups and 23 ordinary checks
 pass with JVM exit 0; native input counts and job UUIDs restore. Invalid DTOs are
 not rendered frames, and screenshots do not prove server-only inventories.
+
+Pending NeoForge 1.21.1 native coverage at #378 opens an actual standard CPU
+in the prepared base client to check that the Forge-only suspension API is absent.
+It requires ordinary NeoForge status recovery afterward; it does not enable
+Forge suspension mixins or advertise suspension support on NeoForge.

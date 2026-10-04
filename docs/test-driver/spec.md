@@ -432,6 +432,25 @@ native-status entries in that input, while the native source stays unchanged.
 The incorrect saved appearance must still reject at the existing real threshold,
 then restore the original switch, bytes and observation before normal recovery.
 
+At `6c70e8f3`, the outside badge text case and all 30 supplemental checks plus
+13 ordinary checks pass with JVM exit 0, native interval 279.071105 seconds.
+Source badge frames 2200-2207 are actual consecutive frames; the selected outside
+entry is native CPU #1 text at its original content and geometry. JaCoCo confirms
+both bounds predicate branches covered. All 65 captures reviewed in nine contact
+sheets and the new badge checkpoint individually; all 134 archived hashes match.
+Both CI jobs pass. Codecov confirms 95.84%, five misses and 237 partials.
+
+Pending native NeoForge suspension API boundary: use the prepared 1.21.1 base
+client and original standard status scenario. After its real fixture prepares,
+hold the actual terminal stage and open its actual standard CPU. Await eight
+native screen render callbacks. The genuine CPU menu must lack the Forge-only
+suspension method; invoking the existing selected-snapshot helper must report
+that missing API with the retained error and NoSuchMethodException cause. Preserve
+the menu identity while checking. Capture the real menu, close its actual container,
+and let the original standard scenario open the terminal and complete normally.
+No substitute menus, fake Minecraft objects or job state. This is missing API
+boundary evidence on NeoForge, not evidence of a broken required Forge mixin.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.

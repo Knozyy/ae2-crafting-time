@@ -224,3 +224,31 @@ tasks.register('checkTestDriverArtifacts') {
 tasks.named('test') { dependsOn tasks.named('checkTestDriverArtifacts') }
 
 sourceSets.testDriver.java.srcDir '../../shared/src/testDriverAddons/java'
+
+// Optional native API verification; not part of production, dist or the ordinary driver.
+def nativeSuspensionApiMetadata = layout.buildDirectory.file('native-suspension-api/META-INF/neoforge.mods.toml')
+def nativeSuspensionApiPack = layout.buildDirectory.file('native-suspension-api/pack.mcmeta')
+tasks.register('nativeSuspensionApiBoundaryJar', Jar) {
+    from(sourceSets.test.output) { include '**/nativetests/NativeSuspensionApiBoundaryMod*.class' }
+    from({ configurations.testRuntimeClasspath.findAll {
+        it.name.startsWith('junit-jupiter-api-') || it.name.startsWith('junit-platform-commons-')
+                || it.name.startsWith('opentest4j-') || it.name.startsWith('apiguardian-api-')
+    }.collect { zipTree(it) } }) { exclude 'META-INF/**', 'module-info.class' }
+    from(nativeSuspensionApiMetadata) { into 'META-INF' }
+    from(nativeSuspensionApiPack)
+    archiveFileName = 'ae2ct-native-suspension-api-boundary.jar'
+    destinationDirectory = layout.buildDirectory.dir('native-suspension-api')
+    doFirst {
+        def metadata = nativeSuspensionApiMetadata.get().asFile
+        metadata.parentFile.mkdirs()
+        metadata.text = ''''modLoader="javafml"
+loaderVersion="[1,)"
+license="MIT"
+[[mods]]
+modId="ae2ct_native_suspension_api_boundary"
+version="1"
+displayName="AE2CT Native Suspension API Boundary Tests"
+'''
+        nativeSuspensionApiPack.get().asFile.text = '{"pack":{"pack_format":34,"description":"Native suspension API boundary tests"}}'
+    }
+}
