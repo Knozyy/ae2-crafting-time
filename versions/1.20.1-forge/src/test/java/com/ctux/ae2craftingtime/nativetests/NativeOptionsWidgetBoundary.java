@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -59,7 +58,8 @@ final class NativeOptionsWidgetBoundary {
                 new com.google.gson.Gson().toJson(Map.of("cases", cases,
                     "scope", "isolated driver expectations on actual native Options controls; no process relaunch claim",
                     "screen", minecraft.screen.getClass().getName(),
-                    "nativeRenderCallback", com.ctux.ae2craftingtime.testdriver.TestDriverRuntime.renderedFrames,
+                    "nativeRenderCallback", field(com.ctux.ae2craftingtime.testdriver.TestDriverRuntime.class,
+                        "renderedFrames", null),
                     "labels", minecraft.screen.children().stream().filter(Button.class::isInstance)
                         .map(Button.class::cast).map(b -> b.getMessage().getString()).toList(),
                     "savedConfigUnchanged", true, "nativeLabelsRestoredBeforeDraw", true)));
