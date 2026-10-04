@@ -1451,3 +1451,11 @@ Capture restored controls on the following real callback, then release the
 ordinary flow. World/inventory helper checks consume actual absence, not null
 Minecraft or replacement menu objects. Retain existing native job/input guards
 and require normal suspension recovery and exact final output conservation.
+
+The compact/color extension stays in the existing native Options artifact. Apply
+each isolated native client configuration, open the actual Displays group and use
+its real next-page button for color controls. After a completed render, invoke
+the original relaunch helpers with incorrect independent checkpoint expectations.
+Require retained errors or a pending result without captures, state advancement
+or saved changes. Capture the actual initialized controls; no synthetic widgets
+or invented process continuations. All thirty groups must pass before acceptance.

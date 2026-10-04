@@ -499,7 +499,48 @@ public final class NativeOptionsBoundaryMod {
                     stage++;
                 }
                 case 28 -> {
-                    assertEquals(26, passed.size(), "Every native Options assertion group must execute");
+                    var config = new ClientConfig();
+                    config.features().setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, false);
+                    openGroup(minecraft, config, "displays");
+                    stage++;
+                }
+                case 29 -> {
+                    NativeOptionsWidgetBoundary.verifyCompact(minecraft, scenarioType, scenario, output, false);
+                    capture(minecraft, "native-compact-off.png");
+                    passed.add("Actual compact Off control waits without repeating the saved Off checkpoint");
+                    var config = new ClientConfig();
+                    config.features().setEnabled(OptionFeature.COMPACT_STATUS_AMOUNTS, true);
+                    openGroup(minecraft, config, "displays");
+                    stage++;
+                }
+                case 30 -> {
+                    NativeOptionsWidgetBoundary.verifyCompact(minecraft, scenarioType, scenario, output, true);
+                    capture(minecraft, "native-compact-on.png");
+                    passed.add("Actual compact On control rejects an independent initial Off expectation");
+                    var config = new ClientConfig();
+                    config.features().setEnabled(OptionFeature.TTC_COLORS, true);
+                    openGroup(minecraft, config, "displays");
+                    call("clickOptionButton", new Class<?>[]{Minecraft.class, String.class}, minecraft, ">");
+                    stage++;
+                }
+                case 31 -> {
+                    NativeOptionsWidgetBoundary.verifyColors(minecraft, scenarioType, scenario, output, true);
+                    capture(minecraft, "native-colors-on.png");
+                    passed.add("Actual colors On control rejects an independent initial Off expectation");
+                    var config = new ClientConfig();
+                    config.features().setEnabled(OptionFeature.TTC_COLORS, false);
+                    openGroup(minecraft, config, "displays");
+                    call("clickOptionButton", new Class<?>[]{Minecraft.class, String.class}, minecraft, ">");
+                    stage++;
+                }
+                case 32 -> {
+                    NativeOptionsWidgetBoundary.verifyColors(minecraft, scenarioType, scenario, output, false);
+                    capture(minecraft, "native-colors-off.png");
+                    passed.add("Actual colors Off control rejects an independent completed edit expectation");
+                    stage++;
+                }
+                case 33 -> {
+                    assertEquals(30, passed.size(), "Every native Options assertion group must execute");
                     restore();
                     Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(
                             Map.of("result", "PASS", "checks", passed, "runtimeClassSha256", runtimeHash())));

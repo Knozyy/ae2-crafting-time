@@ -65,6 +65,51 @@ final class NativeOptionsWidgetBoundary {
                     "savedConfigUnchanged", true, "nativeLabelsRestoredBeforeDraw", true)));
     }
 
+    static void verifyColors(Minecraft minecraft, Class<?> type, Object scenario, Path output, boolean on) throws Exception {
+        var colors = button(minecraft, "config.ae2craftingtime.ttcColors");
+        assertEquals(on, colors.getMessage().getString().endsWith(I18n.get("options.on")));
+        set(type, "badgeOutsideEdited", scenario, !on);
+        check(minecraft, type, scenario, output, 5, on ? "TTC colors did not start Off" : "Other-group edit did not apply");
+        Files.writeString(output.resolve(on ? "native-colors-on-input.json" : "native-colors-off-input.json"),
+                new com.google.gson.Gson().toJson(Map.of("actualLabel", colors.getMessage().getString(),
+                    "independentEditExpected", !on, "savedConfigUnchanged", true,
+                    "scope", "actual native display control rejects incorrect independent edit expectation; no process relaunch claim")));
+    }
+
+    static void verifyCompact(Minecraft minecraft, Class<?> type, Object scenario, Path output, boolean on) throws Exception {
+        var toggle = button(minecraft, "config.ae2craftingtime.compactStatusAmounts");
+        assertEquals(on, toggle.getMessage().getString().endsWith(I18n.get("options.on")));
+        set(type, "amountResumeChecksRestored", scenario, true);
+        set(type, "amountResumeSaving", scenario, false);
+        set(type, "amountResumeOpened", scenario, true);
+        set(type, "amountResumeOffCaptured", scenario, !on);
+        set(type, "amountResumeOnCaptured", scenario, false);
+        set(type, "amountOptionRenderedAfter", scenario, 0L);
+        var method = type.getDeclaredMethod("statusRelaunchTick", Minecraft.class, Map.class, java.util.function.Consumer.class);
+        method.setAccessible(true);
+        var screen = minecraft.screen;
+        var saved = Files.readAllBytes(output.resolve("client.toml"));
+        var checks = new LinkedHashMap<String, Boolean>();
+        Throwable failure = null;
+        try {
+            assertEquals(false, method.invoke(scenario, minecraft, checks,
+                    (java.util.function.Consumer<String>) name -> fail("Invalid compact state captured success")));
+        } catch (InvocationTargetException error) { failure = error.getCause(); }
+        if (on) assertEquals("Relaunched Options screen did not show compact amounts off",
+                assertInstanceOf(IllegalStateException.class, failure).getMessage());
+        else assertNull(failure);
+        assertSame(screen, minecraft.screen);
+        assertTrue(checks.isEmpty());
+        assertEquals(!on, field(type, "amountResumeOffCaptured", scenario));
+        assertEquals(false, field(type, "amountResumeOnCaptured", scenario));
+        assertEquals(false, field(type, "amountResumeSaving", scenario));
+        assertArrayEquals(saved, Files.readAllBytes(output.resolve("client.toml")));
+        Files.writeString(output.resolve(on ? "native-compact-on-input.json" : "native-compact-off-input.json"),
+                new com.google.gson.Gson().toJson(Map.of("actualLabel", toggle.getMessage().getString(),
+                    "independentOffCheckpointAlreadyObserved", !on, "savedConfigUnchanged", true,
+                    "scope", "actual native compact control rejects wrong initial On or waits on unchanged Off; no process relaunch claim")));
+    }
+
     private static Button button(Minecraft minecraft, String key) {
         return minecraft.screen.children().stream().filter(Button.class::isInstance).map(Button.class::cast)
                 .filter(b -> b.getMessage().getString().startsWith(I18n.get(key) + ": "))

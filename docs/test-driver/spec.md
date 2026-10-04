@@ -561,6 +561,22 @@ Preserve native screen/menu identity, server/client settings, saved bytes and
 ordinary checks. Keep all existing supplemental groups and all 23 ordinary
 suspension checks mandatory; no fake menus, snapshots, jobs or futures.
 
+At `91bc5296`, all eight supplemental groups and 23 ordinary suspension checks
+pass, JVM exit 0, native interval 535.342798 seconds. Actual no-menu helpers,
+four CPU control waits and seventeen server-control waits preserve native state.
+All thirteen captures reviewed and all forty archived hashes match. Both CI jobs
+and both uploads pass. Codecov confirms 96.53%, zero misses and 202 partials.
+Tooltips/chat obscure some values; implausible fallback time headers remain
+REVIEW_REQUIRED and are not prediction-accuracy evidence.
+
+Pending native compact/color controls: open actual Displays controls with compact
+amounts On and Off and TTC colors On and Off. Independent driver expectations
+must reject incorrect initial On, wait on unchanged Off, and reject incorrect
+other-group color edit expectations. Preserve native screen, capture flags,
+ordinary checks and saved bytes. Capture restored actual controls and retain all
+26 prior Options groups. These are native control boundaries, not process-relaunch
+receipts.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.
