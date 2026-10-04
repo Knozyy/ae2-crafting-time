@@ -39,6 +39,7 @@ final class NativeSuspensionBoundaryRunner {
     private long optionsStarted;
     private boolean closeReplacementMenu;
     private InputsHold hold;
+    private NativeSuspensionObservationBoundary observations;
 
     NativeSuspensionBoundaryRunner() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -115,14 +116,20 @@ final class NativeSuspensionBoundaryRunner {
                 var cancel = minecraft.screen.children().stream().filter(AbstractWidget.class::isInstance)
                         .map(AbstractWidget.class::cast).filter(w -> w.getMessage().getString().equals("Cancel"))
                         .findFirst().orElseThrow();
-                var platform = Class.forName("com.ctux.ae2craftingtime.testdriver.DriverPlatform");
-                var click = platform.getDeclaredMethod("click", Minecraft.class, int.class, int.class);
-                click.setAccessible(true);
-                click.invoke(null, minecraft, cancel.getX() + 4, cancel.getY() + 4);
+                assertTrue(minecraft.screen.mouseClicked(cancel.getX() + 4, cancel.getY() + 4, 0));
                 assertSame(optionsParent, minecraft.screen);
                 if (optionsSaved == null) assertFalse(Files.exists(config));
                 else assertArrayEquals(optionsSaved, Files.readAllBytes(config));
                 passed.add("disabled-options-pending");
+                return;
+            }
+            if (stage == 14 && !passed.contains("disabled-observation-guards")) {
+                if (observations == null) observations = new NativeSuspensionObservationBoundary();
+                if (observations.tick(minecraft, runtime, standard, output)) {
+                    capture(minecraft, "disabled-observation-guards", Map.of("cases", 3,
+                            "scope", "native CPU screenshot; invalid observation DTO inputs are recorded separately"));
+                    passed.add("disabled-observation-guards");
+                }
                 return;
             }
             runtime.tick();
@@ -130,7 +137,7 @@ final class NativeSuspensionBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Ordinary suspension recovery failed");
-                assertEquals(4, passed.size());
+                assertEquals(5, passed.size());
                 Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(Map.of(
                         "result", "PASS", "checks", passed, "normalResult", result, "runtimeClassSha256", runtimeHash())));
                 finished = true;

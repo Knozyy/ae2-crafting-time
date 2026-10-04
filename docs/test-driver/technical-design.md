@@ -225,7 +225,14 @@ The AE2 observation store does not publish client Options. Count its actual
 native `ScreenEvent.Render.Post` callbacks instead of reusing a retained AE2
 snapshot or incrementing a synthetic frame counter. Record that limitation and
 the real render count in the Options checkpoint receipt; bound this wait to
-thirty seconds.
+thirty seconds. Use the native screen's mouse-click API for Cancel; reflectively
+enumerating all DriverPlatform methods unnecessarily loads optional addon types.
+After cancellation, the observation guard holds the original stage 14. Substitute
+only observation DTOs, invoke the original runtime, then restore the actual source
+in finally before another render. Count a source frame only when the real server
+future was consumed and the stage did not advance. Preserve actual screen/menu
+identity and saved config bytes or absence; eight consumed source frames are
+required per invalid input. No replacement futures or menu objects.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

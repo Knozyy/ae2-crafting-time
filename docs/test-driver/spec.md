@@ -408,6 +408,12 @@ Options screen for eight real frames, cancel without saving, and return to the
 same native CPU screen. Record each checkpoint and native server receipts; images
 do not prove server-only inventory counts. Require every ordinary suspension
 check and exact output conservation to pass before reporting the combined run.
+After cancelling Options, hold the actual CPU screen at disabled recovery and
+provide separate absent, wrong-screen and stale Suspended-title observation DTOs.
+For each input, require eight actual source frames where the original native
+server predicate is consumed and the stage remains pending. Restore the original
+observation before the next render. Saved config, native screen and menu remain
+unchanged. Do not present altered DTOs as rendered pixels.
 
 ## Plan readiness with optional backgrounds (#585)
 

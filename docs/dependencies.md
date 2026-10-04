@@ -446,3 +446,10 @@ fueled vanilla furnaces and, for connected proof, distinct Alpha/Beta clients
 with two clean server phases on one disposable world. Fabric and NeoForge
 retain their existing native crafting paths; the new Forge mixin configuration
 must not appear in their artifacts.
+
+Pending supplemental native coverage at issue #378 uses the same prepared base
+client and standard CPUs. It holds actual furnace inputs and provider patterns,
+checks native menu recovery and rejects separate stale observation DTOs. Client
+Options clicks use the native screen API so enumerating test-platform methods
+does not require absent optional addons. Ordinary output conservation remains
+mandatory; this additional coverage is not yet verified.
