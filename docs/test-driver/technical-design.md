@@ -1459,3 +1459,14 @@ the original relaunch helpers with incorrect independent checkpoint expectations
 Require retained errors or a pending result without captures, state advancement
 or saved changes. Capture the actual initialized controls; no synthetic widgets
 or invented process continuations. All thirty groups must pass before acceptance.
+
+Reuse NativeSuspensionObservationBoundary at the actual stage 3 as well as
+stage 14. A stage-3 source must contain the genuine in-bounds suspended title.
+Change only the separate observation DTO: remove it or the title, omit title
+bounds, or move those bounds outside the source GUI. Invoke the original
+runtime tick with its real asynchronous paused predicate and preserve its
+future. Count only actual source frames whose server future was consumed;
+require eight per input. The genuine paused-no-dispatch check may be recorded
+by the real predicate, but the stage, native menu, screen and saved config must
+remain unchanged. Restore the source observation in finally before rendering;
+capture the original paused CPU after all four cases and resume ordinary flow.

@@ -40,6 +40,7 @@ final class NativeSuspensionBoundaryRunner {
     private boolean closeReplacementMenu;
     private InputsHold hold;
     private NativeSuspensionObservationBoundary observations;
+    private NativeSuspensionObservationBoundary pausedObservations;
     private Screen boundaryScreen;
     private long boundaryRenders;
     private boolean controlCapturePending;
@@ -97,6 +98,15 @@ final class NativeSuspensionBoundaryRunner {
                         (Map<?, ?>) field(flow.getClass(), "checks", flow), output, serverControls, boundaryRenders);
                 controlCaptureName = serverControls ? "native-server-controls" : "native-cpu-controls";
                 controlCapturePending = true;
+                return;
+            }
+            if (stage == 3 && !passed.contains("paused-observation-guards")) {
+                if (pausedObservations == null) pausedObservations = new NativeSuspensionObservationBoundary(3);
+                if (pausedObservations.tick(minecraft, runtime, standard, output)) {
+                    capture(minecraft, "paused-observation-guards", Map.of("cases", 4,
+                            "scope", "actual native paused CPU; invalid title DTOs are separate and restored before draw"));
+                    passed.add("paused-observation-guards");
+                }
                 return;
             }
             if (hold != null) {
@@ -165,7 +175,7 @@ final class NativeSuspensionBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Ordinary suspension recovery failed");
-                assertEquals(8, passed.size());
+                assertEquals(9, passed.size());
                 Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(Map.of(
                         "result", "PASS", "checks", passed, "normalResult", result, "runtimeClassSha256", runtimeHash())));
                 finished = true;

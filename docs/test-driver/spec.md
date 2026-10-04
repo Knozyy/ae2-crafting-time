@@ -1552,3 +1552,19 @@ Display rows per page, so one next-page click does not reach colors. Its PID
 6448 exited -1; preserve the receipt, captures and execution data, excluding
 the failed data from reports. Retry through the original native seek helper
 until the actual color control is present; all thirty groups remain required.
+
+At e154bd2a, all thirty native Options groups pass with JVM exit 0:
+120.840542 seconds from scheduled launch to exit. All eighteen captures reviewed
+in three contact sheets, with four new controls also inspected individually.
+All 32 archived file hashes match. Local verification takes 14s and reports 1s;
+both current-head CI jobs pass. Both Codecov uploads are MERGED: 96.59%,
+5,624 hits, zero misses and 198 partials across 5,822 lines in 73 files.
+Earlier tooltip occlusion remains REVIEW_REQUIRED. Setup, loading split, review
+and archive timings are not separately measured. No relaunch accuracy claim.
+
+Pending paused-title boundary: while the genuine first suspension remains
+paused under its original job UUID, consume eight real server-predicate frames
+for each absent observation, absent title, missing title bounds and outside
+bounds input. Restore the source observation before every draw; invalid DTOs
+are not rendered screenshots. Require ordinary suspension recovery and all
+nine supplemental groups before retaining the new execution data.
