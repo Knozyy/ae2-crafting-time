@@ -184,6 +184,7 @@ final class NativeSuspensionBoundaryRunner {
             assertEquals(stage, field(type, "suspensionStage", standard));
             if (removal == null) {
                 removal = minecraft.getSingleplayerServer().submit(() -> {
+                    try {
                     var player = minecraft.getSingleplayerServer().getPlayerList().getPlayer(minecraft.player.getUUID());
                     before = stateMethod.invoke(fixture, player, 0);
                     assertTrue((boolean) field(before.getClass(), "busy", before));
@@ -205,6 +206,9 @@ final class NativeSuspensionBoundaryRunner {
                     assertEquals(field(before.getClass(), "jobId", before), field(held.getClass(), "jobId", held));
                     assertTrue((boolean) field(held.getClass(), "busy", held));
                     return true;
+                    } catch (Exception exception) {
+                        throw new IllegalStateException("Native input removal failed", exception);
+                    }
                 });
                 return false;
             }
@@ -235,6 +239,7 @@ final class NativeSuspensionBoundaryRunner {
 
         CompletableFuture<Boolean> cleanup(Minecraft minecraft) {
             return minecraft.getSingleplayerServer().submit(() -> {
+                try {
                 for (int i = 0; i < inputs.size(); i++) {
                     assertTrue(furnaces.get(i).getItem(0).isEmpty(), "Native provider dispatched while its pattern was held");
                     furnaces.get(i).setItem(0, inputs.get(i));
@@ -250,6 +255,9 @@ final class NativeSuspensionBoundaryRunner {
                     inputs.clear(); patterns.clear();
                 }
                 return true;
+                } catch (Exception exception) {
+                    throw new IllegalStateException("Native input restoration failed", exception);
+                }
             });
         }
     }
