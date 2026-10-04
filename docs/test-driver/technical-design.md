@@ -1440,3 +1440,14 @@ changes only its independent expected partial-job flag; the real server reads it
 unaltered retained sample and rejects the mismatch through its original future.
 Discard that failed probe without replacing or resetting its future. Existing
 full/partial chat rejection and ordinary scenario recovery remain mandatory.
+
+Suspension control probes reuse the original optional Forge runner. Count actual
+ScreenEvent.Render.Post callbacks per native screen identity, never a synthetic
+observation for Options. After eight callbacks, invoke only control-wait stages
+of an independent suspension flow carrying the actual fixture. Missing controls
+use temporary native button labels; inactive controls use their original active
+flag restored in finally. These stages return before clicking or server actions.
+Capture restored controls on the following real callback, then release the
+ordinary flow. World/inventory helper checks consume actual absence, not null
+Minecraft or replacement menu objects. Retain existing native job/input guards
+and require normal suspension recovery and exact final output conservation.

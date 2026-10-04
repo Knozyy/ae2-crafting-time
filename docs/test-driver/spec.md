@@ -544,6 +544,23 @@ reject it without changing real profiles. Preserve actual fixture/menu identity,
 saved bytes and ordinary checks; require both existing chat guards and all twelve
 ordinary lifecycle checks afterward.
 
+At `e0b11a9e`, all nine lifecycle boundary cases and twelve ordinary checks pass,
+JVM exit 0, native interval 262.419134 seconds. All seventeen captures reviewed
+and all 45 archived hashes match. Both CI jobs and both uploads pass. Codecov
+confirms 96.23%, zero misses and 219 partials. Invalid DTOs are separate inputs;
+the actual server rejects wrong expectations without changed retained samples.
+Restored-plan chat occlusion and tutorial toasts remain REVIEW_REQUIRED.
+
+Pending suspension widget extension: inspect genuine world/inventory state for
+absent-screen and wrong-menu helper returns. Hold the actual running CPU and
+server Options screen after eight native screen renders. Independent driver
+expectations must wait for missing Cancel/Suspend/Resume controls and for missing
+or disabled suspension, profiling and Done controls. Temporarily change only
+actual Button labels or active flags, restoring exact originals before drawing.
+Preserve native screen/menu identity, server/client settings, saved bytes and
+ordinary checks. Keep all existing supplemental groups and all 23 ordinary
+suspension checks mandatory; no fake menus, snapshots, jobs or futures.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.

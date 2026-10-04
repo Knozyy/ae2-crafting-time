@@ -40,6 +40,10 @@ final class NativeSuspensionBoundaryRunner {
     private boolean closeReplacementMenu;
     private InputsHold hold;
     private NativeSuspensionObservationBoundary observations;
+    private Screen boundaryScreen;
+    private long boundaryRenders;
+    private boolean controlCapturePending;
+    private String controlCaptureName;
 
     NativeSuspensionBoundaryRunner() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -48,6 +52,8 @@ final class NativeSuspensionBoundaryRunner {
         });
         MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.client.event.ScreenEvent.Render.Post event) -> {
             if (runtime != null) runtime.afterRender();
+            if (boundaryScreen != event.getScreen()) { boundaryScreen = event.getScreen(); boundaryRenders = 0; }
+            boundaryRenders++;
             if (optionsParent != null && Minecraft.getInstance().screen instanceof OptionsScreen) optionsRenders++;
         });
     }
@@ -71,6 +77,28 @@ final class NativeSuspensionBoundaryRunner {
             assertTrue(System.nanoTime() - started < 1_200_000_000_000L, "Native suspension exceeded twenty minutes");
             var type = standard.getClass();
             int stage = (int) field(type, "suspensionStage", standard);
+            if (!passed.contains("native-no-menu") && minecraft.screen == null
+                    && minecraft.player.containerMenu == minecraft.player.inventoryMenu) {
+                NativeSuspensionWidgetBoundary.verifyNoMenu(minecraft, standard, output);
+                passed.add("native-no-menu");
+            }
+            if (controlCapturePending) {
+                capture(minecraft, controlCaptureName, Map.of("scope", "actual native controls after payload restoration",
+                        "screen", minecraft.screen.getClass().getName(), "nativeRenders", boundaryRenders));
+                passed.add(controlCaptureName);
+                controlCapturePending = false;
+                return;
+            }
+            boolean serverControls = stage == 12 && minecraft.screen instanceof com.ctux.ae2craftingtime.mc1201.ServerOptionsScreen;
+            boolean cpuControls = stage == 2 && minecraft.screen instanceof appeng.client.gui.me.crafting.CraftingCPUScreen;
+            if ((serverControls || cpuControls) && !passed.contains(serverControls ? "native-server-controls" : "native-cpu-controls")) {
+                if (boundaryScreen != minecraft.screen || boundaryRenders < 8) return;
+                NativeSuspensionWidgetBoundary.verifyControls(minecraft, standard, field(flow.getClass(), "marker", flow),
+                        (Map<?, ?>) field(flow.getClass(), "checks", flow), output, serverControls, boundaryRenders);
+                controlCaptureName = serverControls ? "native-server-controls" : "native-cpu-controls";
+                controlCapturePending = true;
+                return;
+            }
             if (hold != null) {
                 if (hold.tick(minecraft, runtime, standard, output)) {
                     passed.add("inputs-pending-" + hold.stage);
@@ -137,7 +165,7 @@ final class NativeSuspensionBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Ordinary suspension recovery failed");
-                assertEquals(5, passed.size());
+                assertEquals(8, passed.size());
                 Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(Map.of(
                         "result", "PASS", "checks", passed, "normalResult", result, "runtimeClassSha256", runtimeHash())));
                 finished = true;
