@@ -250,7 +250,8 @@ final class NativeCraftBoundaryRunner {
             finished = true;
             try {
                 if (startBoundary != null) startBoundary.restore();
-                recurrenceGrid.close(minecraft);
+                try { recurrenceGrid.close(minecraft); }
+                catch (Exception secondary) { error.addSuppressed(secondary); }
                 restoreFontPack();
                 if (persistenceConfig != null)
                     com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.apply(persistenceConfig);

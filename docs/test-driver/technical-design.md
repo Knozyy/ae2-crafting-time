@@ -166,6 +166,10 @@ an empty real crafting service. Preserve the original feature flags and block,
 destroy the owned node and cell on success or failure, and retain ordinary menu,
 checks and saved client bytes. Schedule each operation once and poll the real
 server future within thirty seconds; never substitute nodes or grid predicates.
+Snapshot the server feature set through its own disabled keys, rather than
+querying client-owned switches. The existing fixture owns temporary recurrence
+detection and its restoration. Preserve the primary failure trace even when a
+cleanup assertion also fails.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

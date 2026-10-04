@@ -10,8 +10,8 @@ import com.ctux.ae2craftingtime.core.OptionFeature;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import net.minecraft.client.Minecraft;
@@ -32,7 +32,7 @@ final class NativeRecurrenceGridBoundary {
     private ServerPlayer player;
     private BlockPos powerPos;
     private BlockState originalBlock;
-    private Map<OptionFeature, Boolean> featuresBefore;
+    private Set<OptionFeature> disabledBefore;
     private boolean connected;
     private boolean cellPlaced;
     private final ArrayList<Map<String, Object>> states = new ArrayList<>();
@@ -79,10 +79,7 @@ final class NativeRecurrenceGridBoundary {
 
     private boolean advance(Object fixture) throws Exception {
         if (recurrence == null) {
-            featuresBefore = new EnumMap<>(OptionFeature.class);
-            for (var feature : OptionFeature.values()) featuresBefore.put(feature,
-                    com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current().features().enabled(feature));
-            assertTrue(featuresBefore.get(OptionFeature.RECURRENT_DETECTION), "Require unchanged native recurrence detection");
+            disabledBefore = com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current().features().disabled();
             powerPos = ((BlockPos) field(fixture.getClass(), "terminal", fixture)).above(20);
             originalBlock = player.level().getBlockState(powerPos);
             assertTrue(originalBlock.isAir(), "Temporary energy cell must replace verified air only");
@@ -143,8 +140,8 @@ final class NativeRecurrenceGridBoundary {
                 cellPlaced = false;
             }
         }
-        if (featuresBefore != null) for (var feature : OptionFeature.values()) assertEquals(featuresBefore.get(feature),
-                com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current().features().enabled(feature));
+        if (disabledBefore != null) assertEquals(disabledBefore,
+                com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current().features().disabled());
     }
 
     void close(Minecraft minecraft) throws Exception {

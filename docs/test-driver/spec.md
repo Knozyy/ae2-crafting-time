@@ -327,6 +327,11 @@ native activation and require rejection while the powered grid has no craftable
 patterns. Remove the owned node and temporary cell, restore the original air
 block and feature flags, and require normal scenario recovery. Prove grid state
 through native assertions and JSON receipts; a menu screenshot is not grid proof.
+The first attempt at `4fea30b7` failed while its test setup queried client-owned
+features through the server feature set. It created no grid and remains excluded
+from coverage. The corrected setup snapshots the server's disabled set, lets the
+existing recurrence fixture temporarily enable detection, and verifies exact
+restoration when that fixture closes.
 
 ## Plan readiness with optional backgrounds (#585)
 
