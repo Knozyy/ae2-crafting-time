@@ -16,12 +16,16 @@ import net.minecraftforge.event.TickEvent;
 /** Runs boundary inputs against native plans, then requires ordinary scenario recovery. */
 final class NativeVariantBoundaryRunner {
     private final Path output = Path.of(System.getProperty("ae2craftingtime.test.nativeVariantOutput"));
+    private final NativeTerminalRouteBoundary terminal = new NativeTerminalRouteBoundary();
+    private final NativePrematureReleaseBoundary release = new NativePrematureReleaseBoundary();
     private final NativeVariantGuardBoundary clean = new NativeVariantGuardBoundary(false);
     private final NativeVariantGuardBoundary diagnosed = new NativeVariantGuardBoundary(true);
     private TestDriverRuntime runtime;
     private Object flow;
     private Object standard;
     private long started;
+    private boolean terminalDone;
+    private boolean releaseDone;
     private boolean cleanDone;
     private boolean diagnosedDone;
     private boolean finished;
@@ -55,6 +59,19 @@ final class NativeVariantBoundaryRunner {
             assertTrue(System.nanoTime() - started < 1_200_000_000_000L, "Native variant run exceeded twenty minutes");
             var type = standard.getClass();
             var snapshot = UiObservationStore.latest();
+            if (snapshot != null && field(type, "phase", standard).toString().equals("TERMINAL")
+                    && minecraft.screen instanceof appeng.client.gui.me.common.MEStorageScreen) {
+                var marker = field(flow.getClass(), "marker", flow);
+                var checks = (Map<?, ?>) field(flow.getClass(), "checks", flow);
+                if (!terminalDone) {
+                    terminalDone = terminal.tick(minecraft, standard, marker, checks, output);
+                    return;
+                }
+                if (!releaseDone) {
+                    releaseDone = release.tick(minecraft, standard, marker, checks, output);
+                    return;
+                }
+            }
             if (snapshot != null && field(type, "phase", standard).toString().equals("PLAN_SORT")
                     && (boolean) field(type, "variantHover", standard)) {
                 var step = (int) field(type, "variantStep", standard);
@@ -74,9 +91,9 @@ final class NativeVariantBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Ordinary stored-variant scenario failed");
-                assertTrue(cleanDone && diagnosedDone, "Both native guard checkpoints must execute");
+                assertTrue(terminalDone && releaseDone && cleanDone && diagnosedDone, "Both native guard checkpoints must execute");
                 Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(Map.of(
-                        "result", "PASS", "guardCases", clean.caseCount() + diagnosed.caseCount(),
+                        "result", "PASS", "guardCases", clean.caseCount() + diagnosed.caseCount() + 2,
                         "normalResult", result, "runtimeClassSha256", runtimeHash())));
                 finished = true;
                 runtime.close();

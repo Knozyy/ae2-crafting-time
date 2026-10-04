@@ -466,6 +466,27 @@ Use AE2’s actual server-side menu-opening API with the real fixture block enti
 and real player; require its successful return and eight client CPU renders. This
 creates native menus through AE2, never replacement menu objects or fake players.
 
+At `3f881b94`, the genuine AE2 menu opener, missing Forge API assertion and all
+thirteen ordinary NeoForge status checks pass, JVM exit 0. Eight actual CPU render
+callbacks precede the assertion. Native interval: 188.577893 seconds; local checks
+and packaging: eight seconds; reports: one second each. All 33 originals reviewed
+and all 80 archived hashes match. Both CI jobs pass and both uploads are MERGED.
+Codecov confirms 95.87%, three misses and 237 partials. The supplemental matching
+NeoForge unit-class report includes existing unsupported-target and absent transport
+checks; it does not relabel native execution data or change coverage rules. Visual
+gates remain REVIEW_REQUIRED; tiny scales, chat/toast occlusion and implausible
+fallback headers retain their limitations.
+
+Pending native terminal and premature-release boundaries: hold the actual standard
+ME terminal before the stored-variant flow advances. An independent driver flow
+expects the wireless route and must wait for eight native source frames on that
+wrong real screen without actions, captures, config changes or ordinary check
+changes. Then submit the original final-output release guard against the actual
+prepared idle CPU, which has no held output. Require the real server future to
+reject with the retained error before mutation. Read native CPU state before and
+after and require equality. No fake jobs, players, fixtures or futures. Release the
+original stored-variant scenario and require all seventeen ordinary checks.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.

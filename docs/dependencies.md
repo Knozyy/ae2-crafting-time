@@ -456,7 +456,11 @@ mandatory. At `9701cc45`, all five supplemental groups and 23 ordinary checks
 pass with JVM exit 0; native input counts and job UUIDs restore. Invalid DTOs are
 not rendered frames, and screenshots do not prove server-only inventories.
 
-Pending NeoForge 1.21.1 native coverage at #378 opens an actual standard CPU
+Verified NeoForge 1.21.1 native coverage at `3f881b94` (#378) opens an actual standard CPU
 in the prepared base client to check that the Forge-only suspension API is absent.
-It requires ordinary NeoForge status recovery afterward; it does not enable
+The missing API check and thirteen ordinary status checks pass. It does not enable
 Forge suspension mixins or advertise suspension support on NeoForge.
+
+Pending Forge #378 guard extensions use the same prepared base client and actual
+ME terminal/idle CPU, followed by mandatory stored-variant recovery. They add no
+optional dependency requirement and do not claim a real wireless screen or job.

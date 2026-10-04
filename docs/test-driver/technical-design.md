@@ -239,6 +239,17 @@ in finally before another render. Count a source frame only when the real server
 future was consumed and the stage did not advance. Preserve actual screen/menu
 identity and saved config bytes or absence; eight consumed source frames are
 required per invalid input. No replacement futures or menu objects.
+The optional stored-variant boundary runner also holds its actual TERMINAL stage.
+Construct independent driver expectations with stored-variant observation still
+enabled; retain the original real fixture and marker. The wireless route probe
+uses the same actual ME screen and native source snapshots but expects the wrong
+screen class. Count eight distinct native frames and assert no UI/server action,
+check or config mutation. A separate WORLD_RELEASE probe submits the original
+server predicate against the actual idle CPU. Keep its real CompletableFuture;
+verify the native CPU state before and after its expected CompletionException and
+retained IllegalStateException cause. Never install a fake completion or fake CPU.
+Only the scoped probe fails; the original flow must recover all ordinary checks.
+
 A separate optional NeoForge native artifact owns the missing Forge API check.
 It creates the ordinary runtime and uses real RenderFrame/ScreenRender callbacks.
 Hold the original TERMINAL stage after preparation, open the fixture CPU via its
