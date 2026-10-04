@@ -527,6 +527,23 @@ their original Component objects before drawing. Require retained errors or
 unchanged pending stages and capture the restored Off/On controls. Do not claim
 these isolated driver expectations prove a real process relaunch.
 
+At `a576fa2c`, all 26 Options groups pass, JVM exit 0, native interval 107.503906
+seconds. All fourteen captures reviewed and all 24 archived hashes match. Both
+CI jobs and both uploads pass. Codecov confirms 96.16%, zero misses and 223
+partials. The preceding `d4b62d87` test-only compilation failure is corrected
+without changing the driver API. Tooltip occlusion remains REVIEW_REQUIRED.
+
+Pending lifecycle readiness extension: derive separate invalid observation DTOs
+from actual unprofiled and partially profiled plan frames. Too few crafting rows,
+missing expected descriptions and a nonempty tooltip must remain pending for
+eight real source frames, preserving the original observation before drawing.
+Record hover callback requests as outputs of the guard, not executed native mouse
+input. Separately check an incorrect expected full/partial flag against each
+actual completed job: the original asynchronous server accuracy predicate must
+reject it without changing real profiles. Preserve actual fixture/menu identity,
+saved bytes and ordinary checks; require both existing chat guards and all twelve
+ordinary lifecycle checks afterward.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.

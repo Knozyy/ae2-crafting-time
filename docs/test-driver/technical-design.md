@@ -1429,3 +1429,14 @@ the exact original components in finally before rendering. Check native screen
 identity, stage, check map and saved bytes. Restored Off/On captures are native
 controls; they do not establish process-relaunch provenance. Retain all 24 existing
 Options groups and require both new groups before accepting the run.
+
+Lifecycle readiness probes hold PLAN_SORT and GALLERY_PROFILED_PLAN only when the
+actual plan satisfies its expected native row descriptions. Independent flows
+share the actual fixture but consume separate DTOs with one readiness condition
+missing. Stable source frame identifiers stay genuine; restore UiObservationStore
+in finally before rendering. Guard hover callback outputs may request (0,0), but
+the harness records rather than executes them. The completed-job accuracy probe
+changes only its independent expected partial-job flag; the real server reads its
+unaltered retained sample and rejects the mismatch through its original future.
+Discard that failed probe without replacing or resetting its future. Existing
+full/partial chat rejection and ordinary scenario recovery remain mandatory.
