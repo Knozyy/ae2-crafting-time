@@ -206,6 +206,19 @@ tooltip presence and style without modifying native components or flags. Verify
 stable pending behavior and no server operation or success capture. After any
 native scale restoration, hold the original scenario until a later actual render
 supplies the checkpoint PNG and its separately recorded capture snapshot.
+The native suspension runner holds the original scenario at stages 21 and 27.
+Wait for real furnace inputs, then unregister each actual provider's first pattern
+and retain its original pattern stack and furnace input on the server thread.
+No substitute plans, nodes, state snapshots or futures are installed. Let the
+original scenario schedule its own server predicate and require that actual
+future to complete false; consume it through the original runtime before restoring
+native inventories and patterns. Require unchanged job UUID and restored counts.
+Cleanup restores owned inputs on failure before stopping the disposable client.
+The replacement-menu case closes a real native container and lets the original
+flow reopen it. The disabled-recovery case temporarily opens actual client Options
+with the current CPU screen as parent; wait on native renders and cancel through
+its real button. Ordinary native recovery and exact output conservation remain
+mandatory. Keep server-state receipts separate from rendered menu evidence.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

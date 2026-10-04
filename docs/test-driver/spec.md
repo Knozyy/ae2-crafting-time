@@ -392,6 +392,23 @@ threshold without modifying native state, capturing success or scheduling server
 work. Keep the original stored-variant observation enabled and require ordinary
 recovery after all 35 cases. New guard images must show actual frames after redraw.
 
+At `6d178701`, all 35 guards and 17 ordinary checks pass with JVM exit 0. Both
+CI jobs pass. Both guard captures show actual redraws after restoration. All 13
+originals are reviewed in three contact sheets and both guard images individually;
+all 34 archived hashes match. Codecov confirms 95.67%, 10 misses and 242 partials.
+
+Pending native suspension waits: reuse the ordinary singleplayer suspension
+scenario. At the four-input and final one-input waits, temporarily withdraw the
+two actual provider patterns and real furnace inputs on the server thread. Require
+the original scenario's own server predicate to complete false with the stage
+unchanged. Restore those exact native stacks and patterns, verify input counts
+and job UUID, then continue. Close the actual replacement CPU menu once so the
+original scenario must open it again. At disabled recovery, hold the actual client
+Options screen for eight real frames, cancel without saving, and return to the
+same native CPU screen. Record each checkpoint and native server receipts; images
+do not prove server-only inventory counts. Require every ordinary suspension
+check and exact output conservation to pass before reporting the combined run.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.
