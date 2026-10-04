@@ -241,7 +241,7 @@ tasks.register('nativeSuspensionApiBoundaryJar', Jar) {
     doFirst {
         def metadata = nativeSuspensionApiMetadata.get().asFile
         metadata.parentFile.mkdirs()
-        metadata.text = ''''modLoader="javafml"
+        metadata.text = '''modLoader="javafml"
 loaderVersion="[1,)"
 license="MIT"
 [[mods]]

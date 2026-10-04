@@ -440,7 +440,7 @@ both bounds predicate branches covered. All 65 captures reviewed in nine contact
 sheets and the new badge checkpoint individually; all 134 archived hashes match.
 Both CI jobs pass. Codecov confirms 95.84%, five misses and 237 partials.
 
-Pending native NeoForge suspension API boundary: use the prepared 1.21.1 base
+Pending native NeoForge suspension API boundary: use the prepared 1.21.1 native
 client and original standard status scenario. After its real fixture prepares,
 hold the actual terminal stage and open its actual standard CPU. Await eight
 native screen render callbacks. The genuine CPU menu must lack the Forge-only
@@ -450,6 +450,11 @@ the menu identity while checking. Capture the real menu, close its actual contai
 and let the original standard scenario open the terminal and complete normally.
 No substitute menus, fake Minecraft objects or job state. This is missing API
 boundary evidence on NeoForge, not evidence of a broken required Forge mixin.
+The first `6bdcf5e3` launch failed during loader initialization because its fresh
+runtime lacked the prepared FML config. The second used that template but exposed
+an extra quote in the optional artifact metadata. Both attempts are preserved and
+their execution data is excluded. Correct the packaged TOML and require an explicit
+8 GiB client heap before retrying. No native menu success is claimed yet.
 
 ## Plan readiness with optional backgrounds (#585)
 
