@@ -47,6 +47,7 @@ final class NativeCraftBoundaryRunner {
     private final NativeStaleStatusBoundary staleStatus = new NativeStaleStatusBoundary();
     private final NativeBadgeObservationBoundary badgeObservation = new NativeBadgeObservationBoundary();
     private final NativePersistenceQuantityBoundary persistenceQuantities = new NativePersistenceQuantityBoundary();
+    private final NativeQuantityObservationBoundary quantityObservations = new NativeQuantityObservationBoundary();
 
     NativeCraftBoundaryRunner() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -120,6 +121,14 @@ final class NativeCraftBoundaryRunner {
                 return;
             }
             if (pending == null) {
+                if (passed.contains("STATUS_AMOUNTS") && !passed.contains("invalid-quantity-observations")) {
+                    if (quantityObservations.tick(minecraft, standardType, field(flow.getClass(), "marker", flow),
+                            (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
+                        begin(minecraft, "invalid-quantity-observations", UiObservationStore.latest().frame());
+                        finishFault(minecraft);
+                    }
+                    return;
+                }
                 if (passed.contains("profile-off-missing-row") && !passed.contains("badge-off-unremembered-text")) {
                     if (badgeObservation.tick(minecraft, standardType,
                             (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
@@ -155,7 +164,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 20 : 19,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 21 : 20,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();

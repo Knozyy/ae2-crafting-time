@@ -229,7 +229,7 @@ and both current-head CI checks pass. Codecov confirms 94.58%; the 100% target
 remains unfinished. The interrupted earlier run has no final receipt and a
 zero-byte execution file; preserve it separately and exclude it from coverage.
 
-Pending plan-observation extension: reuse the invalid observation guards in the
+Plan-observation extension: reuse the invalid observation guards in the
 actual stocked Crafting Plan screen. Check missing snapshots, wrong identity,
 empty/one-positive-row inputs, a panel rectangle used as a badge, and the original
 stocked plan without a missing row. Both badge states must stay pending before
@@ -237,6 +237,21 @@ stable readiness advances, preserving stage, checks, native screen/menu, GUI sca
 and saved bytes. Retain the original input separately from the five altered DTOs;
 the screenshot shows the actual screen. Require all twelve plan combinations,
 the existing fifteen status/scale combinations and ordinary recovery to pass.
+
+At `526c6246`, all twelve plan combinations pass with twenty fault groups,
+menu closure and all thirteen ordinary checks, JVM exit 0. All 56 captures are
+reviewed in contact sheets and the plan checkpoint also individually. Local and
+both current-head CI checks pass; processed Codecov remains 94.58%. A OneDrive
+focus interruption was dismissed and the same native run resumed. The launch
+interval includes that pause. All 115 archived file hashes match.
+
+Pending quantity-observation boundary: use the actual first Stone quantity frame
+and separate copies with wrong output, stored, active or pending metadata. Each
+flow must reach its real stable-frame threshold before restoring the expected
+native payload without advancing the quantity case, capturing success or moving
+the mouse. Preserve checks, settings and the actual screen/menu; restore the
+original observation and payload on success or failure. Record original native
+frames separately from deliberately invalid DTO inputs. Require normal recovery.
 
 ## Plan readiness with optional backgrounds (#585)
 

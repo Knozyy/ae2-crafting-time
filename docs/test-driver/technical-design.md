@@ -108,6 +108,15 @@ readiness, changing stage/checks or touching screen, menu, scale or saved bytes.
 Record all twelve cases and their inputs in a separate plan file; preserve the
 original observation in `finally`. The existing native Start fixture creates
 the real config prerequisite before this check and retains its own retry contract.
+Run invalid quantity observations after the ordinary first-row absence fault
+has restored its real payload. Four separate `STATUS_AMOUNTS` flows receive DTO
+copies with one incorrect quantity field or output identity. Poll distinct native
+source frames and the existing stable-frame threshold; detect recovery through
+the actual status payload setter. Require the expected Stone quantities, a reset
+stability counter and no case advancement, capture, mouse movement or server work.
+Preserve checks, settings and screen/menu. Restore the original payload and store
+observation in `finally`. Record source frames separately from altered DTOs; the
+single screenshot shows the unchanged native screen. Use a thirty-second bound.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same
