@@ -157,6 +157,15 @@ zero observed scale and wrong requested scale separately. Incorrect quantities
 must reset stability and restore expected payload; tooltip, delay and scale waits
 must preserve it. Reach the original eight-frame threshold and restore original
 store/payload in `finally`, then resume the original scenario.
+For recurrence grid readiness, use a separate actual recurrence fixture with its
+unconfigured name and a real managed provider node. The empty name skips graph
+replacement and inventory draining. Its disconnected native node must reject
+readiness before connecting to an isolated creative energy cell in verified air
+above the existing fixture. Poll actual activation, then reject readiness with
+an empty real crafting service. Preserve the original feature flags and block,
+destroy the owned node and cell on success or failure, and retain ordinary menu,
+checks and saved client bytes. Schedule each operation once and poll the real
+server future within thirty seconds; never substitute nodes or grid predicates.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same

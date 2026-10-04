@@ -313,6 +313,21 @@ Reach real stability on distinct original frames, preserve case, checks, saved
 bytes and native menu/screen/scale, and restore original observations and payloads
 before normal recovery. Altered DTO inputs are not native rendered frames.
 
+At `3d1c0f5d`, twenty-seven fault groups, menu closure and all thirteen ordinary
+checks pass, JVM exit 0. The item, addon and scale cases each use eight consecutive
+original frames. All 63 captures are reviewed in nine contact sheets and the
+new scale checkpoint individually. Local and both CI checks pass. Processed
+Codecov confirms 95.00%, 25 misses and 266 partials. All 130 archived file hashes
+match. The 100% target remains unfinished.
+
+Pending recurrence grid readiness: create a separate real managed node in the
+disposable world. Require the existing fixture's readiness predicate to reject
+its unpowered grid. Connect it to a real isolated creative energy cell, await
+native activation and require rejection while the powered grid has no craftable
+patterns. Remove the owned node and temporary cell, restore the original air
+block and feature flags, and require normal scenario recovery. Prove grid state
+through native assertions and JSON receipts; a menu screenshot is not grid proof.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.

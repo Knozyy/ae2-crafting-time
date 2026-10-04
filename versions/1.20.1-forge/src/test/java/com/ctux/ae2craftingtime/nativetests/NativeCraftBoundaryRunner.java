@@ -54,6 +54,7 @@ final class NativeCraftBoundaryRunner {
     private final NativeScreenBoundary wrongPlanMenu = new NativeScreenBoundary(false);
     private final NativeRecurrenceBoundary recurrenceInventory = new NativeRecurrenceBoundary();
     private final NativeRecurrenceBoundary recurrenceMissingPlans = new NativeRecurrenceBoundary();
+    private final NativeRecurrenceGridBoundary recurrenceGrid = new NativeRecurrenceGridBoundary();
 
     NativeCraftBoundaryRunner() {
         MinecraftForge.EVENT_BUS.addListener(this::tick);
@@ -125,6 +126,14 @@ final class NativeCraftBoundaryRunner {
                 }
             }
             if (startBoundary != null) {
+                if (!passed.contains("recurrence-grid-readiness")) {
+                    if (recurrenceGrid.tick(minecraft, standardType, standard,
+                            (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
+                        begin(minecraft, "recurrence-grid-readiness", UiObservationStore.latest().frame());
+                        finishFault(minecraft);
+                    }
+                    return;
+                }
                 if (!passed.contains("recurrence-missing-plan-inputs")) {
                     if (recurrenceMissingPlans.tick(minecraft, standardType, standard,
                             (Map<?, ?>) field(flow.getClass(), "checks", flow), output, false)) {
@@ -219,7 +228,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 27 : 25,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 28 : 26,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();
@@ -241,6 +250,7 @@ final class NativeCraftBoundaryRunner {
             finished = true;
             try {
                 if (startBoundary != null) startBoundary.restore();
+                recurrenceGrid.close(minecraft);
                 restoreFontPack();
                 if (persistenceConfig != null)
                     com.ctux.ae2craftingtime.mc1201.ClientOptionsRuntime.apply(persistenceConfig);
