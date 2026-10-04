@@ -242,8 +242,9 @@ required per invalid input. No replacement futures or menu objects.
 The optional stored-variant boundary runner also holds its actual TERMINAL stage.
 Construct independent driver expectations with stored-variant observation still
 enabled; retain the original real fixture and marker. The wireless route probe
-uses the same actual ME screen and native source snapshots but expects the wrong
-screen class. Count eight distinct native frames and assert no UI/server action,
+uses the same actual ME screen but expects the wrong screen class. The observation
+store does not publish ME storage snapshots. Count eight distinct real terminal
+ScreenEvent.Render.Post callbacks and assert no UI/server action,
 check or config mutation. A separate WORLD_RELEASE probe submits the original
 server predicate against the actual idle CPU. Keep its real CompletableFuture;
 verify the native CPU state before and after its expected CompletionException and

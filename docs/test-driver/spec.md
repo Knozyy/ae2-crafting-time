@@ -479,13 +479,18 @@ fallback headers retain their limitations.
 
 Pending native terminal and premature-release boundaries: hold the actual standard
 ME terminal before the stored-variant flow advances. An independent driver flow
-expects the wireless route and must wait for eight native source frames on that
+expects the wireless route and must wait for eight actual screen-render callbacks on that
 wrong real screen without actions, captures, config changes or ordinary check
 changes. Then submit the original final-output release guard against the actual
 prepared idle CPU, which has no held output. Require the real server future to
 reject with the retained error before mutation. Read native CPU state before and
 after and require equality. No fake jobs, players, fixtures or futures. Release the
 original stored-variant scenario and require all seventeen ordinary checks.
+The `2fa18c63` attempt completes the ordinary scenario and prior variant probes
+but fails its final completeness assertion because the two new probes never run.
+ME storage screens do not publish observation snapshots. Count genuine terminal
+ScreenEvent.Render.Post callbacks instead; preserve the existing observation store
+without inventing a snapshot. Preserve and exclude the failed run.
 
 ## Plan readiness with optional backgrounds (#585)
 

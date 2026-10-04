@@ -17,11 +17,11 @@ final class NativeTerminalRouteBoundary {
     private final ArrayList<Long> frames = new ArrayList<>();
     private Object probe;
 
-    boolean tick(Minecraft minecraft, Object original, Object marker, Map<?, ?> ordinaryChecks, Path output) throws Exception {
+    boolean tick(Minecraft minecraft, Object original, Object marker, Map<?, ?> ordinaryChecks, Path output, long nativeRender) throws Exception {
         var source = UiObservationStore.latest();
         assertInstanceOf(appeng.client.gui.me.common.MEStorageScreen.class, minecraft.screen);
         assertNotEquals("com.lhy.wcwt.client.WirelessComprehensiveWorkTerminalScreen", minecraft.screen.getClass().getName());
-        if (source == null || source.gui() == null || frames.contains(source.frame())) return false;
+        if (nativeRender <= 0 || frames.contains(nativeRender)) return false;
         var type = original.getClass();
         if (probe == null) {
             var constructor = type.getDeclaredConstructor(String.class, String.class, Path.class, boolean.class);
@@ -55,12 +55,13 @@ final class NativeTerminalRouteBoundary {
         assertSame(source, UiObservationStore.latest());
         if (saved == null) assertFalse(Files.exists(config));
         else assertArrayEquals(saved, Files.readAllBytes(config));
-        frames.add(source.frame());
+        frames.add(nativeRender);
         if (frames.size() < 8) return false;
         Files.writeString(output.resolve("wireless-route-wrong-terminal.json"), new com.google.gson.Gson().toJson(Map.of(
-                "frames", frames, "screen", screen.getClass().getName(), "menu", menu.getClass().getName(),
+                "nativeTerminalRenderCallbacks", frames, "screen", screen.getClass().getName(), "menu", menu.getClass().getName(),
                 "scope", "independent driver expects wireless route; actual native ME terminal unchanged",
-                "ordinaryChecksUnchanged", true, "savedConfigUnchanged", true, "captureSnapshot", source)));
+                "ordinaryChecksUnchanged", true, "savedConfigUnchanged", true,
+                "nativeGuiScale", minecraft.getWindow().getGuiScale(), "observationStorePublishesTerminal", false)));
         try (var image = net.minecraft.client.Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
             image.writeToFile(output.resolve("wireless-route-wrong-terminal.png"));
         }

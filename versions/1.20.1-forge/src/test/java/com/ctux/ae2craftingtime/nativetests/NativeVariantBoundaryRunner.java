@@ -24,6 +24,7 @@ final class NativeVariantBoundaryRunner {
     private Object flow;
     private Object standard;
     private long started;
+    private long terminalRenders;
     private boolean terminalDone;
     private boolean releaseDone;
     private boolean cleanDone;
@@ -37,6 +38,7 @@ final class NativeVariantBoundaryRunner {
         });
         MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.client.event.ScreenEvent.Render.Post event) -> {
             if (runtime != null) runtime.afterRender();
+            if (Minecraft.getInstance().screen instanceof appeng.client.gui.me.common.MEStorageScreen) terminalRenders++;
         });
     }
 
@@ -59,12 +61,12 @@ final class NativeVariantBoundaryRunner {
             assertTrue(System.nanoTime() - started < 1_200_000_000_000L, "Native variant run exceeded twenty minutes");
             var type = standard.getClass();
             var snapshot = UiObservationStore.latest();
-            if (snapshot != null && field(type, "phase", standard).toString().equals("TERMINAL")
+            if (field(type, "phase", standard).toString().equals("TERMINAL")
                     && minecraft.screen instanceof appeng.client.gui.me.common.MEStorageScreen) {
                 var marker = field(flow.getClass(), "marker", flow);
                 var checks = (Map<?, ?>) field(flow.getClass(), "checks", flow);
                 if (!terminalDone) {
-                    terminalDone = terminal.tick(minecraft, standard, marker, checks, output);
+                    terminalDone = terminal.tick(minecraft, standard, marker, checks, output, terminalRenders);
                     return;
                 }
                 if (!releaseDone) {
@@ -91,7 +93,7 @@ final class NativeVariantBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Ordinary stored-variant scenario failed");
-                assertTrue(terminalDone && releaseDone && cleanDone && diagnosedDone, "Both native guard checkpoints must execute");
+                assertTrue(terminalDone && releaseDone && cleanDone && diagnosedDone, "All native fixture and plan guard checkpoints must execute");
                 Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(Map.of(
                         "result", "PASS", "guardCases", clean.caseCount() + diagnosed.caseCount() + 2,
                         "normalResult", result, "runtimeClassSha256", runtimeHash())));
