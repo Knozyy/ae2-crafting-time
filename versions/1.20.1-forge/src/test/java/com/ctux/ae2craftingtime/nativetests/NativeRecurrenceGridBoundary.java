@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +36,7 @@ final class NativeRecurrenceGridBoundary {
     private Set<OptionFeature> disabledBefore;
     private boolean connected;
     private boolean cellPlaced;
+    private List<Future<appeng.api.networking.crafting.ICraftingPlan>> calculations;
     private final ArrayList<Map<String, Object>> states = new ArrayList<>();
 
     boolean tick(Minecraft minecraft, Class<?> type, Object template, Map<?, ?> checks, Path output) throws Exception {
@@ -88,6 +90,22 @@ final class NativeRecurrenceGridBoundary {
             var constructor = type.getDeclaredConstructor(fixture.getClass());
             constructor.setAccessible(true);
             recurrence = constructor.newInstance(fixture);
+            var filters = java.util.Arrays.stream(type.getDeclaredMethods())
+                    .filter(method -> method.isSynthetic() && method.getReturnType() == boolean.class
+                            && java.util.Arrays.equals(method.getParameterTypes(),
+                                    new Class<?>[]{net.minecraft.world.item.Item.class})).toList();
+            assertEquals(1, filters.size(), "Locate the existing native registry filter uniquely");
+            var filter = filters.get(0);
+            filter.setAccessible(true);
+            var items = List.of(net.minecraft.world.item.Items.AIR,
+                    net.minecraft.world.item.Items.SMOOTH_STONE, net.minecraft.world.item.Items.STONE);
+            for (var item : items) {
+                var key = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
+                assertNotNull(key);
+                boolean included = (boolean) filter.invoke(null, item);
+                assertEquals(item == net.minecraft.world.item.Items.STONE, included);
+                states.add(Map.of("state", "registered-item-filter", "item", key.toString(), "included", included));
+            }
             node = GridHelper.createManagedNode(recurrence, (owner, reason) -> {})
                     .setInWorldNode(false).addService(ICraftingProvider.class, (ICraftingProvider) recurrence);
             node.create(player.level(), powerPos);
@@ -111,8 +129,34 @@ final class NativeRecurrenceGridBoundary {
         if (!node.isActive()) return false;
         assertFalse(node.getGrid().getCraftingService().isCraftable(appeng.api.stacks.AEItemKey.of(
                 net.minecraft.world.item.Items.SMOOTH_STONE)));
-        assertEquals(false, prepare());
-        states.add(Map.of("state", "powered-no-patterns", "nodeActive", node.isActive(), "craftable", false));
+        if (calculations == null) {
+            assertEquals(false, prepare());
+            states.add(Map.of("state", "powered-no-patterns", "nodeActive", node.isActive(), "craftable", false));
+            assertInstanceOf(appeng.menu.me.crafting.CraftConfirmMenu.class, player.containerMenu);
+            set(recurrence.getClass(), "configured", recurrence, "less");
+            var validate = recurrence.getClass().getDeclaredMethod("validate", ServerPlayer.class);
+            validate.setAccessible(true);
+            assertEquals(false, validate.invoke(recurrence, player));
+            calculations = (List<Future<appeng.api.networking.crafting.ICraftingPlan>>)
+                    field(recurrence.getClass(), "boundaryPlans", recurrence);
+            assertEquals(2, calculations.size());
+            // AE2 calculations pause until a later native server simulation tick.
+            // Both calls occur in this one server operation, before that tick.
+            assertTrue(calculations.stream().noneMatch(Future::isDone));
+            assertEquals(false, validate.invoke(recurrence, player));
+            assertTrue(calculations.stream().noneMatch(Future::isDone));
+            states.add(Map.of("state", "pending-native-calculations", "count", calculations.size(),
+                    "validationReady", false, "allPending", true));
+            return false;
+        }
+        if (calculations.stream().anyMatch(future -> !future.isDone())) return false;
+        for (var calculation : calculations) {
+            assertFalse(calculation.isCancelled());
+            var plan = calculation.get();
+            assertNotNull(plan);
+            states.add(Map.of("state", "completed-native-calculation", "type", plan.getClass().getName(),
+                    "simulation", plan.simulation()));
+        }
         cleanup();
         states.add(Map.of("state", "cleaned", "nodeRemoved", true, "blockRestored", true, "featuresRestored", true));
         return true;
@@ -125,6 +169,8 @@ final class NativeRecurrenceGridBoundary {
     }
 
     private void cleanup() throws Exception {
+        if (calculations != null) for (var calculation : calculations)
+            if (!calculation.isDone()) calculation.cancel(true);
         try {
             if (recurrence != null) {
                 var close = recurrence.getClass().getDeclaredMethod("close");

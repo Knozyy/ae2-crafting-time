@@ -332,6 +332,19 @@ features through the server feature set. It created no grid and remains excluded
 from coverage. The corrected setup snapshots the server's disabled set, lets the
 existing recurrence fixture temporarily enable detection, and verifies exact
 restoration when that fixture closes.
+At `0d96a020`, both real grid rejection states and exact cleanup pass, followed
+by all thirteen ordinary checks, JVM exit 0. All 64 original captures are reviewed
+in nine contact sheets and the grid checkpoint individually. Local and both CI
+checks pass. Codecov confirms 95.01%, 25 misses and 265 partials. All 132 archived
+file hashes match; the 100% target remains unfinished.
+
+Pending recurrence fixture boundaries: exercise its registry filter with the
+actual registered air, smooth stone and stone items. Begin real AE2 calculations
+on the isolated native grid and call validation again in the same server
+operation, before the next simulation tick. Require pending validation to wait,
+then poll genuine calculation completion and clean up before ordinary recovery.
+Do not substitute future implementations or claim these server-only checks from
+the held-plan screenshot.
 
 ## Plan readiness with optional backgrounds (#585)
 

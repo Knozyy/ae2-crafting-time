@@ -170,6 +170,15 @@ Snapshot the server feature set through its own disabled keys, rather than
 querying client-owned switches. The existing fixture owns temporary recurrence
 detection and its restoration. Preserve the primary failure trace even when a
 cleanup assertion also fails.
+Locate the existing synthetic item-filter method uniquely by its native Item
+parameter and boolean result. Invoke it with registered vanilla identities;
+do not invent registry entries. For the pending branch, set only the separate
+fixture's case to `less`, let its existing validation begin the actual AE2
+calculations, then validate again before returning from that same server
+operation. AE2 registers simulations and pauses them until a subsequent native
+tick; assert both real futures are still pending. Poll their completion, retain
+the native plan types in the receipt, and cancel only those owned calculations
+if cleanup follows a failure. Keep the original fixture and plan untouched.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same
