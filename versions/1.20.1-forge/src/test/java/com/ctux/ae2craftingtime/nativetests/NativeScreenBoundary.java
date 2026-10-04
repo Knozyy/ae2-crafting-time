@@ -33,8 +33,9 @@ final class NativeScreenBoundary {
         var source = UiObservationStore.latest();
         if (source == null || !source.screen().equals(minecraft.screen.getClass().getName())) return false;
         if (!originals.isEmpty() && source.frame() == originals.get(originals.size()-1).frame()) return false;
-        assertInstanceOf(planScreen ? appeng.client.gui.me.crafting.CraftConfirmScreen.class
-                : appeng.client.gui.me.crafting.CraftingStatusScreen.class, minecraft.screen);
+        Class<?> expectedScreen = planScreen ? appeng.client.gui.me.crafting.CraftConfirmScreen.class
+                : appeng.client.gui.me.crafting.CraftingStatusScreen.class;
+        assertInstanceOf(expectedScreen, minecraft.screen);
         var constructor = type.getDeclaredConstructor(String.class, String.class, Path.class, boolean.class);
         constructor.setAccessible(true);
         var stageType = Class.forName(type.getName() + "$Stage");
