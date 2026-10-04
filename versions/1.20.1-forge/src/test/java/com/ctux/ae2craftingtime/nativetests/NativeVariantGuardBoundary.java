@@ -42,7 +42,9 @@ final class NativeVariantGuardBoundary {
                 "recurrence-absent", "recurrence-label-absent", "recurrence-hint-absent", "draw-absent",
                 "draw-bounds-absent", "fresh-menu-pending", "fresh-summary-pending", "fresh-revision-pending",
                 "lifecycle-label-pending", "lifecycle-flag-pending", "lifecycle-explanation-pending",
-                "lifecycle-suggestion-pending") : List.of("summary-absent", "summary-changed", "revision-changed",
+                "lifecycle-suggestion-pending", "recurrent-tooltip-variant", "recurrent-tooltip-hover",
+                "recurrent-tooltip-hint", "recurrent-tooltip-label", "recurrent-tooltip-bold",
+                "recurrent-tooltip-color", "recurrent-tooltip-no-color") : List.of("summary-absent", "summary-changed", "revision-changed",
                 "missing-changed", "unrelated-flag", "row-absent", "expected-flag", "label-absent",
                 "network-summary-changed", "lifecycle-pending", "too-small", "resize");
         done = new boolean[cases.size()];
@@ -94,6 +96,14 @@ final class NativeVariantGuardBoundary {
                     set(type, "variantSecondMenu", flow, menu.containerId + (name.equals("fresh-menu-pending") ? 1 : 0));
                     set(type, "variantSecondSummary", flow, name.equals("fresh-summary-pending") ? summary : null);
                     set(type, "variantSecondRevision", flow, ((RecurrentPlanMenu) menu).ae2craftingtime$summaryRevision());
+                }
+                if (name.startsWith("recurrent-tooltip-")) {
+                    // Keep the original stored-variant observation enabled; switch only the independent flow.
+                    set(type, "leaf", flow, "recurrent-plan");
+                    var stages = Class.forName(type.getName() + "$Stage");
+                    set(type, "phase", flow, java.util.Arrays.stream(stages.getEnumConstants())
+                            .filter(stage -> stage.toString().equals("PLAN_TOOLTIP")).findFirst().orElseThrow());
+                    set(type, "recurrenceHover", flow, !name.equals("recurrent-tooltip-hover"));
                 }
                 flows.add(flow);
                 inputs.add(new ArrayList<>());
@@ -167,7 +177,7 @@ final class NativeVariantGuardBoundary {
                 }
                 assertFalse(checks.get("variant-layout") || checks.get("native-replan") || checks.get("network-switch"));
                 assertNull(field(type, "operation", flow));
-                assertEquals("PLAN_SORT", field(type, "phase", flow).toString());
+                assertEquals(name.startsWith("recurrent-tooltip-") ? "PLAN_TOOLTIP" : "PLAN_SORT", field(type, "phase", flow).toString());
                 assertEquals(-1, field(type, "variantPendingStep", flow));
                 assertSame(screen, minecraft.screen);
                 assertSame(menu, minecraft.player.containerMenu);
@@ -207,9 +217,16 @@ final class NativeVariantGuardBoundary {
                         .filter(t -> !name.equals("recurrence-label-absent") || !t.key().equals(RECURRENT)).toList(),
                         r.storedAmount(), r.activeAmount(), r.pendingAmount())).toList();
         var tooltip = source.tooltip().stream()
+                .filter(t -> !name.startsWith("recurrent-tooltip-") || name.equals("recurrent-tooltip-variant") || !t.key().startsWith(LABEL))
+                .filter(t -> !name.equals("recurrent-tooltip-hint") || !t.key().equals(RECURRENT + "_hint"))
+                .filter(t -> !name.equals("recurrent-tooltip-label") || !t.key().equals(RECURRENT))
                 .filter(t -> !(name.equals("explanation-absent") || name.equals("lifecycle-explanation-pending")) || !t.key().equals(EXPLANATION))
                 .filter(t -> !(name.equals("suggestion-absent") || name.equals("lifecycle-suggestion-pending")) || !t.key().equals(SUGGESTION))
-                .filter(t -> !name.equals("recurrence-hint-absent") || !t.key().equals(RECURRENT + "_hint")).toList();
+                .filter(t -> !name.equals("recurrence-hint-absent") || !t.key().equals(RECURRENT + "_hint"))
+                .map(t -> t.key().equals(RECURRENT) && List.of("recurrent-tooltip-bold", "recurrent-tooltip-color", "recurrent-tooltip-no-color").contains(name)
+                        ? new UiSnapshot.ObservedText(t.key(), t.rendered(), t.arguments(), t.bounds(),
+                                name.equals("recurrent-tooltip-no-color") ? null : name.equals("recurrent-tooltip-color") ? 0 : t.color(),
+                                name.equals("recurrent-tooltip-bold") || t.bold()) : t).toList();
         var text = source.text().stream().filter(t -> !name.equals("draw-absent") || !t.key().equals(LABEL))
                 .map(t -> name.equals("draw-bounds-absent") && t.key().equals(LABEL)
                         ? new UiSnapshot.ObservedText(t.key(), t.rendered(), t.arguments(), null, t.color(), t.bold()) : t).toList();

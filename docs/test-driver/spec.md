@@ -384,6 +384,13 @@ originals are reviewed in three contact sheets and both guard images individuall
 all 34 archived hashes match. The clear guard image is black after native resize
 cleared the framebuffer, so its visual checkpoint remains unverified. The guard
 capture must wait for a subsequent actual native frame after scale restoration.
+Pending recurrence-tooltip extension: reuse the actual diagnosed pickaxe tooltip
+and seven separate DTO inputs to verify retained variant-text rejection, hover
+and hint disagreement, absent recurrence labels, bold labels, incorrect color
+and absent color. Independent recurrence flows must wait at their real stable
+threshold without modifying native state, capturing success or scheduling server
+work. Keep the original stored-variant observation enabled and require ordinary
+recovery after all 35 cases. New guard images must show actual frames after redraw.
 
 ## Plan readiness with optional backgrounds (#585)
 

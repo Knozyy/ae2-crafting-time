@@ -199,6 +199,13 @@ reduction; restore the original scale before the next render. Require exact
 rejection messages or stable readiness waits, unchanged ordinary state and saved
 bytes, two native checkpoint captures, and ordinary scenario completion. Partial
 checks local to a guard flow do not modify or prove ordinary scenario completion.
+Seven additional recurrence-tooltip flows reuse the actual diagnosed checkpoint.
+Construct through the stored-variant path so global observation remains enabled,
+then switch only the independent flow to recurrence Plan tooltip. Alter DTO
+tooltip presence and style without modifying native components or flags. Verify
+stable pending behavior and no server operation or success capture. After any
+native scale restoration, hold the original scenario until a later actual render
+supplies the checkpoint PNG and its separately recorded capture snapshot.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same
