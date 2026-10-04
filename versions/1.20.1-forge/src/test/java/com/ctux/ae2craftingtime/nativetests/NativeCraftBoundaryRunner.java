@@ -48,7 +48,8 @@ final class NativeCraftBoundaryRunner {
     private final NativeBadgeObservationBoundary badgeObservation = new NativeBadgeObservationBoundary();
     private final NativePersistenceQuantityBoundary persistenceQuantities = new NativePersistenceQuantityBoundary();
     private final NativeQuantityObservationBoundary quantityObservations = new NativeQuantityObservationBoundary();
-    private final NativeQuantityObservationBoundary addonQuantityObservations = new NativeQuantityObservationBoundary(true);
+    private final NativeQuantityObservationBoundary addonQuantityObservations = new NativeQuantityObservationBoundary(NativeQuantityObservationBoundary.Mode.ADDON);
+    private final NativeQuantityObservationBoundary scaleObservations = new NativeQuantityObservationBoundary(NativeQuantityObservationBoundary.Mode.SCALE);
     private final NativeScreenBoundary wrongStatusMenu = new NativeScreenBoundary(true);
     private final NativeScreenBoundary wrongPlanMenu = new NativeScreenBoundary(false);
     private final NativeRecurrenceBoundary recurrenceInventory = new NativeRecurrenceBoundary();
@@ -150,6 +151,14 @@ final class NativeCraftBoundaryRunner {
                 return;
             }
             if (pending == null) {
+                if (passed.contains("STATUS_SCALES") && !passed.contains("invalid-scale-observations")) {
+                    if (scaleObservations.tick(minecraft, standardType, standard,
+                            field(flow.getClass(), "marker", flow), (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
+                        begin(minecraft, "invalid-scale-observations", UiObservationStore.latest().frame());
+                        finishFault(minecraft);
+                    }
+                    return;
+                }
                 if (passed.contains("STATUS_AMOUNTS") && !passed.contains("invalid-quantity-observations")) {
                     if (quantityObservations.tick(minecraft, standardType, standard, field(flow.getClass(), "marker", flow),
                             (Map<?, ?>) field(flow.getClass(), "checks", flow), output)) {
@@ -210,7 +219,7 @@ final class NativeCraftBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Original scenario failed");
-                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 26 : 24,
+                assertEquals(Boolean.getBoolean("ae2craftingtime.test.nativeAddonRows") ? 27 : 25,
                         passed.size(), "Every required native fault must execute");
                 assertInstanceOf(CraftingStatusScreen.class, minecraft.screen);
                 var observed = UiObservationStore.latest();

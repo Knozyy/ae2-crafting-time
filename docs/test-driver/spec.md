@@ -296,6 +296,23 @@ throughout asynchronous polling. Record input checks separately from screenshots
 the checkpoint shows the restored native plan, not missing payloads. Require the
 original scenario to pass afterward.
 
+At `e1ece13c`, twenty-six fault groups, menu closure and all thirteen ordinary
+checks pass, JVM exit 0. All 62 captures are reviewed in nine contact sheets and
+the new recurrence checkpoints individually. The inventory checkpoint shows
+Loading terrain; server menu identity is established by assertions and its JSON
+receipt. Local and both CI checks pass. Processed Codecov confirms 94.89%, 25
+misses and 272 partials. All 128 archived file hashes match. The failed public
+null-installer attempt is excluded. The requested 100% target remains unfinished.
+
+Pending quantity readiness extension: after matching the actual quantity row,
+require item and addon flows to remain pending on an empty tooltip. The addon
+capture-delay guard must wait before hover or capture. At the real billion-scale
+row, separately reject incorrect stored, active and pending DTO quantities, a
+zero observed scale and a scale that differs from the requested native scale.
+Reach real stability on distinct original frames, preserve case, checks, saved
+bytes and native menu/screen/scale, and restore original observations and payloads
+before normal recovery. Altered DTO inputs are not native rendered frames.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.

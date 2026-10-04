@@ -147,6 +147,16 @@ the public installer invokes observation hooks whose contract requires a valid
 summary. The failed `e7fabfb9` attempt called that installer with null; its original
 payload was restored in `finally`, and its execution data is preserved and
 excluded from passing reports.
+Reuse the quantity-observation helper with item, addon and scale modes. Add
+empty-tooltip waits after setting the isolated flow's existing hovered state;
+the addon delay case uses the actual current rendered count plus the normal
+two-frame capture delay and must not hover or capture. Do not advance or fabricate
+the global rendered count. For scale mode, retain the actual first native scale
+and billion-quantity row, with its scale-set prerequisite. Vary each quantity,
+zero observed scale and wrong requested scale separately. Incorrect quantities
+must reset stability and restore expected payload; tooltip, delay and scale waits
+must preserve it. Reach the original eight-frame threshold and restore original
+store/payload in `finally`, then resume the original scenario.
 The addon graph explicitly requires both installed mana and chemical mods. Wait
 for the first real addon key payload and its rendered row before removing it;
 do not mistake the previous item/fluid frame for an addon row. Reuse the same
