@@ -492,6 +492,24 @@ ME storage screens do not publish observation snapshots. Count genuine terminal
 ScreenEvent.Render.Post callbacks instead; preserve the existing observation store
 without inventing a snapshot. Preserve and exclude the failed run.
 
+At `13e9682b`, all 37 native guard cases and seventeen ordinary checks pass,
+JVM exit 0, native interval 188.956217 seconds. Eight actual terminal render
+callbacks exercise the wrong-route wait. The actual idle CPU rejects premature
+release without changed server state. All fourteen captures reviewed and all
+37 archived hashes match. Both CI jobs and both Codecov uploads pass. Codecov
+confirms 95.92%, one miss and 236 partials. Visual gates remain REVIEW_REQUIRED.
+
+Pending completed-job chat guard: run the original `craft-lifecycle` with both
+real furnace jobs. Wait for each genuine full or partial coverage chat response
+while the actual completed job passes the original server accuracy predicate.
+Temporarily replace only the client response's coverage suffix, invoking the
+original guard from an independent flow with the actual fixture and interaction.
+Require its retained error after real stable frames, then restore the original
+native message objects and interaction deadline before rendering. Preserve native
+menu, screen, observation, config and ordinary checks. Capture only the restored
+chat/plan and require all twelve ordinary lifecycle checks afterward. Invalid
+inputs are client payload evidence, not rendered chat or invented server history.
+
 ## Plan readiness with optional backgrounds (#585)
 
 Status: planned; implementation and runtime verification pending.

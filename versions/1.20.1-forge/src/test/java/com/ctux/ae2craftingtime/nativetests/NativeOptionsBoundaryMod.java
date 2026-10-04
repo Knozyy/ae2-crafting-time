@@ -33,6 +33,10 @@ public final class NativeOptionsBoundaryMod {
     private int originalScale;
 
     public NativeOptionsBoundaryMod() {
+        if (System.getProperty("ae2craftingtime.test.nativeGalleryOutput") != null) {
+            new NativeGalleryBoundaryRunner();
+            return;
+        }
         if (System.getProperty("ae2craftingtime.test.nativeSuspensionOutput") != null) {
             new NativeSuspensionBoundaryRunner();
             return;

@@ -1402,3 +1402,20 @@ The profiling-off case pauses a live job with profiling disabled, then disables
 suspension through Options/Done and waits for native recovery. Supplemental
 CS-6, permission and file-reload checks are listed in the
 [feature design](../crafting-suspension/technical-design.md#supplemental-runtime-checks-after-the-automated-leaf).
+
+
+## Completed-job chat boundary (#378)
+
+The optional Forge native artifact holds the original lifecycle at GALLERY_DETAILS
+only after its real stats interaction has received the completed job response.
+An independent StandardAe2Scenario shares that actual fixture and interaction,
+keeping the original partial-job flag. Its real asynchronous server accuracy
+predicate and frame-readiness logic remain intact. For each full and partial job,
+replace only the genuine chat response suffix with invalid coverage text on the
+client thread, invoke the original tick, and restore the exact message objects
+and interaction deadline in finally before the next draw. No server profiles,
+menus, jobs or futures are replaced. Record original frames and response strings
+separately from the invalid input; captures occur on a subsequent restored frame.
+Native menu/screen identity, observation, saved config and ordinary check set must
+remain unchanged. Both guarded errors and normal twelve-check lifecycle recovery
+are mandatory within the existing bounded native runner.
