@@ -446,3 +446,10 @@ fueled vanilla furnaces and, for connected proof, distinct Alpha/Beta clients
 with two clean server phases on one disposable world. Fabric and NeoForge
 retain their existing native crafting paths; the new Forge mixin configuration
 must not appear in their artifacts.
+
+Replacement-CPU suspension is a separate
+[planned Forge 1.20.1 extension](crafting-suspension/spec.md#replacement-addon-cpus)
+tracked in [#647](https://github.com/cTux/ae2-crafting-time/issues/647).
+AdvancedAE, NeoEco and LightningTech profiling support above does not yet imply
+suspension support. The plan reuses native player-pause state where available
+and adds an AdvancedAE backport; it changes no supported dependency minimums.

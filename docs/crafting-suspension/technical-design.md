@@ -269,3 +269,151 @@ steps 3 and 4 of the [verification ladder](implementation-plan.md#verification-l
 retain their current-head evidence; no automated marker substitutes for them.
 Optional-install observation and unsupported-loader artifact checks
 remain separate gates in the implementation plan.
+
+## Addon CPU extension
+
+Lifecycle and acceptance: [replacement addon CPUs](spec.md#replacement-addon-cpus).
+The standard-CPU design above remains the finished baseline.
+
+### Inspected seams
+
+Planning base: `f0cf420b`. Artifact identities and observed APIs are retained in
+[addon evidence](addon-evidence.md). These are bytecode observations, not runtime
+acceptance. AdvancedAE owns `AdvCraftingCPU` and `AdvCraftingCPULogic` rather than
+subclassing AE2's logic. Its dispatch/lifecycle/NBT seams match the backport's
+shape and need a separate state adapter.
+
+NeoEco 20.3.0 and 20.4.2 expose `isJobUserPaused` and `setJobUserPaused`, separately
+from `isJobSuspended`/`setJobSuspended`. Delegate player actions to the former.
+Retain both existing dispatch-contract families: 20.3.0 has the private
+budgeted `executeCrafting(int,int,...,FastPathBatchBudget)` entrance; 20.4.2 has
+the public four-argument entrance. Required suspension guards must cover each
+selected family's dispatch entrance, including FastPath, without cancelling the
+whole lifecycle tick or output flush.
+
+LightningTech's job persists `suspended`, and its logic exposes
+`isJobSuspended`/`setJobSuspended`. Use these methods and its native persistence.
+Its four-argument `executeCrafting` delegates to `executeCraftingBudgeted`, which
+also serves the budgeted tick. Guard the budgeted entrance with an empty native
+`TickUsage` result; retain lifecycle, soft-cancel and physical scheduling cleanup.
+Do not block `insertWaitingFor`, `extractWaitingFor`, completion or recovery.
+
+### Adapter boundary
+
+Keep adapters and mixin registration Forge-only. Extend `CraftingSuspensionAccess`
+to report support and the exact profiler scope, alongside state, UUID and mutation.
+The ordinary AE2 adapter keeps its exact runtime-class guard. Add explicit
+AdvancedAE, NeoEco and LightningTech adapters, selected by raw bytecode contracts
+before class initialization. Use the existing `IntegrationContract` inspection
+machinery, but choose suspension separately from profiling so a missing pause
+API cannot disable an otherwise compatible profiler or the reverse.
+
+Change `IntegrationSelection` from dependency-only decision keys to immutable
+`(dependency, capability)` keys. Add a capability field to candidates and
+decisions; migrate existing candidates to `profiling`, and use `suspension`
+for the new contracts. Mixin ownership, duplicate-candidate checks, the decision
+cache, snapshots and newest-variant lookup use that pair. Installed-version
+lookup still receives the real dependency ID, never a synthetic capability ID.
+Each capability independently selects its first matching variant. Update callers
+and diagnostics accordingly. Boundary tests cover both capabilities selected,
+either contract failing while the other succeeds, absence, wrong side/target,
+independent fallback variants and duplicate ownership. No combined candidate
+matrix or shared decision that can disable the other capability.
+
+Add a candidate `versionAllowed` predicate receiving the installed dependency
+version. In `choose`, reject an ineligible variant with `unsupported_version`
+before probing its bytecode. Existing profiling candidates allow their existing
+version range. The Forge LightningTech suspension candidate uses Forge's native
+Maven version comparison to require at least `2.1.0-beta.4`; treat the
+`-forge.1.20.1` packaging suffix as target metadata, not a prerelease increment.
+Unknown or malformed versions reject suspension only. Both version eligibility
+and the raw member contract must pass. Test beta.2/beta.3 rejection even with
+identical beta.4 members, beta.4 with/without the packaging suffix, later valid
+versions, malformed versions and below-floor profiling remaining selected.
+
+Each suspension contract lists CPU/logic identity, selected-menu access, native
+pause API where used, job UUID, dirtying, tick reconciliation and all required
+dispatch entrances. Retain released-artifact fixture hashes and descriptors.
+Use optional `@Pseudo` string targets; selected gameplay/persistence injections
+are required. Missing contracts skip the adapter; unexpected bootstrap failures
+propagate. Do not make an absent addon a class-loading dependency or replace a
+required injection with `require = 0`.
+
+AdvancedAE gets the existing covered `CraftingSuspension` state and namespaced
+job-compound NBT flag. Clear it on accepted submission and finish; mark its CPU
+dirty on mutations. NeoEco and LightningTech delegate to their native state and
+NBT. The inspected NeoEco 20.3.0 setter changes `job.userPaused`, calls
+`cpu.markDirty()` when a CPU exists, then `postChange(null)`; its job NBT writes
+and reads `userPaused` independently from `suspended`. Both retained families
+therefore use native persistence. Include those members and dirtying/persistence
+behavior in each family's contract and restart checks; do not select an adapter
+when those seams fail. No extra NBT boolean or duplicate dirtying is needed for
+the inspected 20.3.0 artifact. Reconciliation clears only player pause when the server option is disabled,
+then mirrors the resulting state to the profiler. NeoEco never calls
+`setJobSuspended(false)` for Resume or recovery. Native pause setters and load/tick
+reconciliation feed the same profiler transitions, including actions issued
+outside TTC's button. Suppress diagnostics only for intentional player pause.
+
+Use the identities already used at dispatch/return/finish: standard AE2 cluster,
+AdvancedAE CPU, and NeoEco/LightningTech logic instances. Passing the selected
+CPU object blindly to `ProfilerBridge` would create a second, unrelated scope.
+Expose that scope through the adapter rather than adding global job registries.
+
+Descriptor probes alone cannot verify method behavior: the existing ASM reader
+skips code. Gate suspension on the exact whole-JAR SHA-512 values in
+`addon-evidence.md`, in addition to version and member checks. Read Forge's
+discovered original mod-file bytes before class initialization, not transformed
+classes. Add hash eligibility to suspension candidates only. Any unlisted or
+missing hash disables suspension while profiling retains its existing selection.
+Add new hashes only after dirtying/load/save bytecode inspection and runtime
+restart verification. Test identical members with a wrong/missing hash and
+independent profiling selection. Thus the persistence selection requirements
+above are enforced by exact-artifact identity; member names alone are insufficient.
+
+Route selected-row requests in `StatsRequestContext.current`/`StatsRequestHandler`
+through the Forge resolver's verified addon selection and `profilerScope()`.
+Route each live listed CPU in `CpuTtcRequestHandler.collect` through the same
+CPU-to-adapter scope mapping before `ProfilerBridge.remainingJobSeconds`, while
+retaining the CPU object for busy/grid/list/serial validation. Standard scope is
+the cluster; AdvancedAE is its CPU; NeoEco and LightningTech are their logic.
+Keep this routing Forge-specific and the existing other-target path unchanged.
+Test selected rows and listed cards for each scope, paused/active competing
+jobs, diagnostic switches off, null selection and unsupported adapters.
+
+### Selection and actions
+
+Add one Forge `CraftingSuspensionResolver` used by both menu snapshots and C2S
+actions. Resolve the server menu's selected standard CPU or the verified addon
+menu slot: `advancedAE$advCpu`, `neoecoae$cpu`, or
+`thunderbolt$timeWheelCpu`. Validate the selected object against the live grid,
+and for status menus against the selected serial/list mapping. Use exact typed
+contract reads rather than scanning fields or trusting a client location.
+This resolver is independent of the addon profiling switches; do not reuse
+`StatsRequestContext.optionalAdvancedCpu` with its diagnostic-option gate.
+
+Reuse the existing 29-byte request/snapshot codecs and packet registrations.
+Preserve channel support, current container/context, `stillValid`, UUID and
+desired-state validation before mutation. Snapshot support is the resolved
+adapter's capability, not an exact standard-class test. Client state remains
+per menu and invalidates on selection changes. No new `@GuiSync` IDs.
+
+Keep screen/button changes on the existing Forge screen mixin. If a supported
+addon installs a second native pause widget, use a contract-checked presentation
+adapter to show one control on negotiated TTC screens; leave native widgets
+unchanged for optional-peer screens. Existing inspected NeoEco screen mixin has
+no pause widget. Every changed optional presentation hook uses `require = 0`
+and needs a remapped production-target check plus real startup.
+
+### Verification
+
+Map ACS-1 through ACS-7 to the [implementation plan](implementation-plan.md#addon-cpu-extension).
+Extend real addon fixtures instead of creating fake CPU classes. Inspect raw
+and transformed descriptors independently. AdvancedAE 1.3.6 uses one-argument
+`readFromNBT(CompoundTag)`/`writeToNBT(CompoundTag)` hooks, descriptor
+`(Lnet/minecraft/nbt/CompoundTag;)V`. NeoEco 20.3.0 uses
+`readFromNBT(CompoundTag, HolderLookup.Provider)` and the corresponding writer,
+descriptor `(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;)V`.
+For NeoEco 20.4.2 and LightningTech, retain their own released member descriptors
+in separate contract fixtures and check native job load/save and dirtying;
+do not infer their signatures from AdvancedAE, NeoEco 20.3.0 or standard AE2.
+Keep native internal-suspension and intentional user-pause tests separate.

@@ -1,5 +1,8 @@
 # Crafting suspension on Forge 1.20.1
 
+The finished standard-CPU backport below is a separate delivery scope from the
+later [replacement addon CPU extension](#replacement-addon-cpus).
+
 Status: finished
 
 Scope: Initial Forge 1.20.1 backport and its focused verification.
@@ -110,3 +113,79 @@ option, safe disable behavior, addon limitation and limits of machine relief.
 
 Planning review found no issue-body correction necessary. The initial scope is
 delivered with the verification evidence linked above.
+
+## Replacement addon CPUs
+
+Status: ready-to-implement
+
+Scope: Extend suspension to the project's supported replacement CPU engines on
+Forge 1.20.1 only. Fabric and newer NeoForge targets are outside this extension.
+
+Issue: [#647](https://github.com/cTux/ae2-crafting-time/issues/647)
+
+Planning: [Addon implementation plan](implementation-plan.md#addon-cpu-extension)
+and [addon technical design](technical-design.md#addon-cpu-extension).
+
+The documents have been self-reviewed. The exact final issue text was approved
+on 2026-10-05, applied to #647 and read back without differences. No addon
+support is delivered yet.
+
+### Player behavior and boundaries
+
+Support AdvancedAE Quantum Computer CPUs, NeoEco ECO CPUs and LightningTech
+time-wheel CPUs using their existing optional integrations. Ordinary addon
+blocks that still produce the standard AE2 CPU and logic retain the existing
+backport. Do not treat an arbitrary subclass as supported merely because it
+inherits an interface; unrecognized replacement engines keep the control hidden.
+
+Use the same Suspend/Resume control, job identity checks and world-owned
+`craftingSuspension` option as the standard CPU. Suspension stops new work,
+preserves reservations and progress, accepts already-dispatched outputs, permits
+Cancel and completion, and survives a clean save/restart. It does not stop
+external machines or release the CPU. All shared-provider and diagnostic rules
+in the initial scope apply equally to addon jobs.
+
+When an addon already has a persistent player-pause state, use that state rather
+than keeping a competing boolean. NeoEco's player pause is distinct from its
+internal suspension; Resume and option-disable recovery must never clear an
+internal engine condition. The option governs the integrated player-pause state
+on supported jobs, including one changed through the addon's own controls.
+Turning it off clears that player pause on the next loaded logic tick, while
+leaving internal engine conditions alone. This also works with TTC profiling off.
+
+Observe native player-pause changes so menu state and TTC diagnostics agree.
+Preserve existing addon controls and optional-peer behavior; show only one
+Suspend/Resume control if an addon already provides one in the same screen.
+TTC-originated requests retain the existing menu/context/UUID validation. Do not
+replace an addon's scheduler, cancellation, soft-cancel or recovery behavior.
+
+Suspension availability must not depend on enabling the addon's TTC profiling
+option. Disabling a diagnostic integration must neither strand a paused job nor
+remove access to Resume. A missing or incompatible suspension API hides only
+that suspension adapter; it must not disable working profiling integration.
+
+The LightningTech suspension capability floor is `2.1.0-beta.4-forge.1.20.1`,
+the inspected artifact. Beta.2 and beta.3 retain their existing profiling
+support but do not expose TTC suspension; test that capability boundary.
+Later versions require a matching suspension contract before enabling it.
+No broader dependency minimum or newest-release claim changes in this scope. Verify
+the pinned compatible artifacts and retained supported API families. A changed
+addon API needs a verified adapter before its control is enabled. LightningTech
+source-discovery issue [#460](https://github.com/cTux/ae2-crafting-time/issues/460)
+does not prevent inspecting the recorded cached artifact; it does prevent
+claiming that artifact is the latest available release.
+
+### Acceptance criteria
+
+| ID | Completion gate |
+| --- | --- |
+| ACS-1 | AdvancedAE, both retained Forge NeoEco API families and contract-compatible LightningTech at or above the beta.4 suspension floor expose Suspend/Resume for the actual selected replacement CPU. Earlier LightningTech versions retain profiling only; unknown replacements and absent addons remain safe. |
+| ACS-2 | Normal, batched, FastPath and time-wheel dispatch stop while paused; in-flight returns still count. A competing CPU finishes, then the same resumed UUID finishes with exact input/output conservation. |
+| ACS-3 | Three pause/resume cycles, failed submission, completion, cancellation, soft cancellation and replacement-job/CPU-switch stale requests preserve native behavior. |
+| ACS-4 | Two real clients, reopen and clean dedicated restart retain UUID/state/counts. Repeated and forged requests cannot mutate a different job. |
+| ACS-5 | Live and startup-file disable recovery work with profiling and addon diagnostics off. Internal NeoEco suspension remains untouched, and native pause actions update TTC state. |
+| ACS-6 | Paused rows, totals and CPU cards remain visible: the total says Suspended and the card estimate is unknown. Actual addon profiler scopes suppress estimates, false blocked diagnostics, warnings and automatic highlights on those surfaces without suppressing another job; resume starts a fresh delay interval and paused jobs contribute no accuracy sample. |
+| ACS-7 | Contract selection, core coverage, transformed production hooks, focused runtime captures, English/Ukrainian GuideME/wiki and dependency documentation agree. Other target artifacts and optional-peer installs keep their existing behavior. |
+
+Do not mark this scope finished until every row has source-bound verification
+and the implementation has been merged with separate authorization.
