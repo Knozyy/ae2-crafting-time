@@ -35,19 +35,16 @@ public final class ProviderStartTracker {
 
     public static void endTick() { POSITIONS.clear(); }
 
-    public static void noteCandidate(IGrid grid, Object scope, String networkId, IPatternDetails pattern,
+    public static void noteCandidate(IGrid grid, Object scope, Set<ProfileKey> outputs,
             ICraftingProvider provider) {
-        if (grid == null || scope == null || pattern == null || provider == null) return;
+        if (grid == null || scope == null || outputs == null || provider == null) return;
         if (!ProfilerBridge.trackingEnabled(scope)) return;
         var position = locate(grid, provider);
         if (position.isEmpty()) return;
         var scoped = CANDIDATES.computeIfAbsent(scope, ignored -> new HashMap<>());
-        for (var output : pattern.getOutputs()) {
-            if (output != null && output.what() != null) {
-                var key = new ProfileKey(networkId, output.what().getId().toString());
-                var positions = scoped.computeIfAbsent(key, ignored -> new LinkedHashSet<>());
-                if (positions.size() < PacketLimits.MAX_HIGHLIGHT_POSITIONS) positions.add(position.get());
-            }
+        for (var key : outputs) {
+            var positions = scoped.computeIfAbsent(key, ignored -> new LinkedHashSet<>());
+            if (positions.size() < PacketLimits.MAX_HIGHLIGHT_POSITIONS) positions.add(position.get());
         }
     }
 

@@ -11,6 +11,34 @@ import org.junit.jupiter.api.Test;
 
 class DelayedNotificationTest {
     @Test
+    void oneLiveDiagnosticSnapshotFeedsPlatesAndEpisodeTransitions() {
+        var profiler = new CraftProfiler(10);
+        var cpu = new Object();
+        var output = key("minecraft:iron_plate");
+        seedTypical(profiler, output, new Object());
+        profiler.start(output, cpu, 2, ProfileUnit.ITEM, 300);
+        assertTrue(profiler.delayedDiagnostics(cpu, 400).isEmpty());
+        var live = profiler.delayedDiagnostics(cpu, 800);
+        assertEquals(Set.of(output), live.keySet());
+        var newly = profiler.pollNewlyDelayed(cpu, 800, live);
+        assertEquals(1, newly.size());
+        assertSame(live.get(output), newly.get(0).diagnostic());
+        assertTrue(profiler.pollNewlyDelayed(cpu, 800, live).isEmpty());
+        profiler.complete(output, cpu, 1, 801);
+        var recovered = profiler.delayedDiagnostics(cpu, 802);
+        assertTrue(recovered.isEmpty());
+        assertTrue(profiler.pollNewlyDelayed(cpu, 802, recovered).isEmpty());
+        assertEquals(List.of(output), profiler.pollResolvedDelayed(cpu));
+        assertEquals(1, profiler.pollNewlyDelayed(cpu, 1300, profiler.delayedDiagnostics(cpu, 1300)).size());
+        profiler.setSuspended(cpu, true, 1301);
+        assertTrue(profiler.delayedDiagnostics(cpu, 2000).isEmpty());
+        assertTrue(profiler.pollNewlyDelayed(cpu, 2000, live).isEmpty());
+        assertTrue(profiler.delayedDiagnostics(null, 2000).isEmpty());
+        profiler.setEnabled(false);
+        assertTrue(profiler.delayedDiagnostics(cpu, 2000).isEmpty());
+    }
+
+    @Test
     void activeOutputCleanupSeparatesOwnersAndKeepsWaitingJobs() {
         var profiler = new CraftProfiler(10);
         var output = key("minecraft:iron_plate");

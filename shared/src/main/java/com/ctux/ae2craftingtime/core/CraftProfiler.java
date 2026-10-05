@@ -23,6 +23,8 @@ public final class CraftProfiler {
     private double typicalDurationMultiplier = 2.0;
     private boolean delayedEnabled = true;
     private final Map<Object, Map<ProfileKey, ArrayDeque<PendingCraft>>> pending = new IdentityHashMap<>();
+    private final Map<ProfileKey, Set<Object>> pendingScopes = new HashMap<>();
+    private final Map<ProfileKey, Set<Object>> waitingScopes = new HashMap<>();
     private final Map<Object, Map<ProfileKey, Long>> lastProgressTicks = new IdentityHashMap<>();
     private final Map<Object, CapacityState> capacities = new IdentityHashMap<>();
     private final Map<Object, WaitingState> waiting = new IdentityHashMap<>();
@@ -69,6 +71,8 @@ public final class CraftProfiler {
         providerDispatch.setEnabled(enabled);
         if (!enabled) {
             pending.clear();
+            pendingScopes.clear();
+            waitingScopes.clear();
             lastProgressTicks.clear();
             capacities.clear();
             waiting.clear();
@@ -127,6 +131,7 @@ public final class CraftProfiler {
         }
 
         statusesDirty = true;
+        removeWaiting(scope);
         missingProviders.clear(scope);
         suspended.remove(scope);
         ignoreRemembered.remove(scope);
@@ -145,6 +150,7 @@ public final class CraftProfiler {
             waiting.remove(scope);
         } else {
             waiting.put(scope, new WaitingState(tick, waitingKeys));
+            for (var key : waitingKeys) index(waitingScopes, key, scope);
         }
     }
 
@@ -168,13 +174,15 @@ public final class CraftProfiler {
         // Fresh live observations supersede any remembered status for the key.
         forgetStatus(key);
         var waitingState = waiting.get(scope);
-        if (waitingState != null) statusesDirty = true;
-        if (waitingState != null && waitingState.keys.remove(key) && waitingState.keys.isEmpty()) {
-            waiting.remove(scope);
+        if (waitingState != null && waitingState.keys.remove(key)) {
+            statusesDirty = true;
+            unindex(waitingScopes, key, scope);
+            if (waitingState.keys.isEmpty()) waiting.remove(scope);
         }
         pending.computeIfAbsent(scope, ignored -> new HashMap<>())
                 .computeIfAbsent(key, ignored -> new ArrayDeque<>())
                 .addLast(new PendingCraft(amount, unit, tick));
+        index(pendingScopes, key, scope);
         lastProgressTicks.computeIfAbsent(scope, ignored -> new HashMap<>()).putIfAbsent(key, tick);
         completionIntervals.computeIfAbsent(key, ignored -> new CompletionInterval(unit, tick));
     }
@@ -216,6 +224,7 @@ public final class CraftProfiler {
 
         if (queue.isEmpty()) {
             scopedPending.remove(key);
+            unindex(pendingScopes, key, scope);
             removeLastProgress(scope, key);
             if (scopedPending.isEmpty()) {
                 pending.remove(scope);
@@ -232,12 +241,9 @@ public final class CraftProfiler {
     /** Completes an output whose CPU scope changed during a chunk reload. */
     public boolean completeUniquePending(ProfileKey key, long amount, long tick) {
         if (key == null || amount <= 0) return false;
-        Object onlyScope = null;
-        for (var entry : pending.entrySet()) {
-            if (!entry.getValue().containsKey(key)) continue;
-            if (onlyScope != null) return false;
-            onlyScope = entry.getKey();
-        }
+        var scopes = pendingScopes.getOrDefault(key, Set.of());
+        if (scopes.size() != 1) return false;
+        var onlyScope = scopes.iterator().next();
         if (onlyScope == null) return false;
         return complete(key, onlyScope, amount, tick);
     }
@@ -319,7 +325,7 @@ public final class CraftProfiler {
         var removed = pending.remove(scope);
         lastProgressTicks.remove(scope);
         capacities.remove(scope);
-        statusesDirty |= waiting.remove(scope) != null;
+        removeWaiting(scope);
         jobOwners.remove(scope);
         jobEstimates.remove(scope);
         delayedNotified.remove(scope);
@@ -327,6 +333,7 @@ public final class CraftProfiler {
             return;
         }
         for (var key : removed.keySet()) {
+            unindex(pendingScopes, key, scope);
             if (!hasPending(key)) {
                 forgetStatus(key);
                 var interval = completionIntervals.get(key);
@@ -421,15 +428,16 @@ public final class CraftProfiler {
      * the server can explicitly clear their highlight while the craft runs.
      */
     public List<DelayedEvent> pollNewlyDelayed(Object scope, long tick) {
+        return pollNewlyDelayed(scope, tick, delayedDiagnostics(scope, tick));
+    }
+
+    /** Consume the same live evidence used for this CPU's warning plates. */
+    public List<DelayedEvent> pollNewlyDelayed(Object scope, long tick,
+            Map<ProfileKey, StallDiagnostic> currentlyDelayed) {
         if (!enabled || scope == null || suspended.contains(scope)) {
             return List.of();
         }
-        var scopedPending = pending.getOrDefault(scope, Map.of());
         var notified = delayedNotified.computeIfAbsent(scope, ignored -> new HashSet<>());
-        var currentlyDelayed = new HashMap<ProfileKey, StallDiagnostic>();
-        for (var key : scopedPending.keySet()) {
-            stall(key, scope, tick).ifPresent(diagnostic -> currentlyDelayed.put(key, diagnostic));
-        }
         // Progress that clears the stall ends the episode and re-arms notification.
         // Drop remembered DELAYED for resolved keys so login resync and world
         // save never resurrect a recovered plate; a later transition re-adds it.
@@ -496,12 +504,16 @@ public final class CraftProfiler {
 
     /** Current stall evidence, independent of whether chat notification was polled. */
     public Set<ProfileKey> liveDelayedKeys(Object scope, long tick) {
-        if (!enabled || scope == null || suspended.contains(scope)) return Set.of();
-        var live = new HashSet<ProfileKey>();
+        return Set.copyOf(delayedDiagnostics(scope, tick).keySet());
+    }
+
+    public Map<ProfileKey, StallDiagnostic> delayedDiagnostics(Object scope, long tick) {
+        if (!enabled || scope == null || suspended.contains(scope)) return Map.of();
+        var live = new HashMap<ProfileKey, StallDiagnostic>();
         for (var key : pending.getOrDefault(scope, Map.of()).keySet()) {
-            if (stall(key, scope, tick).isPresent()) live.add(key);
+            stall(key, scope, tick).ifPresent(value -> live.put(key, value));
         }
-        return Set.copyOf(live);
+        return live;
     }
 
     public void rememberStatus(PersistedOutputStatus status) {
@@ -609,18 +621,18 @@ public final class CraftProfiler {
     }
 
     public boolean hasPending(ProfileKey key) {
-        return key != null && pending.values().stream().anyMatch(scoped -> scoped.containsKey(key));
+        return key != null && pendingScopes.containsKey(key);
     }
 
     /** Includes jobs waiting for their first dispatch; null owner checks every job. */
     public boolean hasActiveOutput(ProfileKey key, UUID owner) {
         if (key == null) return false;
-        for (var scope : pending.keySet()) {
-            if ((owner == null || owner.equals(jobOwners.get(scope))) && pending.get(scope).containsKey(key))
+        for (var scope : pendingScopes.getOrDefault(key, Set.of())) {
+            if (owner == null || owner.equals(jobOwners.get(scope)))
                 return true;
         }
-        for (var entry : waiting.entrySet()) {
-            if ((owner == null || owner.equals(jobOwners.get(entry.getKey()))) && entry.getValue().keys.contains(key))
+        for (var scope : waitingScopes.getOrDefault(key, Set.of())) {
+            if (owner == null || owner.equals(jobOwners.get(scope)))
                 return true;
         }
         return false;
@@ -684,6 +696,7 @@ public final class CraftProfiler {
         forgetStatus(key);
         pending.values().forEach(scoped -> scoped.remove(key));
         pending.values().removeIf(Map::isEmpty);
+        pendingScopes.remove(key);
         lastProgressTicks.values().forEach(scoped -> scoped.remove(key));
         lastProgressTicks.values().removeIf(Map::isEmpty);
         delayedNotified.values().forEach(notified -> notified.remove(key));
@@ -761,6 +774,8 @@ public final class CraftProfiler {
         dispatchPower.clear();
         providerDispatch.clear();
         pending.clear();
+        pendingScopes.clear();
+        waitingScopes.clear();
         lastProgressTicks.clear();
         capacities.clear();
         waiting.clear();
@@ -782,6 +797,24 @@ public final class CraftProfiler {
                     addSample(output.key(), new CraftSample(sample.amount(), output.unit(), sample.durationTicks()));
                 }
             }
+        }
+    }
+
+    private static void index(Map<ProfileKey, Set<Object>> index, ProfileKey key, Object scope) {
+        index.computeIfAbsent(key, ignored -> Collections.newSetFromMap(new IdentityHashMap<>())).add(scope);
+    }
+
+    private static void unindex(Map<ProfileKey, Set<Object>> index, ProfileKey key, Object scope) {
+        var scopes = index.get(key);
+        scopes.remove(scope);
+        if (scopes.isEmpty()) index.remove(key);
+    }
+
+    private void removeWaiting(Object scope) {
+        var state = waiting.remove(scope);
+        if (state != null) {
+            statusesDirty = true;
+            for (var key : state.keys) unindex(waitingScopes, key, scope);
         }
     }
 

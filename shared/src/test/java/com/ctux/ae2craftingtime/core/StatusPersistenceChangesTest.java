@@ -6,6 +6,24 @@ import org.junit.jupiter.api.Test;
 
 class StatusPersistenceChangesTest {
     @Test
+    void repeatedDispatchDoesNotDirtyUnchangedWaitingRows() {
+        var profiler = new CraftProfiler(10);
+        var cpu = new Object();
+        var started = new ProfileKey("test:started");
+        var waiting = new ProfileKey("test:waiting");
+        profiler.startWaiting(cpu, List.of(started, waiting), 0);
+        profiler.start(started, cpu, 1, ProfileUnit.ITEM, 1);
+        assertEquals(waiting, profiler.takeChangedStatuses().orElseThrow().get(0).key());
+        for (int tick = 2; tick < 100; tick++) {
+            profiler.start(started, cpu, 1, ProfileUnit.ITEM, tick);
+            assertTrue(profiler.takeChangedStatuses().isEmpty());
+        }
+        profiler.start(waiting, cpu, 1, ProfileUnit.ITEM, 100);
+        assertEquals(List.of(), profiler.takeChangedStatuses().orElseThrow());
+        assertTrue(profiler.takeChangedStatuses().isEmpty());
+    }
+
+    @Test
     void unchangedPollsDoNotRebuildStatusesAndChangesCoalesce() {
         var profiler = new CraftProfiler(10);
         var key = new ProfileKey("test:output");

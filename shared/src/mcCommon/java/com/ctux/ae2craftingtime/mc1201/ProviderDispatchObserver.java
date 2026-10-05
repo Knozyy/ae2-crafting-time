@@ -5,8 +5,10 @@ import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.networking.IGrid;
 import appeng.api.stacks.KeyCounter;
 import com.ctux.ae2craftingtime.core.ProviderDispatchTracker.Evaluation;
+import com.ctux.ae2craftingtime.core.ProfileKey;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import java.util.Iterator;
+import java.util.Map;
 
 public final class ProviderDispatchObserver {
     private final String networkId;
@@ -14,6 +16,7 @@ public final class ProviderDispatchObserver {
     private final Object scope;
     private final IPatternDetails pattern;
     private final long tick;
+    private final Map<ProfileKey, Long> outputs;
     private final Evaluation evaluation = new Evaluation();
     private boolean presenceObserved;
     private boolean completed;
@@ -24,6 +27,14 @@ public final class ProviderDispatchObserver {
         this.scope = scope;
         this.pattern = pattern;
         this.tick = tick;
+        outputs = ProfilerBridge.patternOutputs(networkId, pattern);
+        ProviderStartTracker.noteDispatch(scope, pattern, outputs);
+    }
+
+    public String networkId() { return networkId; }
+
+    public void power(double required, double extracted) {
+        ProfilerBridge.observeDispatchPower(scope, pattern, outputs, required, extracted, tick);
     }
 
     public Iterator<ICraftingProvider> iterator(Iterable<ICraftingProvider> providers) {
@@ -47,7 +58,7 @@ public final class ProviderDispatchObserver {
                 var provider = delegate.next();
                 observePresence(true);
                 evaluation.candidate();
-                ProviderStartTracker.noteCandidate(grid, scope, networkId, pattern, provider);
+                ProviderStartTracker.noteCandidate(grid, scope, outputs.keySet(), provider);
                 return provider;
             }
 
@@ -87,7 +98,7 @@ public final class ProviderDispatchObserver {
     private void observePresence(boolean hasProvider) {
         if (!presenceObserved) {
             presenceObserved = true;
-            ProfilerBridge.observeProviders(networkId, scope, pattern, hasProvider);
+            ProfilerBridge.observeProviders(scope, pattern, outputs, hasProvider);
         }
     }
 
@@ -96,6 +107,6 @@ public final class ProviderDispatchObserver {
             return;
         }
         completed = true;
-        ProfilerBridge.observeProviderDispatch(networkId, scope, pattern, reason, tick);
+        ProfilerBridge.observeProviderDispatch(scope, pattern, outputs, reason, tick);
     }
 }

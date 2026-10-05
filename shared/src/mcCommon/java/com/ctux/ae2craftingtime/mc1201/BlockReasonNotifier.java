@@ -35,7 +35,12 @@ public final class BlockReasonNotifier {
         if (ProfilerBridge.isSuspended(scope) || !armed(server) || !ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_POWER_DETECTION)) {
             return;
         }
-        var reasons = ProfilerBridge.blockReasons(scope, grid, tick);
+        notifyPower(scope, grid, ProfilerBridge.blockReasons(scope, grid, tick), server, highlightSender);
+    }
+
+    static void notifyPower(Object scope, IGrid grid, java.util.Map<ProfileKey, CraftingBlockReason> reasons,
+            MinecraftServer server, BiConsumer<ServerPlayer, ProviderHighlightCodec.Highlight> highlightSender) {
+        if (!ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_POWER_DETECTION)) return;
         var keys = new HashSet<ProfileKey>();
         for (var entry : reasons.entrySet()) {
             if (entry.getValue() == CraftingBlockReason.NO_POWER) {
@@ -56,13 +61,24 @@ public final class BlockReasonNotifier {
                 || scope == null || grid == null) {
             return;
         }
-        var networkId = ProfilerBridge.networkId(grid);
+        notifySpace(scope, grid, spaceKeys(grid, logic), server, highlightSender);
+    }
+
+    static Set<ProfileKey> spaceKeys(IGrid grid, Object logic) {
         var keys = new HashSet<ProfileKey>();
-        for (var aeKey : NoSpaceProbe.stuckKeys(logic)) {
-            if (aeKey != null) {
-                keys.add(ProfilerBridge.key(networkId, aeKey));
-            }
+        if (grid == null || !ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_SPACE_DETECTION)) return keys;
+        var outputs = NoSpaceProbe.stuckKeys(logic);
+        if (outputs.isEmpty()) return keys;
+        var networkId = ProfilerBridge.networkId(grid);
+        for (var aeKey : outputs) {
+            if (aeKey != null) keys.add(ProfilerBridge.key(networkId, aeKey));
         }
+        return keys;
+    }
+
+    static void notifySpace(Object scope, IGrid grid, Set<ProfileKey> keys, MinecraftServer server,
+            BiConsumer<ServerPlayer, ProviderHighlightCodec.Highlight> highlightSender) {
+        if (!ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_SPACE_DETECTION)) return;
         notifyAll(scope, grid, keys, server, "text.ae2craftingtime.chat.no_space.word",
                 Component.translatable("text.ae2craftingtime.no_space.explanation"), NO_SPACE, highlightSender);
     }

@@ -44,13 +44,14 @@ public final class ProfilerBridge {
     public static void observeProviders(String networkId, Object scope, IPatternDetails pattern,
             boolean hasProvider) {
         if (!trackingEnabled(scope)) return;
-        var outputs = new HashMap<ProfileKey, Long>();
-        for (var output : pattern.getOutputs()) {
-            outputs.merge(key(networkId, output.what()), output.amount(), Long::sum);
-        }
-        if (isEnabled()) {
-            ProviderStartTracker.noteDispatch(scope, pattern, outputs);
-        }
+        var outputs = patternOutputs(networkId, pattern);
+        ProviderStartTracker.noteDispatch(scope, pattern, outputs);
+        observeProviders(scope, pattern, outputs, hasProvider);
+    }
+
+    static void observeProviders(Object scope, IPatternDetails pattern, Map<ProfileKey, Long> outputs,
+            boolean hasProvider) {
+        if (!trackingEnabled(scope)) return;
         if (ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_PROVIDER_DETECTION))
             PROFILER.observeProviders(scope, pattern, outputs, hasProvider);
     }
@@ -69,6 +70,14 @@ public final class ProfilerBridge {
         CHANCE.observe(scope, outputs, chances);
     }
 
+    static Map<ProfileKey, Long> patternOutputs(String networkId, IPatternDetails pattern) {
+        var outputs = new HashMap<ProfileKey, Long>();
+        for (var output : pattern.getOutputs()) {
+            outputs.merge(key(networkId, output.what()), output.amount(), Long::sum);
+        }
+        return outputs;
+    }
+
     public static void clearChanceEvidence() { CHANCE.clearAll(); }
 
     public static java.util.OptionalInt chanceOutput(Object scope, ProfileKey key) {
@@ -78,11 +87,14 @@ public final class ProfilerBridge {
     public static void observeDispatchPower(String networkId, Object scope, IPatternDetails pattern,
             double required, double extracted, long tick) {
         if (!trackingEnabled(scope)) return;
-        var outputs = new HashMap<ProfileKey, Long>();
-        for (var output : pattern.getOutputs()) {
-            outputs.merge(key(networkId, output.what()), output.amount(), Long::sum);
-        }
-        if (isEnabled()) ProviderStartTracker.noteDispatch(scope, pattern, outputs);
+        var outputs = patternOutputs(networkId, pattern);
+        ProviderStartTracker.noteDispatch(scope, pattern, outputs);
+        observeDispatchPower(scope, pattern, outputs, required, extracted, tick);
+    }
+
+    static void observeDispatchPower(Object scope, IPatternDetails pattern, Map<ProfileKey, Long> outputs,
+            double required, double extracted, long tick) {
+        if (!trackingEnabled(scope)) return;
         if (ServerOptionsRuntime.enabled(com.ctux.ae2craftingtime.core.OptionFeature.NO_POWER_DETECTION))
             PROFILER.observeDispatchPower(scope, pattern, outputs, required, extracted, tick);
     }
@@ -90,10 +102,13 @@ public final class ProfilerBridge {
     public static void observeProviderDispatch(String networkId, Object scope, IPatternDetails pattern,
             CraftingBlockReason reason, long tick) {
         if (!trackingEnabled(scope)) return;
-        var outputs = new HashMap<ProfileKey, Long>();
-        for (var output : pattern.getOutputs()) {
-            outputs.merge(key(networkId, output.what()), output.amount(), Long::sum);
-        }
+        var outputs = patternOutputs(networkId, pattern);
+        observeProviderDispatch(scope, pattern, outputs, reason, tick);
+    }
+
+    static void observeProviderDispatch(Object scope, IPatternDetails pattern, Map<ProfileKey, Long> outputs,
+            CraftingBlockReason reason, long tick) {
+        if (!trackingEnabled(scope)) return;
         if (reason == null || reasonEnabled(reason)) PROFILER.observeProviderDispatch(scope, pattern, outputs, reason, tick);
     }
 
@@ -102,8 +117,11 @@ public final class ProfilerBridge {
         if (grid == null) {
             return java.util.Map.of();
         }
-        var live = PROFILER.blockReasons(scope, tick, missingProviders(scope, grid));
-        live.entrySet().removeIf(entry -> !reasonEnabled(entry.getValue()));
+        return blockReasons(scope, tick, liveBlockReasons(scope, grid, tick));
+    }
+
+    static Map<ProfileKey, CraftingBlockReason> blockReasons(Object scope, long tick,
+            Map<ProfileKey, CraftingBlockReason> live) {
         for (var entry : live.entrySet()) {
             PROFILER.rememberBlockReason(entry.getKey(), entry.getValue(), tick);
         }
@@ -350,6 +368,15 @@ public final class ProfilerBridge {
             return List.of();
         }
         return PROFILER.pollNewlyDelayed(scope, tick);
+    }
+
+    static Map<ProfileKey, StallDiagnostic> delayedDiagnostics(Object scope, long tick) {
+        return PROFILER.delayedDiagnostics(scope, tick);
+    }
+
+    static List<CraftProfiler.DelayedEvent> pollNewlyDelayed(Object scope, long tick,
+            Map<ProfileKey, StallDiagnostic> diagnostics) {
+        return PROFILER.pollNewlyDelayed(scope, tick, diagnostics);
     }
 
     public static boolean discardDisabledScope(Object scope, long tick, net.minecraft.server.MinecraftServer server) {

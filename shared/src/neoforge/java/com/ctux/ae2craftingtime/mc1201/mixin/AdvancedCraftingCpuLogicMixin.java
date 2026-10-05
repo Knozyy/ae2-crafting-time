@@ -83,7 +83,8 @@ public abstract class AdvancedCraftingCpuLogicMixin {
     private double ae2craftingtime$observeDispatchPower(IEnergyService energy, double required,
             Actionable mode, PowerMultiplier multiplier) {
         var extracted = energy.extractAEPower(required, mode, multiplier);
-        if (ProfilerBridge.trackingEnabled(cpu)) ProfilerBridge.observeDispatchPower(ProfilerBridge.networkId(cpu.getGrid()), cpu,
+        if (ae2craftingtime$dispatchObserver != null) ae2craftingtime$dispatchObserver.power(required, extracted);
+        else if (ProfilerBridge.trackingEnabled(cpu)) ProfilerBridge.observeDispatchPower(ProfilerBridge.networkId(cpu.getGrid()), cpu,
                 ae2craftingtime$dispatchPattern, required, extracted, cpu.getLevel().getGameTime());
         return extracted;
     }
@@ -136,7 +137,8 @@ public abstract class AdvancedCraftingCpuLogicMixin {
             Actionable type) {
         inventory.insert(what, amount, type);
         if (type == Actionable.MODULATE && amount > 0 && ProfilerBridge.trackingEnabled(cpu)) {
-            ProfilerBridge.start(ProfilerBridge.networkId(cpu.getGrid()), cpu, what, amount,
+            ProfilerBridge.start(ae2craftingtime$dispatchObserver == null
+                    ? ProfilerBridge.networkId(cpu.getGrid()) : ae2craftingtime$dispatchObserver.networkId(), cpu, what, amount,
                     cpu.getLevel().getGameTime());
             IntegrationLog.cpu("advanced_ae", "cpu-dispatch");
         }

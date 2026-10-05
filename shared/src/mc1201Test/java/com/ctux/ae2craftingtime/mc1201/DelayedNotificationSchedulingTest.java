@@ -11,6 +11,22 @@ import org.objectweb.asm.tree.MethodInsnNode;
 
 class DelayedNotificationSchedulingTest {
     @Test
+    void cpuTickCollectsEachLiveProbeOnceAndReconciliationDoesNotProbeAgain() throws IOException {
+        var notifications = read(DelayedNotificationServer.class);
+        var tick = notifications.methods.stream().filter(m -> m.name.equals("tick")).findFirst().orElseThrow();
+        var calls = Arrays.stream(tick.instructions.toArray()).filter(MethodInsnNode.class::isInstance)
+                .map(MethodInsnNode.class::cast).toList();
+        for (var probe : List.of("delayedDiagnostics", "liveBlockReasons", "spaceKeys")) {
+            assertEquals(1, calls.stream().filter(call -> call.name.equals(probe)).count(), probe);
+        }
+        var reconcile = notifications.methods.stream().filter(m -> m.name.equals("reconcile")
+                && (m.access & org.objectweb.asm.Opcodes.ACC_PRIVATE) != 0).findFirst().orElseThrow();
+        assertFalse(Arrays.stream(reconcile.instructions.toArray()).anyMatch(insn ->
+                insn instanceof MethodInsnNode call && List.of("liveDelayedKeys", "liveBlockReasons",
+                        "stuckKeys", "spaceKeys").contains(call.name)));
+    }
+
+    @Test
     void cpuUpdatesNeverFlushGlobalStateAndEveryLoaderRegistersTheFlush() throws IOException {
         var notifications = read(DelayedNotificationServer.class);
         for (var name : List.of("reconcile", "clearScope", "clearKey")) {

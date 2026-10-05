@@ -249,6 +249,21 @@ before clearing provider-position indexes. Explicit clears join that same flush;
 login replay remains immediate. Shared recipients stay highlighted until their
 last CPU contribution clears, and offline recipients remain pending.
 
+Each CPU tick collects live delay diagnostics, block reasons, and stuck stored
+outputs once, then shares that evidence between notification episodes and
+plate reconciliation. Request-time fallback probes remain fresh; there is no
+cross-tick warning cache. Offline owners still keep their notification episode
+unconsumed. Repeated dispatch only dirties waiting persistence when a waiting
+key actually leaves the set.
+
+Pending and waiting outputs maintain identity sets of their CPU scopes per
+profile key. Completion and owner checks visit only scopes tracking that key,
+instead of scanning unrelated jobs. Partial output, cancellation, reset, load,
+disable, and waiting replacement maintain these indexes. They are runtime-only.
+Native and AdvancedAE dispatch observers reuse one network ID and output map
+within each pattern evaluation; independent addon hooks retain their direct
+bridge entry points. No persisted identity or packet layout changes.
+
 Remove cumulative `inProgressStats` from throughput lookup when the interval
 collector is installed: the first real interval is retained at end tick and
 provides the useful one-sample estimate. Before then, use retained history or

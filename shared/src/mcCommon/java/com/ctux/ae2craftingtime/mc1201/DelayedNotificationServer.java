@@ -10,7 +10,6 @@ import com.ctux.ae2craftingtime.core.ProviderWarningKeys;
 import com.ctux.ae2craftingtime.mc1201.net.ProviderHighlightCodec;
 import com.ctux.ae2craftingtime.mc1201.net.ProviderHighlightS2C;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,6 +23,7 @@ public final class DelayedNotificationServer {
             new ProviderPlateState<>(PacketLimits.MAX_HIGHLIGHT_POSITIONS);
 
     public static void tick(Object scope, IGrid grid, Object logic, long tick, MinecraftServer server) {
+        if (scope == null || server == null) return;
         if (!ProfilerBridge.trackingEnabled(scope)) {
             ProfilerBridge.discardDisabledScope(scope, tick, server);
             clearScope(scope, server);
@@ -33,28 +33,37 @@ public final class DelayedNotificationServer {
             clearScope(scope, server);
             return;
         }
-        maybeNotify(scope, grid, tick, server);
-        BlockReasonNotifier.maybeNotifyPower(scope, grid, tick, server);
-        BlockReasonNotifier.maybeNotifySpace(scope, grid, logic, server);
-        reconcile(scope, grid, logic, tick, server, defaultHighlightSender());
+        var delayed = ProfilerBridge.delayedDiagnostics(scope, tick);
+        var reasons = ProfilerBridge.liveBlockReasons(scope, grid, tick);
+        var noSpace = BlockReasonNotifier.spaceKeys(grid, logic);
+        var sender = defaultHighlightSender();
+        maybeNotify(scope, grid, tick, server, sender, delayed);
+        if (ServerOptionsRuntime.enabled(OptionFeature.NO_POWER_DETECTION)) {
+            BlockReasonNotifier.notifyPower(scope, grid,
+                    grid == null ? Map.of() : ProfilerBridge.blockReasons(scope, tick, reasons), server, sender);
+        }
+        BlockReasonNotifier.notifySpace(scope, grid, noSpace, server, sender);
+        reconcile(scope, grid,
+                ProviderWarningKeys.combine(delayed.keySet(), reasons, noSpace));
     }
 
     public static void reconcile(Object scope, IGrid grid, Object logic, long tick, MinecraftServer server,
             BiConsumer<ServerPlayer, ProviderHighlightCodec.Highlight> sender) {
         if (scope == null || server == null || sender == null) return;
+        if (grid == null || ProfilerBridge.isSuspended(scope)
+                || ProfilerBridge.discardDisabledScope(scope, tick, server)) {
+            clearScope(scope, server);
+            return;
+        }
+        reconcile(scope, grid,
+                ProviderWarningKeys.combine(ProfilerBridge.liveDelayedKeys(scope, tick),
+                        ProfilerBridge.liveBlockReasons(scope, grid, tick), BlockReasonNotifier.spaceKeys(grid, logic)));
+    }
+
+    private static void reconcile(Object scope, IGrid grid, java.util.Set<ProfileKey> keys) {
         var current = new java.util.HashMap<ProviderPlateState.Recipient,
                 ProviderPlateState.Contribution<BlockPos, AEKey>>();
-        if (grid != null && !ProfilerBridge.isSuspended(scope)
-                && !ProfilerBridge.discardDisabledScope(scope, tick, server)) {
-            var noSpace = new LinkedHashSet<ProfileKey>();
-            var network = ProfilerBridge.networkId(grid);
-            if (ServerOptionsRuntime.enabled(OptionFeature.NO_SPACE_DETECTION)) {
-                for (var output : NoSpaceProbe.stuckKeys(logic)) {
-                    if (output != null) noSpace.add(ProfilerBridge.key(network, output));
-                }
-            }
-            var keys = ProviderWarningKeys.combine(ProfilerBridge.liveDelayedKeys(scope, tick),
-                    ProfilerBridge.liveBlockReasons(scope, grid, tick), noSpace);
+        if (grid != null) {
             var owner = ownerOf(scope, List.copyOf(keys));
             var dimension = ProfilerBridge.dimensionId(grid);
             if (owner != null && !dimension.isBlank()) {
@@ -116,6 +125,12 @@ public final class DelayedNotificationServer {
 
     public static void maybeNotify(Object scope, IGrid grid, long tick, MinecraftServer server,
             BiConsumer<ServerPlayer, ProviderHighlightCodec.Highlight> highlightSender) {
+        maybeNotify(scope, grid, tick, server, highlightSender, null);
+    }
+
+    private static void maybeNotify(Object scope, IGrid grid, long tick, MinecraftServer server,
+            BiConsumer<ServerPlayer, ProviderHighlightCodec.Highlight> highlightSender,
+            Map<ProfileKey, com.ctux.ae2craftingtime.core.StallDiagnostic> delayed) {
         if (scope == null || server == null || ProfilerBridge.isSuspended(scope)) {
             return;
         }
@@ -127,7 +142,8 @@ public final class DelayedNotificationServer {
         if (liveOwner != null && server.getPlayerList().getPlayer(liveOwner) == null) {
             return;
         }
-        var newlyDelayed = ProfilerBridge.pollNewlyDelayed(scope, tick);
+        var newlyDelayed = delayed == null ? ProfilerBridge.pollNewlyDelayed(scope, tick)
+                : ProfilerBridge.pollNewlyDelayed(scope, tick, delayed);
         var resolved = ProfilerBridge.pollResolvedDelayed(scope);
         if (newlyDelayed.isEmpty() && resolved.isEmpty()) {
             return;
