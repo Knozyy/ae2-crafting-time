@@ -64,6 +64,19 @@ class RowStatsRequestsTest {
     }
 
     @Test
+    void clearDropsTheContextSessionAndJobBaseline() {
+        var requests = new RowStatsRequests();
+        requests.prepare(SCREEN, CPU);
+        requests.observeJob(100, 20);
+        var old = send(requests, 0);
+
+        requests.clear();
+        assertFalse(requests.accept(old, CPU, CPU));
+        assertFalse(requests.observeJob(64, 0));
+        assertTrue(requests.prepare(SCREEN, CPU));
+    }
+
+    @Test
     void screenChangeStillResetsTheJobBaseline() {
         var requests = new RowStatsRequests();
         requests.prepare(SCREEN, CPU);
