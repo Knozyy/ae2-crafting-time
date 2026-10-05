@@ -121,6 +121,23 @@ final class StandardCraftFixture {
         unprofiledPlan = true;
         originShift = 1024;
     }
+
+    void enableSuspension(ServerPlayer player) {
+        var feature = com.ctux.ae2craftingtime.core.OptionFeature.CRAFTING_SUSPENSION;
+        if (com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.enabled(feature)) return;
+        var config = com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current().copy();
+        config.features().setEnabled(feature, true);
+        try {
+            com.ctux.ae2craftingtime.core.ServerConfigFile.save(player.server
+                    .getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
+                    .resolve("serverconfig/ae2craftingtime-server.toml"), config);
+        } catch (java.io.IOException error) {
+            throw new IllegalStateException("Could not enable suspension in the fixture world", error);
+        }
+        com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.current().features().setEnabled(feature, true);
+        for (var connected : player.server.getPlayerList().getPlayers())
+            com.ctux.ae2craftingtime.mc1201.ServerOptionsRuntime.sendTo(connected);
+    }
     void refreshCpuIdentities() { cpuListIdentities = null; }
     void refreshCpuIdentities(ServerPlayer player) {
         var previous = cpuListIdentities;

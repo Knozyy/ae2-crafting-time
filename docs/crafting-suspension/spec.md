@@ -49,10 +49,13 @@ server keeps normal AE2 menus and receives no unsupported custom packets.
 
 ## Configuration and diagnostics
 
-The world-owned server option `craftingSuspension` defaults to `true` and appears
+The world-owned server option `craftingSuspension` defaults to `false` and appears
 under **Server Options / General** on Forge 1.20.1. Existing operator permission,
 revision validation and Done/save behavior apply. File edits load at world/server
 startup. The option is independent of profiling's `enabled` setting.
+
+Enable it to show Suspend/Resume. Existing files with an explicit value retain
+that choice; missing values and Reset use the disabled default.
 
 Turning the option off hides its control and rejects suspension requests. Each
 loaded suspended CPU clears its flag on its next logic tick; unloaded CPUs do

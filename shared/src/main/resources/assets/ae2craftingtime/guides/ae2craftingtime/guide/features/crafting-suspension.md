@@ -23,7 +23,8 @@ The server remembers suspension across a world restart. A suspended job shows
 produce delay warnings. On resume, a new delay interval begins.
 
 The world-owned Server Options → General switch **Allow crafting suspension**
-(`craftingSuspension = true`) starts on. Turning it off resumes every loaded
+(`craftingSuspension = false`) starts off. Enable it to show Suspend/Resume.
+Existing files keep their explicit choice; Reset turns it off. Turning it off resumes every loaded
 suspended CPU on its next logic tick; unloaded CPUs resume when they load.
 This switch works even if profiling is off. Only standard AE2 CPUs support this
 Forge backport; addon replacement CPUs keep their normal behavior.

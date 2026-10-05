@@ -589,6 +589,7 @@ public final class DedicatedCpuScenario {
                 suspensionJob = loaded.jobId();
                 suspensionUndispatched = loaded.undispatched();
             } else {
+                gridFixture.enableSuspension(alpha);
                 if (!gridFixture.prepare(alpha, origin) || !gridFixture.submitSuspensionLarge(alpha)) return;
                 var active = gridFixture.suspensionState(alpha, 0);
                 if (active.undispatched() >= 64 || active.furnaceInput() == 0) return;

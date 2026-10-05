@@ -32,7 +32,7 @@ public final class FeatureOptions {
                 OptionFeature.TEXT_SHADOW, OptionFeature.BADGE_BACKGROUND,
                 OptionFeature.CHANCE_OUTPUT_STATUS));
         else disabled.addAll(Set.of(OptionFeature.RECURRENT_DETECTION,
-                OptionFeature.CHANCE_OUTPUT_DETECTION));
+                OptionFeature.CHANCE_OUTPUT_DETECTION, OptionFeature.CRAFTING_SUSPENSION));
     }
 
     public Set<OptionFeature> disabled() {

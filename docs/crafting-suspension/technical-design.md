@@ -113,7 +113,7 @@ the existing background preference. Row suppression is keyed to the current
 menu state, so a cached old stats snapshot cannot override suspension.
 
 Append `CRAFTING_SUSPENSION(SERVER, GENERAL, "craftingSuspension")` to
-`OptionFeature`; default true under `FeatureOptions`. Add ServerConfigFile's
+`OptionFeature`; default false under `FeatureOptions`. Add ServerConfigFile's
 required description. Hide this feature from `ServerOptionsScreen` unless
 `IntegrationPlatform.TARGET` is `1.20.1-forge`; key storage elsewhere is inert.
 Use existing world config, permission checks and save-before-apply transaction.

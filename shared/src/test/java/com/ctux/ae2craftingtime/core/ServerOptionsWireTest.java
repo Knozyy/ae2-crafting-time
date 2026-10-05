@@ -28,7 +28,7 @@ class ServerOptionsWireTest {
         assertFalse(decoded.config().features().enabled(OptionFeature.PROFILING));
         assertFalse(decoded.config().features().enabled(OptionFeature.NO_POWER_DETECTION));
         assertTrue(decoded.config().features().enabled(OptionFeature.NO_SPACE_DETECTION));
-        assertTrue(decoded.config().features().enabled(OptionFeature.CRAFTING_SUSPENSION));
+        assertFalse(decoded.config().features().enabled(OptionFeature.CRAFTING_SUSPENSION));
         assertEquals(100, decoded.config().maxSamples());
         assertEquals(1000, decoded.config().outlierMultiplier());
         assertEquals(3600, decoded.config().minimumNoProgressSeconds());
@@ -41,11 +41,11 @@ class ServerOptionsWireTest {
     void appendedSuspensionBitDoesNotMoveExistingOptions() {
         var config = new ServerConfig();
         var before = ServerOptionsWire.encode(new ServerOptionsWire.Snapshot(0, false, config));
-        config.features().setEnabled(OptionFeature.CRAFTING_SUSPENSION, false);
+        config.features().setEnabled(OptionFeature.CRAFTING_SUSPENSION, true);
         var after = ServerOptionsWire.encode(new ServerOptionsWire.Snapshot(0, false, config));
         long difference = ByteBuffer.wrap(before).getLong(6) ^ ByteBuffer.wrap(after).getLong(6);
         assertEquals(1L << 19, difference);
-        assertFalse(ServerOptionsWire.decode(after).config().features().enabled(OptionFeature.CRAFTING_SUSPENSION));
+        assertTrue(ServerOptionsWire.decode(after).config().features().enabled(OptionFeature.CRAFTING_SUSPENSION));
     }
 
     @Test

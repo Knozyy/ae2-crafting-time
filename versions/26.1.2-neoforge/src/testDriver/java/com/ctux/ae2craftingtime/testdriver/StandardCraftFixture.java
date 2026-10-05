@@ -771,6 +771,7 @@ final class StandardCraftFixture {
             int furnaceInput, int furnaceOutput) { }
 
     void configureSuspension() { throw new UnsupportedOperationException("Forge-only suspension fixture"); }
+    void enableSuspension(ServerPlayer player) { throw new UnsupportedOperationException("Forge-only suspension fixture"); }
     void beginSuspensionCase(ServerPlayer player, int amount) { throw new UnsupportedOperationException("Forge-only suspension fixture"); }
     boolean submitSuspensionLarge(ServerPlayer player) { throw new UnsupportedOperationException("Forge-only suspension fixture"); }
     boolean submitSuspensionSmall(ServerPlayer player) { throw new UnsupportedOperationException("Forge-only suspension fixture"); }

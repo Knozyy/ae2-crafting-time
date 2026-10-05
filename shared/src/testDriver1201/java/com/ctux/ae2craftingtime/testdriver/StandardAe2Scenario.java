@@ -1951,7 +1951,10 @@ final class StandardAe2Scenario {
             throw new IllegalStateException("Crafting suspension requires Forge 1.20.1");
         if (suspensionStage == 0) {
             fixture.configureSuspension();
-            if (server(minecraft, player -> fixture.prepare(player, marker) && fixture.submitSuspensionLarge(player))) {
+            if (server(minecraft, player -> {
+                fixture.enableSuspension(player);
+                return fixture.prepare(player, marker) && fixture.submitSuspensionLarge(player);
+            })) {
                 mark(checks, "standard-cpus", true);
                 phase = Stage.ACTIVE;
                 suspensionStage++;

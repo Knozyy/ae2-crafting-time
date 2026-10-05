@@ -28,7 +28,8 @@ class ServerConfigFileTest {
             if (feature.owner() == OptionFeature.Owner.SERVER) {
                 assertTrue(lines.contains(feature.key() + " = "
                         + (feature != OptionFeature.RECURRENT_DETECTION
-                        && feature != OptionFeature.CHANCE_OUTPUT_DETECTION)), feature.key());
+                        && feature != OptionFeature.CHANCE_OUTPUT_DETECTION
+                        && feature != OptionFeature.CRAFTING_SUSPENSION)), feature.key());
             }
         }
         assertTrue(lines.contains("maxSamples = 10"));
@@ -114,6 +115,23 @@ class ServerConfigFileTest {
         assertTrue(loaded.features().enabled(OptionFeature.RECURRENT_DETECTION));
         loaded.reset();
         assertFalse(loaded.features().enabled(OptionFeature.RECURRENT_DETECTION));
+    }
+
+    @Test
+    void suspensionIsOptInAndExplicitSavedValuesSurviveLoading() throws IOException {
+        var path = directory.resolve("server.toml");
+        var legacy = directory.resolve("missing.toml");
+        Files.write(path, List.of("enabled = true"));
+        assertFalse(ServerConfigFile.load(path, legacy).features().enabled(OptionFeature.CRAFTING_SUSPENSION));
+        for (boolean enabled : new boolean[] {false, true}) {
+            Files.write(path, List.of("craftingSuspension = " + enabled));
+            var loaded = ServerConfigFile.load(path, legacy);
+            assertEquals(enabled, loaded.features().enabled(OptionFeature.CRAFTING_SUSPENSION));
+            ServerConfigFile.save(path, loaded);
+            assertEquals(enabled, ServerConfigFile.load(path, legacy).features().enabled(OptionFeature.CRAFTING_SUSPENSION));
+            loaded.reset();
+            assertFalse(loaded.features().enabled(OptionFeature.CRAFTING_SUSPENSION));
+        }
     }
 
     @Test

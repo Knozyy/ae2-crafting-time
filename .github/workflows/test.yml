@@ -24,6 +24,8 @@ jobs:
       - run: pwsh ./scripts/test-validate-optional-integrations.ps1
       - run: bash ./gradlew test jacocoTestReport
       - uses: codecov/codecov-action@v7
+        # Temporarily disabled during the Codecov certificate outage; re-enable after recovery.
+        if: ${{ false }}
         with:
           use_oidc: true
           fail_ci_if_error: true

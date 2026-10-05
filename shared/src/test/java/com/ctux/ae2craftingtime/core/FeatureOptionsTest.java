@@ -14,7 +14,7 @@ class FeatureOptionsTest {
             OptionFeature.TTC_COLORS, OptionFeature.TEXT_SHADOW, OptionFeature.BADGE_BACKGROUND,
             OptionFeature.CHANCE_OUTPUT_STATUS);
     private static final Set<OptionFeature> SERVER_DEFAULT_OFF = Set.of(OptionFeature.RECURRENT_DETECTION,
-            OptionFeature.CHANCE_OUTPUT_DETECTION);
+            OptionFeature.CHANCE_OUTPUT_DETECTION, OptionFeature.CRAFTING_SUSPENSION);
 
     @Test
     void blockedReasonSwitchesAreIndependent() {
