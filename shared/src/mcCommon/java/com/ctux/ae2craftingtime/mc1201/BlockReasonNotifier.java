@@ -82,17 +82,14 @@ public final class BlockReasonNotifier {
         var newly = tracker.pollNewlyStuck(scope, keys);
         tracker.pollResolved(scope);
         if (newly.isEmpty()) {
-            ProfilerBridge.persistProviderState();
             return;
         }
         var owner = DelayedNotificationServer.ownerOf(scope, List.copyOf(newly));
         if (owner == null) {
-            ProfilerBridge.persistProviderState();
             return;
         }
         var player = server.getPlayerList().getPlayer(owner);
         if (player == null) {
-            ProfilerBridge.persistProviderState();
             return;
         }
         var dimension = ProfilerBridge.dimensionId(grid);
@@ -100,7 +97,6 @@ public final class BlockReasonNotifier {
         for (var key : newly) {
             notify(player, scope, grid, dimension, owner, key, wordKey, detail, highlightSender, chatEnabled);
         }
-        ProfilerBridge.persistProviderState();
     }
 
     private static void notify(ServerPlayer player, Object scope, IGrid grid, String dimension, UUID owner,

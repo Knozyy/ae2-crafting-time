@@ -8,6 +8,18 @@ import org.junit.jupiter.api.Test;
 
 class PlayerRequestRateLimitTest {
     @Test
+    void limitsPacketCountIndependentlyAndClearsLifecycleState() {
+        var limit = new PlayerRequestRateLimit();
+        var player = UUID.randomUUID();
+        for (int i = 0; i < 4; i++) assertTrue(limit.allow(player, 1, 0));
+        assertFalse(limit.allow(player, 1, 999));
+        assertTrue(limit.allow(player, 1, 1000));
+        limit.clear(player);
+        assertTrue(limit.allow(player, 512, 1000));
+        limit.clear();
+        assertTrue(limit.allow(player, 512, 1000));
+    }
+    @Test
     void isolatesPlayersAndKeepsWindowAnchoredDespiteRejectedRequests() {
         var limit = new PlayerRequestRateLimit();
         var first = UUID.randomUUID();
@@ -31,13 +43,13 @@ class PlayerRequestRateLimitTest {
     }
 
     @Test
-    void rejectsInvalidCountsAndChargesEmptyRequests() {
+    void rejectsInvalidAndEmptyRequests() {
         var limit = new PlayerRequestRateLimit();
         var player = UUID.randomUUID();
 
         assertFalse(limit.allow(player, -1, 0));
         assertFalse(limit.allow(player, PlayerRequestRateLimit.MAX_KEYS_PER_SECOND + 1, 0));
-        assertTrue(limit.allow(player, 0, 0));
+        assertFalse(limit.allow(player, 0, 0));
         assertTrue(limit.allow(player, PlayerRequestRateLimit.MAX_KEYS_PER_SECOND - 1, 0));
         assertFalse(limit.allow(player, 0, 0));
     }

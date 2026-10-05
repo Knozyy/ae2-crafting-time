@@ -11,7 +11,7 @@ import java.util.List;
 public final class Ae2CraftingTimeSavedData extends SavedData {
     public static final String FILE_ID = "ae2-crafting-time";
 
-    private List<PersistedOutputSamples> samples = List.of();
+    private final com.ctux.ae2craftingtime.core.SavedSampleHistory samples = new com.ctux.ae2craftingtime.core.SavedSampleHistory();
     private List<ProviderLocateRecords.StoredStart> providerStarts = List.of();
     private List<ProviderLocateRecords.LocateRecord> providerRecords = List.of();
     private List<PersistedOutputStatus> statuses = List.of();
@@ -19,7 +19,7 @@ public final class Ae2CraftingTimeSavedData extends SavedData {
     public static Ae2CraftingTimeSavedData load(CompoundTag tag) {
         var data = new Ae2CraftingTimeSavedData();
         if (!tag.contains("version", Tag.TAG_INT) || tag.getInt("version") == PersistedSamplesTag.VERSION) {
-            data.samples = PersistedSamplesTag.readOutputs(tag.getList("outputs", Tag.TAG_COMPOUND));
+            data.samples.replace(PersistedSamplesTag.readOutputs(tag.getList("outputs", Tag.TAG_COMPOUND)));
         }
         if (tag.contains("providers", Tag.TAG_LIST)) {
             data.providerStarts = PersistedProviderTag.readStarts(tag.getList("providers", Tag.TAG_COMPOUND));
@@ -34,8 +34,13 @@ public final class Ae2CraftingTimeSavedData extends SavedData {
     }
 
     public void replaceFrom(List<PersistedOutputSamples> samples) {
-        this.samples = List.copyOf(samples);
+        this.samples.replace(samples);
         setDirty();
+    }
+
+    public void updateSamples(List<PersistedOutputSamples> changes) {
+        samples.update(changes);
+        if (!changes.isEmpty()) setDirty();
     }
 
     public void replaceProviderStarts(List<ProviderLocateRecords.StoredStart> starts) {
@@ -54,7 +59,7 @@ public final class Ae2CraftingTimeSavedData extends SavedData {
     }
 
     public List<PersistedOutputSamples> samples() {
-        return samples;
+        return samples.snapshot();
     }
 
     public List<ProviderLocateRecords.StoredStart> providerStarts() {
@@ -73,7 +78,7 @@ public final class Ae2CraftingTimeSavedData extends SavedData {
     public CompoundTag save(CompoundTag tag) {
         ProfilerBridge.flushCompletedSamples();
         tag.putInt("version", PersistedSamplesTag.VERSION);
-        tag.put("outputs", PersistedSamplesTag.writeOutputs(samples));
+        tag.put("outputs", PersistedSamplesTag.writeOutputs(samples()));
         tag.put("providers", PersistedProviderTag.writeStarts(providerStarts));
         tag.put("locateRecords", PersistedProviderTag.writeRecords(providerRecords));
         tag.put("statuses", PersistedStatusTag.writeStatuses(statuses));

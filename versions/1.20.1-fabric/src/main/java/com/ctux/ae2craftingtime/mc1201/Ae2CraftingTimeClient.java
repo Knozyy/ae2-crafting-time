@@ -12,6 +12,7 @@ import net.minecraft.world.phys.AABB;
 public final class Ae2CraftingTimeClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client -> ClientStatsRequests.tick());
         ClientOptionsRuntime.initialize(net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir());
         IntegrationLog.required("key-registration", () -> KeyBindingHelper.registerKeyBinding(TtcDetailsKeyMapping.showDetails()));
         IntegrationLog.required("client-network-registration", StatsNetwork::registerClient);

@@ -223,7 +223,7 @@ public abstract class CraftConfirmScreenMixin extends AEBaseScreen<CraftConfirmM
         var key = ProfilerBridge.key(entry.getWhat());
         var stats = ClientStats.CACHE.get(key);
         if (stats.isEmpty()) {
-            ClientStatsRequests.request(key);
+            ClientStatsRequests.requestBackground(key);
             return OptionalLong.empty();
         }
 

@@ -10,6 +10,16 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class ProviderPlateStateTest {
+    @Test
+    void reconnectReplaysOnlyTheRequestedOwnersDeliveredPlates() {
+        var state = new ProviderPlateState<Integer, String>(4);
+        var other = new ProviderPlateState.Recipient(UUID.randomUUID(), KEY, "overworld");
+        var contribution = new ProviderPlateState.Contribution<Integer, String>(List.of(1), "iron");
+        state.update(new Object(), Map.of(RECIPIENT, contribution, other, contribution));
+        state.pending().forEach(state::delivered);
+        state.forgetOwner(OWNER);
+        assertEquals(List.of(new ProviderPlateState.Change<>(RECIPIENT, contribution)), state.pending());
+    }
     private static final UUID OWNER = UUID.randomUUID();
     private static final ProfileKey KEY = new ProfileKey("grid", "item");
     private static final ProviderPlateState.Recipient RECIPIENT =

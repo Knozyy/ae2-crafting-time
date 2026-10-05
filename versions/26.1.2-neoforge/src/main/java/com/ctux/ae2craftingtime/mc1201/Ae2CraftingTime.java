@@ -55,18 +55,23 @@ public final class Ae2CraftingTime {
 
     private void onServerTick(ServerTickEvent.Post event) {
         ProfilerBridge.flushCompletedSamples();
+        DelayedNotificationServer.flush(event.getServer());
+            ProviderStartTracker.endTick();
     }
 
     private void onServerStopping(ServerStoppingEvent event) {
         ProfilerBridge.flushCompletedSamples();
         CpuTtcRequestHandler.clear();
+        StatsRequestHandler.clear();
         WarningPreferenceServer.clearAll();
+        ProviderStartTracker.clearAll();
         ServerOptionsRuntime.clear();
     }
 
     private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
             CpuTtcRequestHandler.clear(player.getUUID());
+            StatsRequestHandler.clear(player.getUUID());
             WarningPreferenceServer.clear(player);
         }
     }

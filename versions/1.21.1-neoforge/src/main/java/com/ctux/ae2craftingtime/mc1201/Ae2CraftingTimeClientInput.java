@@ -10,6 +10,11 @@ import org.lwjgl.glfw.GLFW;
 @EventBusSubscriber(modid = Ae2CraftingTime.MOD_ID, value = Dist.CLIENT)
 public final class Ae2CraftingTimeClientInput {
     @SubscribeEvent
+    public static void onTick(net.neoforged.neoforge.client.event.ClientTickEvent.Post event) {
+        ClientStatsRequests.tick();
+    }
+
+    @SubscribeEvent
     public static void onLogin(ClientPlayerNetworkEvent.LoggingIn event) {
         ClientConnectionSession.open();
         ClientOptionsRuntime.syncWarningPreference();

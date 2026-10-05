@@ -17,11 +17,14 @@ import java.util.OptionalLong;
 public final class StatsRequestHandler {
     private static final PlayerRequestRateLimit RATE_LIMIT = new PlayerRequestRateLimit();
 
+    public static void clear(java.util.UUID playerId) { RATE_LIMIT.clear(playerId); }
+    public static void clear() { RATE_LIMIT.clear(); }
+
     private StatsRequestHandler() {
     }
 
     public static Response collect(ServerPlayer player, List<String> keys) {
-        if (!RATE_LIMIT.allow(player.getUUID(), keys.size(), System.currentTimeMillis())) {
+        if (!RATE_LIMIT.allow(player.getUUID(), keys.size(), java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()))) {
             return null;
         }
         var entries = new ArrayList<StatsEntry>();

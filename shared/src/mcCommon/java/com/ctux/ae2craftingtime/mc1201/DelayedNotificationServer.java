@@ -24,6 +24,11 @@ public final class DelayedNotificationServer {
             new ProviderPlateState<>(PacketLimits.MAX_HIGHLIGHT_POSITIONS);
 
     public static void tick(Object scope, IGrid grid, Object logic, long tick, MinecraftServer server) {
+        if (!ProfilerBridge.trackingEnabled(scope)) {
+            ProfilerBridge.discardDisabledScope(scope, tick, server);
+            clearScope(scope, server);
+            return;
+        }
         if (ProfilerBridge.isSuspended(scope)) {
             clearScope(scope, server);
             return;
@@ -65,7 +70,11 @@ public final class DelayedNotificationServer {
             }
         }
         PLATES.update(scope, current);
-        sync(server, sender);
+    }
+
+    /** Called once after all CPU contributions have been collected for this tick. */
+    public static void flush(MinecraftServer server) {
+        sync(server, defaultHighlightSender());
     }
 
     private static void sync(MinecraftServer server,
@@ -87,12 +96,10 @@ public final class DelayedNotificationServer {
 
     public static void clearScope(Object scope, MinecraftServer server) {
         PLATES.update(scope, Map.of());
-        if (server != null) sync(server, defaultHighlightSender());
     }
 
     public static void clearKey(Object scope, ProfileKey key, MinecraftServer server) {
         PLATES.clearKey(scope, key);
-        if (server != null) sync(server, defaultHighlightSender());
     }
 
     public static void resync(ServerPlayer player) {
@@ -129,12 +136,10 @@ public final class DelayedNotificationServer {
         keys.addAll(newlyDelayed.stream().map(event -> event.key()).toList());
         var owner = ownerOf(scope, keys);
         if (owner == null) {
-            ProfilerBridge.persistProviderState();
             return;
         }
         var player = server.getPlayerList().getPlayer(owner);
         if (player == null) {
-            ProfilerBridge.persistProviderState();
             return;
         }
         var dimension = ProfilerBridge.dimensionId(grid);
@@ -144,7 +149,6 @@ public final class DelayedNotificationServer {
                     event.diagnostic().idleTicks(), event.diagnostic().typicalDurationTicks(), highlightSender,
                     chatEnabled);
         }
-        ProfilerBridge.persistProviderState();
     }
 
     static UUID ownerOf(Object scope, List<ProfileKey> keys) {

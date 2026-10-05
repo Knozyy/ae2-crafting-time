@@ -65,7 +65,7 @@ public abstract class AdvancedCraftingCpuLogicMixin {
             IPatternDetails pattern, Operation<Iterable<ICraftingProvider>> original) {
         ae2craftingtime$finishDispatchEvaluation();
         ae2craftingtime$dispatchPattern = pattern;
-        ae2craftingtime$dispatchObserver = new ProviderDispatchObserver(
+        ae2craftingtime$dispatchObserver = !ProfilerBridge.trackingEnabled(cpu) ? null : new ProviderDispatchObserver(
                 ProfilerBridge.networkId(cpu.getGrid()), cpu.getGrid(),
                 cpu, pattern, cpu.getLevel().getGameTime());
         return original.call(service, pattern);
@@ -83,7 +83,7 @@ public abstract class AdvancedCraftingCpuLogicMixin {
     private double ae2craftingtime$observeDispatchPower(IEnergyService energy, double required,
             Actionable mode, PowerMultiplier multiplier) {
         var extracted = energy.extractAEPower(required, mode, multiplier);
-        ProfilerBridge.observeDispatchPower(ProfilerBridge.networkId(cpu.getGrid()), cpu,
+        if (ProfilerBridge.trackingEnabled(cpu)) ProfilerBridge.observeDispatchPower(ProfilerBridge.networkId(cpu.getGrid()), cpu,
                 ae2craftingtime$dispatchPattern, required, extracted, cpu.getLevel().getGameTime());
         return extracted;
     }
@@ -135,7 +135,7 @@ public abstract class AdvancedCraftingCpuLogicMixin {
     private void ae2craftingtime$profileExpectedOutput(ListCraftingInventory inventory, AEKey what, long amount,
             Actionable type) {
         inventory.insert(what, amount, type);
-        if (type == Actionable.MODULATE && amount > 0) {
+        if (type == Actionable.MODULATE && amount > 0 && ProfilerBridge.trackingEnabled(cpu)) {
             ProfilerBridge.start(ProfilerBridge.networkId(cpu.getGrid()), cpu, what, amount,
                     cpu.getLevel().getGameTime());
             IntegrationLog.cpu("advanced_ae", "cpu-dispatch");
@@ -145,7 +145,7 @@ public abstract class AdvancedCraftingCpuLogicMixin {
     @Inject(method = "insert", at = @At("HEAD"), remap = false)
     private void ae2craftingtime$profileCompletedOutput(AEKey what, long amount, Actionable type,
             CallbackInfoReturnable<Long> cir) {
-        if (type != Actionable.MODULATE || what == null || amount <= 0) {
+        if (type != Actionable.MODULATE || what == null || amount <= 0 || !ProfilerBridge.trackingEnabled(cpu)) {
             return;
         }
 
@@ -168,7 +168,7 @@ public abstract class AdvancedCraftingCpuLogicMixin {
     @Inject(method = "trySubmitJob", at = @At("RETURN"), remap = false, require = 0)
     private void ae2craftingtime$startJobAccuracy(IGrid grid, ICraftingPlan plan, IActionSource source,
             ICraftingRequester requester, CallbackInfoReturnable<ICraftingSubmitResult> cir) {
-        if (cir.getReturnValue().successful()) {
+        if (cir.getReturnValue().successful() && ProfilerBridge.trackingEnabled(cpu)) {
             ProfilerBridge.startJob(ProfilerBridge.networkId(grid), cpu, plan, cpu.getLevel().getGameTime(),
                     System.nanoTime(), ProfilerBridge.jobOwner(source));
             IntegrationLog.cpu("advanced_ae", "cpu-submit");

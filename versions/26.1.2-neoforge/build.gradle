@@ -134,6 +134,8 @@ tasks.register('distMod', Copy) {
 sourceSets { testDriver }
 sourceSets.testDriver.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
 sourceSets.testDriver.runtimeClasspath += sourceSets.testDriver.output + sourceSets.testDriver.compileClasspath
+sourceSets.test.compileClasspath += sourceSets.testDriver.output
+sourceSets.test.runtimeClasspath += sourceSets.testDriver.output
 ext.testDriverLoader = 'neoforge'
 tasks.register('testDriverUnmappedJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar)
 apply from: rootProject.file('scripts/test-driver.gradle')

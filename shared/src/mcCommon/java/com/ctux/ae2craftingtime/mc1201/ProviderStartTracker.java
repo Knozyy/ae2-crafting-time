@@ -2,7 +2,6 @@ package com.ctux.ae2craftingtime.mc1201;
 
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.IGrid;
-import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.stacks.AEKey;
 import com.ctux.ae2craftingtime.core.DisplayKeySelection;
@@ -31,16 +30,16 @@ public final class ProviderStartTracker {
     private static final Map<Object, Map<ProfileKey, Set<IPatternDetails>>> PATTERNS = new IdentityHashMap<>();
     private static final Map<Object, Map<ProfileKey, Set<BlockPos>>> CANDIDATES = new IdentityHashMap<>();
 
+    private static final com.ctux.ae2craftingtime.core.ProviderPositionIndex<IGrid, ICraftingProvider, BlockPos> POSITIONS =
+            new com.ctux.ae2craftingtime.core.ProviderPositionIndex<>();
+
+    public static void endTick() { POSITIONS.clear(); }
+
     public static void noteCandidate(IGrid grid, Object scope, String networkId, IPatternDetails pattern,
             ICraftingProvider provider) {
         if (grid == null || scope == null || pattern == null || provider == null) return;
-        List<IGridNode> nodes = new ArrayList<>();
-        try {
-            grid.getNodes().forEach(nodes::add);
-        } catch (Exception ignored) {
-            return;
-        }
-        var position = locate(nodes, provider);
+        if (!ProfilerBridge.trackingEnabled(scope)) return;
+        var position = locate(grid, provider);
         if (position.isEmpty()) return;
         var scoped = CANDIDATES.computeIfAbsent(scope, ignored -> new HashMap<>());
         for (var output : pattern.getOutputs()) {
@@ -72,6 +71,7 @@ public final class ProviderStartTracker {
     }
 
     public static void clearAll() {
+        POSITIONS.clear();
         PATTERNS.clear();
         CANDIDATES.clear();
     }
@@ -118,11 +118,8 @@ public final class ProviderStartTracker {
             return candidatePositions(scope, key);
         }
         CraftingService crafting;
-        List<IGridNode> nodes;
         try {
             crafting = (CraftingService) grid.getCraftingService();
-            nodes = new ArrayList<>();
-            grid.getNodes().forEach(nodes::add);
         } catch (Exception ignored) {
             return candidatePositions(scope, key);
         }
@@ -141,7 +138,7 @@ public final class ProviderStartTracker {
                 if (provider == null) {
                     continue;
                 }
-                locate(nodes, provider).ifPresent(pos -> {
+                locate(grid, provider).ifPresent(pos -> {
                     if (!positions.contains(pos)) {
                         positions.add(pos);
                     }
@@ -158,18 +155,25 @@ public final class ProviderStartTracker {
         return List.copyOf(CANDIDATES.getOrDefault(scope, Map.of()).getOrDefault(key, Set.of()));
     }
 
-    private static Optional<BlockPos> locate(List<IGridNode> nodes, ICraftingProvider provider) {
-        for (var node : nodes) {
+    private static Optional<BlockPos> locate(IGrid grid, ICraftingProvider provider) {
+        return Optional.ofNullable(POSITIONS.find(grid, provider, () -> {
+            var positions = new IdentityHashMap<ICraftingProvider, BlockPos>();
             try {
-                if (node instanceof InWorldGridNode inWorld
-                        && node.getService(ICraftingProvider.class) == provider) {
-                    return Optional.of(inWorld.getLocation());
+                for (var node : grid.getNodes()) {
+                    try {
+                        if (node instanceof InWorldGridNode inWorld) {
+                            var service = node.getService(ICraftingProvider.class);
+                            if (service != null) positions.putIfAbsent(service, inWorld.getLocation());
+                        }
+                    } catch (Exception ignored) {
+                        // One unreadable node must not hide the rest.
+                    }
                 }
             } catch (Exception ignored) {
-                // One unreadable node must not hide the rest.
+                // An unavailable grid yields the existing fallback positions.
             }
-        }
-        return Optional.empty();
+            return positions;
+        }));
     }
 
     private ProviderStartTracker() {

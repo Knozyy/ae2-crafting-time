@@ -33,6 +33,20 @@ singleplayer:
 - `StatsSnapshotS2C` updates `ClientStatsCache`
 - UI code renders only from the client display cache
 
+Row requests are queued until the client tick boundary. Each nonempty batch has
+at most 256 IDs, with at least 500 ms between batches and a one-second cooldown
+per sent key. Visible rows take the first 192 slots; waiting sort/total requests
+can use the remaining slots, then either queue can fill unused space. FIFO order
+keeps large lists rotating. The queue holds up to 4096 pending keys; render calls
+retry keys that could not yet enter it. More than 512 active keys refresh over
+multiple seconds rather than all at once. Screen, menu, CPU and connection
+changes discard queued context. The wire format is unchanged.
+
+The server rejects empty requests and separately limits each player to four
+packets and 512 IDs per second. Inventory enumeration and whole-job TTC run once
+per accepted batch. Logout/server stop clear rate-limit state. All Minecraft
+reads remain on the server thread; there is no long-lived inventory cache.
+
 ## The Data Flow
 
 ```text

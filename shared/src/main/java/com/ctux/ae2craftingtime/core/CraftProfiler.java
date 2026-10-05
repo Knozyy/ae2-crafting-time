@@ -36,10 +36,13 @@ public final class CraftProfiler {
     private final Set<ProfileKey> dirtySampleKeys = new HashSet<>();
     private final Map<ProfileKey, Long> retainedTailTicks = new HashMap<>();
     private final Map<ProfileKey, ArrayDeque<CraftSample>> samples = new HashMap<>();
+    private final Map<ProfileKey, ProfileStats> statistics = new HashMap<>();
+    private final Set<ProfileKey> changedHistories = new HashSet<>();
     private final Map<ProfileKey, PersistedOutputStatus> rememberedStatuses = new HashMap<>();
     private final MissingProviderTracker<Object> missingProviders = new MissingProviderTracker<>();
     private final DispatchPowerTracker dispatchPower = new DispatchPowerTracker();
     private final ProviderDispatchTracker providerDispatch = new ProviderDispatchTracker();
+    private boolean statusesDirty = true;
     private boolean enabled = true;
     private long newestEventTick = Long.MIN_VALUE;
 
@@ -59,6 +62,7 @@ public final class CraftProfiler {
     }
 
     public void setEnabled(boolean enabled) {
+        statusesDirty |= this.enabled != enabled;
         this.enabled = enabled;
         missingProviders.setEnabled(enabled);
         dispatchPower.setEnabled(enabled);
@@ -76,11 +80,14 @@ public final class CraftProfiler {
             jobEstimates.clear();
             delayedNotified.clear();
             delayedResolved.clear();
+            statusesDirty |= !rememberedStatuses.isEmpty();
             rememberedStatuses.clear();
         }
     }
 
     public void configure(ServerConfig config) {
+        statistics.clear();
+        changedHistories.addAll(samples.keySet());
         maxSamples = config.maxSamples();
         outlierMultiplier = config.outlierMultiplier();
         minimumDelayTicks = config.minimumNoProgressSeconds() * 20L;
@@ -119,6 +126,7 @@ public final class CraftProfiler {
             return;
         }
 
+        statusesDirty = true;
         missingProviders.clear(scope);
         suspended.remove(scope);
         ignoreRemembered.remove(scope);
@@ -158,8 +166,9 @@ public final class CraftProfiler {
         }
         advanceTick(key, tick);
         // Fresh live observations supersede any remembered status for the key.
-        rememberedStatuses.remove(key);
+        forgetStatus(key);
         var waitingState = waiting.get(scope);
+        if (waitingState != null) statusesDirty = true;
         if (waitingState != null && waitingState.keys.remove(key) && waitingState.keys.isEmpty()) {
             waiting.remove(scope);
         }
@@ -216,7 +225,7 @@ public final class CraftProfiler {
         }
 
         recordCompleted(key, consumedTotal, tick);
-        rememberedStatuses.remove(key);
+        forgetStatus(key);
         return true;
     }
 
@@ -285,6 +294,7 @@ public final class CraftProfiler {
             var waitingState = waiting.get(scope);
             if (waitingState != null) waiting.put(scope, new WaitingState(tick, waitingState.keys));
         }
+        statusesDirty = true;
         ignoreRemembered.add(scope);
         missingProviders.clear(scope);
         dispatchPower.clear(scope);
@@ -309,7 +319,7 @@ public final class CraftProfiler {
         var removed = pending.remove(scope);
         lastProgressTicks.remove(scope);
         capacities.remove(scope);
-        waiting.remove(scope);
+        statusesDirty |= waiting.remove(scope) != null;
         jobOwners.remove(scope);
         jobEstimates.remove(scope);
         delayedNotified.remove(scope);
@@ -318,7 +328,7 @@ public final class CraftProfiler {
         }
         for (var key : removed.keySet()) {
             if (!hasPending(key)) {
-                rememberedStatuses.remove(key);
+                forgetStatus(key);
                 var interval = completionIntervals.get(key);
                 if (interval.returnedAmount == 0) {
                     completionIntervals.remove(key);
@@ -428,7 +438,7 @@ public final class CraftProfiler {
         if (!resolved.isEmpty()) {
             delayedResolved.computeIfAbsent(scope, ignored -> new HashSet<>()).addAll(resolved);
             for (var key : resolved) {
-                rememberedStatuses.remove(key);
+                forgetStatus(key);
             }
         }
         notified.retainAll(currentlyDelayed.keySet());
@@ -436,8 +446,7 @@ public final class CraftProfiler {
         for (var entry : currentlyDelayed.entrySet()) {
             if (notified.add(entry.getKey())) {
                 newly.add(new DelayedEvent(entry.getKey(), entry.getValue()));
-                rememberedStatuses.put(entry.getKey(),
-                        new PersistedOutputStatus(entry.getKey(), StatusKind.DELAYED,
+                rememberStatus(new PersistedOutputStatus(entry.getKey(), StatusKind.DELAYED,
                                 entry.getValue().idleTicks(), entry.getValue().typicalDurationTicks(), tick));
             }
         }
@@ -499,14 +508,15 @@ public final class CraftProfiler {
         if (status == null) {
             return;
         }
-        rememberedStatuses.put(status.key(), status);
+        statusesDirty |= !status.equals(rememberedStatuses.put(status.key(), status));
     }
 
     public void rememberBlockReason(ProfileKey key, CraftingBlockReason reason, long tick) {
         var kind = reason == CraftingBlockReason.NO_PROVIDER
                 ? StatusKind.NO_PROVIDER
                 : reason == CraftingBlockReason.NO_POWER ? StatusKind.NO_POWER : null;
-        if (kind != null) {
+        var previous = rememberedStatuses.get(key);
+        if (kind != null && (previous == null || previous.kind() != kind)) {
             rememberStatus(new PersistedOutputStatus(key, kind, 0, 0, tick));
         }
     }
@@ -516,6 +526,16 @@ public final class CraftProfiler {
      * save. Live data always wins on display; this is only the fallback shown
      * after a reload until fresh observations arrive.
      */
+    public Optional<List<PersistedOutputStatus>> takeChangedStatuses() {
+        if (!statusesDirty) return Optional.empty();
+        statusesDirty = false;
+        return Optional.of(snapshotStatuses());
+    }
+
+    private void forgetStatus(ProfileKey key) {
+        statusesDirty |= rememberedStatuses.remove(key) != null;
+    }
+
     public List<PersistedOutputStatus> snapshotStatuses() {
         var snapshot = new HashMap<>(rememberedStatuses);
         for (var state : waiting.values()) {
@@ -528,6 +548,7 @@ public final class CraftProfiler {
     }
 
     public void restoreStatuses(List<PersistedOutputStatus> statuses) {
+        statusesDirty = true;
         rememberedStatuses.clear();
         if (statuses == null) {
             return;
@@ -610,7 +631,10 @@ public final class CraftProfiler {
         if (queue == null) {
             return Optional.empty();
         }
+        return Optional.of(statistics.computeIfAbsent(key, ignored -> calculateStats(queue)));
+    }
 
+    private ProfileStats calculateStats(ArrayDeque<CraftSample> queue) {
         long durationTotal = 0;
         long lastDuration = 0;
         var filtered = filteredSamples(queue, outlierMultiplier);
@@ -636,7 +660,7 @@ public final class CraftProfiler {
 
         var averageDuration = (double) durationTotal / queue.size();
         var amountPerTick = (double) weightedAmountTotal / weightedDurationTotal;
-        return Optional.of(new ProfileStats(
+        return new ProfileStats(
                 queue.size(),
                 averageDuration,
                 amountPerTick,
@@ -647,15 +671,17 @@ public final class CraftProfiler {
                 filtered.size(),
                 outlierMultiplier,
                 sampleDurationTicks,
-                sampleAmounts));
+                sampleAmounts);
     }
 
     public boolean clearSamples(ProfileKey key) {
+        statistics.remove(key);
+        changedHistories.add(key);
         var cleared = samples.remove(key) != null;
         completionIntervals.remove(key);
         dirtySampleKeys.remove(key);
         retainedTailTicks.remove(key);
-        rememberedStatuses.remove(key);
+        forgetStatus(key);
         pending.values().forEach(scoped -> scoped.remove(key));
         pending.values().removeIf(Map::isEmpty);
         lastProgressTicks.values().forEach(scoped -> scoped.remove(key));
@@ -688,6 +714,8 @@ public final class CraftProfiler {
     }
 
     private void addSample(ProfileKey key, CraftSample sample) {
+        statistics.remove(key);
+        changedHistories.add(key);
         var queue = samples.computeIfAbsent(key, ignored -> new ArrayDeque<>());
         queue.addLast(sample);
         trim(queue);
@@ -699,22 +727,35 @@ public final class CraftProfiler {
 
     public List<PersistedOutputSamples> snapshotSamples() {
         var snapshot = new ArrayList<PersistedOutputSamples>();
-        for (var entry : samples.entrySet()) {
-            var persisted = new ArrayList<PersistedCraftSample>();
-            ProfileUnit unit = null;
-            for (var sample : entry.getValue()) {
-                unit = sample.unit;
-                persisted.add(new PersistedCraftSample(sample.amount, sample.durationTicks));
-            }
-            snapshot.add(new PersistedOutputSamples(entry.getKey(), unit, persisted));
-        }
+        for (var key : samples.keySet()) snapshot.add(snapshotSamples(key));
         return snapshot;
     }
 
+    /** Empty sample lists are deletions. Independent of interval flush and stats-cache invalidation. */
+    public List<PersistedOutputSamples> takeChangedSamples() {
+        var updates = new ArrayList<PersistedOutputSamples>(changedHistories.size());
+        for (var key : changedHistories) updates.add(snapshotSamples(key));
+        changedHistories.clear();
+        return updates;
+    }
+
+    private PersistedOutputSamples snapshotSamples(ProfileKey key) {
+        var persisted = new ArrayList<PersistedCraftSample>();
+        var unit = ProfileUnit.ITEM;
+        for (var sample : samples.getOrDefault(key, new ArrayDeque<>())) {
+            unit = sample.unit;
+            persisted.add(new PersistedCraftSample(sample.amount, sample.durationTicks));
+        }
+        return new PersistedOutputSamples(key, unit, persisted);
+    }
+
     public void loadSamples(List<PersistedOutputSamples> persisted) {
+        statistics.clear();
+        changedHistories.addAll(samples.keySet());
         suspended.clear();
         ignoreRemembered.clear();
         samples.clear();
+        statusesDirty = true;
         rememberedStatuses.clear();
         missingProviders.clear();
         dispatchPower.clear();
@@ -792,6 +833,8 @@ public final class CraftProfiler {
     private void recordCompleted(ProfileKey key, long amount, long tick) {
         var tailTick = retainedTailTicks.get(key);
         if (tailTick != null) {
+            statistics.remove(key);
+            changedHistories.add(key);
             var queue = samples.get(key);
             var tail = queue.removeLast();
             try {

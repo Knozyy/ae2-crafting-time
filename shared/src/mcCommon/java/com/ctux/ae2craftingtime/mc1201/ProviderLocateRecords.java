@@ -63,6 +63,14 @@ public final class ProviderLocateRecords {
         }
     }
 
+    private static boolean dirty = true;
+
+    public static synchronized boolean takeDirty() {
+        var changed = dirty;
+        dirty = false;
+        return changed;
+    }
+
     private static final int MAX_RECORDS = 256;
     private static final int MAX_STARTS = 512;
     private record StartIdentity(ProfileKey key, UUID owner) {
@@ -72,11 +80,13 @@ public final class ProviderLocateRecords {
 
     public static synchronized LocateRecord create(UUID owner, String dimensionId, List<BlockPos> positions,
             String outputName, String outputId, long tick) {
+        dirty = true;
         return create(owner, dimensionId, positions, outputName, outputId, tick, "");
     }
 
     public static synchronized LocateRecord create(UUID owner, String dimensionId, List<BlockPos> positions,
             String outputName, String outputId, long tick, String networkId) {
+        dirty = true;
         var record = new LocateRecord(UUID.randomUUID(), owner, dimensionId, positions == null ? List.of()
                 : List.copyOf(positions), outputName, outputId == null ? "" : outputId, tick,
                 networkId == null ? "" : networkId);
@@ -103,16 +113,19 @@ public final class ProviderLocateRecords {
      */
     public static synchronized void noteStart(ProfileKey key, UUID owner, List<BlockPos> positions,
             String outputName) {
+        dirty = true;
         noteStart(key, owner, "", positions, outputName);
     }
 
     public static synchronized void noteStart(ProfileKey key, UUID owner, String dimensionId,
             List<BlockPos> positions, String outputName) {
+        dirty = true;
         noteStart(key, owner, dimensionId, positions, outputName, null);
     }
 
     public static synchronized void noteStart(ProfileKey key, UUID owner, String dimensionId,
             List<BlockPos> positions, String outputName, AEKey displayKey) {
+        dirty = true;
         if (key == null || owner == null) {
             return;
         }
@@ -160,6 +173,7 @@ public final class ProviderLocateRecords {
      */
     public static synchronized void replaceStart(ProfileKey key, UUID owner, List<BlockPos> positions,
             String outputName) {
+        dirty = true;
         if (key == null || owner == null) {
             return;
         }
@@ -177,11 +191,13 @@ public final class ProviderLocateRecords {
 
     public static synchronized void replaceStart(ProfileKey key, UUID owner, String dimensionId,
             List<BlockPos> positions, String outputName) {
+        dirty = true;
         replaceStart(key, owner, dimensionId, positions, outputName, null);
     }
 
     public static synchronized void replaceStart(ProfileKey key, UUID owner, String dimensionId,
             List<BlockPos> positions, String outputName, AEKey displayKey) {
+        dirty = true;
         if (key == null || owner == null) {
             return;
         }
@@ -202,15 +218,16 @@ public final class ProviderLocateRecords {
      * the cap only bounds persistence size.
      */
     public static synchronized List<StoredStart> snapshotStarts() {
+        var clicks = new java.util.HashSet<StartIdentity>();
+        for (var record : RECORDS.values()) {
+            if (record != null && record.owner() != null && !record.outputId().isBlank())
+                clicks.add(new StartIdentity(new ProfileKey(record.networkId(), record.outputId()), record.owner()));
+        }
         var snapshot = new ArrayList<StoredStart>();
         for (var entry : STARTS.entrySet()) {
             var info = entry.getValue();
-            var hasOwnedClick = info.owner() != null && RECORDS.values().stream().anyMatch(record -> record != null
-                    && info.owner().equals(record.owner())
-                    && entry.getKey().key().networkId().equals(record.networkId())
-                    && entry.getKey().key().outputId().equals(record.outputId()));
             if (info.owner() != null && info.positions() != null
-                    && (!info.positions().isEmpty() || hasOwnedClick)) {
+                    && (!info.positions().isEmpty() || clicks.contains(entry.getKey()))) {
                 snapshot.add(new StoredStart(entry.getKey().key(), info.owner(), info.dimensionId(), info.positions(),
                         info.outputName(), info.displayKey()));
             }
@@ -227,6 +244,7 @@ public final class ProviderLocateRecords {
      * login resync when server-side validation finds all positions broken.
      */
     public static synchronized void removeStarts(java.util.Collection<com.ctux.ae2craftingtime.core.ProfileKey> keys) {
+        dirty = true;
         if (keys == null || keys.isEmpty()) {
             return;
         }
@@ -238,6 +256,7 @@ public final class ProviderLocateRecords {
     }
 
     public static synchronized void removeStarts(java.util.Collection<ProfileKey> keys, UUID owner) {
+        dirty = true;
         if (keys == null || owner == null) return;
         for (var key : keys) STARTS.remove(new StartIdentity(key, owner));
     }
@@ -298,6 +317,7 @@ public final class ProviderLocateRecords {
     }
 
     public static synchronized void restoreRecords(List<LocateRecord> stored) {
+        dirty = true;
         RECORDS.clear();
         if (stored == null) {
             return;
@@ -323,6 +343,7 @@ public final class ProviderLocateRecords {
      * {@link #removeRecordsForKeys}.
      */
     public static synchronized void removeRecord(UUID id) {
+        dirty = true;
         if (id != null) {
             RECORDS.remove(id);
         }
@@ -336,6 +357,7 @@ public final class ProviderLocateRecords {
      */
     public static synchronized void removeRecordsForKeys(
             java.util.Collection<com.ctux.ae2craftingtime.core.ProfileKey> keys, UUID owner) {
+        dirty = true;
         if (keys == null || keys.isEmpty() || owner == null) {
             return;
         }
@@ -355,6 +377,7 @@ public final class ProviderLocateRecords {
     }
 
     public static synchronized void removeRecordsForKeys(java.util.Collection<ProfileKey> keys) {
+        dirty = true;
         if (keys == null || keys.isEmpty()) return;
         RECORDS.entrySet().removeIf(entry -> entry.getValue() != null
                 && matchesAny(entry.getValue(), keys));
@@ -366,6 +389,7 @@ public final class ProviderLocateRecords {
     }
 
     public static synchronized void restoreStarts(List<StoredStart> stored) {
+        dirty = true;
         STARTS.clear();
         if (stored == null) {
             return;
@@ -382,6 +406,7 @@ public final class ProviderLocateRecords {
     }
 
     public static synchronized void clearAll() {
+        dirty = true;
         RECORDS.clear();
         STARTS.clear();
     }

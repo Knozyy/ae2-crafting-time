@@ -227,10 +227,27 @@ rate and confidence. Preserve saved statuses/provider records unchanged.
 
 ### Confidence, remaining TTC, and delay
 
-After each finalized/amended observation, `stats` recalculates rate, used count,
+After each finalized/amended observation, the next `stats` read recalculates rate, used count,
 and `reliableEstimate`. Three clean observations suffice; five or more activate
 existing outlier filtering. `?` may disappear, persist, or return. Do not promote
 a preview or duplicate a batch to reach three. `maxSamples < 3` stays unreliable.
+
+The profiler reuses immutable statistics until history changes. Append/eviction,
+same-tick amendment (including overflow removal), reset, load and configuration
+updates invalidate the cached result. Unknown outputs are never cached. Stall
+idle time and capacity expiry remain live; they are not part of this cache.
+
+Provider positions use one lazy identity index per grid and server tick, shared
+by dispatch-candidate capture and warning lookup. The server end-tick hook and
+world cleanup discard the index, so it cannot retain old grids across ticks or
+worlds. Disabled profiling/scopes bypass observer creation and diagnostic tick
+work; crafting suspension keeps its independent hooks.
+
+CPU warning reconciliation updates only that CPU's plate contribution. The
+server end-tick hook merges all contributions and sends their difference once,
+before clearing provider-position indexes. Explicit clears join that same flush;
+login replay remains immediate. Shared recipients stay highlighted until their
+last CPU contribution clears, and offline recipients remain pending.
 
 Remove cumulative `inProgressStats` from throughput lookup when the interval
 collector is installed: the first real interval is retained at end tick and
