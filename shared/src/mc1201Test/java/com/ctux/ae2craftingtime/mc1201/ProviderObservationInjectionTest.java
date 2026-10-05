@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.injection.struct.MemberInfo;
@@ -19,6 +20,26 @@ import org.spongepowered.asm.mixin.injection.struct.MemberInfo;
 class ProviderObservationInjectionTest {
     private static final String ITERATOR = "Ljava/lang/Iterable;iterator()Ljava/util/Iterator;";
     private static final String MIXINS = "com/ctux/ae2craftingtime/mc1201/mixin/";
+
+    @Test
+    void dispatchMetadataIsPreparedOnceAndReused() throws IOException {
+        var observer = readClass("com/ctux/ae2craftingtime/mc1201/ProviderDispatchObserver");
+        assertEquals(1, calls(method(observer, "<init>")).stream()
+                .filter(call -> call.name.equals("patternOutputs")).count());
+        for (var name : List.of("power", "observePresence", "complete")) {
+            var handler = method(observer, name);
+            assertFalse(calls(handler).stream().anyMatch(call ->
+                    call.name.equals("patternOutputs") || call.name.equals("getOutputs")));
+            assertEquals(1, java.util.Arrays.stream(handler.instructions.toArray())
+                    .filter(FieldInsnNode.class::isInstance).map(FieldInsnNode.class::cast)
+                    .filter(field -> field.name.equals("outputs")).count());
+            assertEquals(1, calls(handler).stream().filter(call ->
+                    call.owner.endsWith("ProfilerBridge") && call.desc.contains("Ljava/util/Map;")).count());
+        }
+        var candidates = method(readClass("com/ctux/ae2craftingtime/mc1201/ProviderStartTracker"), "noteCandidate");
+        assertTrue(candidates.desc.contains("Ljava/util/Set;"));
+        assertFalse(calls(candidates).stream().anyMatch(call -> call.name.equals("getOutputs")));
+    }
 
     @Test
     void nativeHookObservesIterationAfterTheAddonReplaceableLookup() throws IOException {
