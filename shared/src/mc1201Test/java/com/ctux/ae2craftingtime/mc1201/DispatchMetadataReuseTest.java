@@ -19,15 +19,19 @@ class DispatchMetadataReuseTest {
         } catch (NoSuchFieldException fabricConfig) {
             return; // Fabric's config values already contain their defaults.
         }
-        var config = Class.forName("com.electronwill.nightconfig.core.CommentedConfig")
-                .getMethod("inMemory").invoke(null);
+        var configType = Class.forName("com.electronwill.nightconfig.core.CommentedConfig");
+        var config = configType.getMethod("inMemory").invoke(null);
+        spec.getClass().getMethod("correct", configType).invoke(spec, config);
         var accept = Arrays.stream(spec.getClass().getMethods()).filter(method ->
                 method.getName().equals("acceptConfig") && method.getParameterCount() == 1
                         && !method.isBridge()).findFirst().orElseThrow();
         var parameter = accept.getParameterTypes()[0];
-        var loaded = parameter.isInstance(config) ? config : Proxy.newProxyInstance(
-                parameter.getClassLoader(), new Class<?>[] { parameter }, (proxy, method, args) ->
-                        method.getName().equals("config") ? config : null);
+        Object loaded = config;
+        if (!parameter.isInstance(config)) {
+            var constructor = parameter.getPermittedSubclasses()[0].getDeclaredConstructors()[0];
+            constructor.setAccessible(true);
+            loaded = constructor.newInstance(config, null, null);
+        }
         accept.invoke(spec, loaded);
     }
 
@@ -36,7 +40,10 @@ class DispatchMetadataReuseTest {
         var reads = new AtomicInteger();
         var pattern = (IPatternDetails) Proxy.newProxyInstance(getClass().getClassLoader(),
                 new Class<?>[] { IPatternDetails.class }, (proxy, method, args) -> switch (method.getName()) {
-                    case "getOutputs" -> { reads.incrementAndGet(); yield new GenericStack[0]; }
+                    case "getOutputs" -> {
+                        reads.incrementAndGet();
+                        yield method.getReturnType().isArray() ? new GenericStack[0] : List.of();
+                    }
                     case "hashCode" -> System.identityHashCode(proxy);
                     case "equals" -> proxy == args[0];
                     default -> throw new UnsupportedOperationException(method.getName());
