@@ -11,7 +11,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.Component;
 
 /** Invalid observation DTOs keep the original native recovery pending. */
 final class NativeSuspensionObservationBoundary {
@@ -22,8 +25,13 @@ final class NativeSuspensionObservationBoundary {
 
     NativeSuspensionObservationBoundary(int stage) {
         this.stage = stage;
-        cases = stage == 3 ? List.of("observation-absent", "title-absent", "title-bounds-absent", "title-outside")
-                : List.of("observation-absent", "screen-mismatch", "stale-suspended-title");
+        cases = switch (stage) {
+            case 3 -> List.of("observation-absent", "title-absent", "title-bounds-absent", "title-outside");
+            case 14 -> List.of("observation-absent", "screen-mismatch", "stale-suspended-title");
+            case 19 -> List.of("control-absent", "control-hidden", "control-inactive");
+            case 23 -> List.of("control-absent", "control-inactive");
+            default -> List.of("control-absent");
+        };
     }
     private final ArrayList<UiSnapshot> originals = new ArrayList<>();
     private final ArrayList<UiSnapshot> inputs = new ArrayList<>();
@@ -46,6 +54,15 @@ final class NativeSuspensionObservationBoundary {
         var config = minecraft.gameDirectory.toPath().resolve("config/ae2craftingtime-client.toml");
         var saved = Files.exists(config) ? Files.readAllBytes(config) : null;
         var name = cases.get(index);
+        boolean action = stage != 3 && stage != 14;
+        var label = stage == 9 ? "Resume" : stage == 23 ? "Cancel" : "Suspend";
+        var button = action ? minecraft.screen.children().stream().filter(Button.class::isInstance)
+                .map(Button.class::cast).filter(b -> b.getMessage().getString().equals(label))
+                .findFirst().orElse(null) : null;
+        if (action && (button == null || !button.visible || !button.active)) return false;
+        var message = button == null ? null : button.getMessage();
+        boolean visible = button != null && button.visible;
+        boolean active = button != null && button.active;
         var text = source.text();
         if (stage == 3) {
             var title = text.stream().filter(line -> line.key().equals("gui.ae2craftingtime.suspended"))
@@ -71,13 +88,19 @@ final class NativeSuspensionObservationBoundary {
                     original.arguments(), original.bounds(), original.color(), original.bold()));
             text = List.copyOf(changed);
         }
-        UiSnapshot input = name.equals("observation-absent") ? null
+        UiSnapshot input = action ? source : name.equals("observation-absent") ? null
                 : new UiSnapshot(name.equals("screen-mismatch") ? "missing-native-observation" : source.screen(),
                         source.menu(), source.gui(), source.screenWidth(), source.screenHeight(), source.guiScale(),
                         source.frame(), source.scroll(), source.rows(), text, source.badges(), source.widgets(),
                         source.itemCells(), source.tooltip(), source.cpuCards(), source.rawCpuSerials());
         try {
+            if (button != null) {
+                if (name.equals("control-absent")) button.setMessage(Component.literal("native test: unavailable control"));
+                else if (name.equals("control-hidden")) button.visible = false;
+                else button.active = false;
+            }
             set(UiObservationStore.class, "latest", null, input);
+            var pending = field(type, "operation", standard);
             runtime.tick();
             assertEquals(stage, field(type, "suspensionStage", standard));
             assertSame(nativeMenu, minecraft.player.containerMenu);
@@ -87,14 +110,22 @@ final class NativeSuspensionObservationBoundary {
             assertInstanceOf(appeng.client.gui.me.crafting.CraftingCPUScreen.class, minecraft.screen);
             originals.add(source);
             inputs.add(input);
-            // Null after the tick means the original real server future was consumed.
-            if (field(type, "operation", standard) == null) consumed.add(source.frame());
+            // False early readiness does not prove that the native UI guard ran.
+            if (pending instanceof CompletableFuture<?> future && future.isDone()
+                    && Boolean.TRUE.equals(future.join()) && field(type, "operation", standard) == null)
+                consumed.add(source.frame());
         } finally {
             set(UiObservationStore.class, "latest", null, source);
+            if (button != null) {
+                button.setMessage(message); button.visible = visible; button.active = active;
+                assertSame(message, button.getMessage());
+                assertEquals(visible, button.visible); assertEquals(active, button.active);
+            }
         }
         if (consumed.size() < 8) return false;
-        Files.writeString(output.resolve((stage == 3 ? "paused-" : "disabled-") + name + "-inputs.json"), new com.google.gson.Gson().toJson(Map.of(
-                "scope", "actual native CPU frames and separate invalid observation DTOs; DTOs are not rendered frames",
+        Files.writeString(output.resolve((action ? "action-stage-" + stage + "-" : stage == 3 ? "paused-" : "disabled-") + name + "-inputs.json"), new com.google.gson.Gson().toJson(Map.of(
+                "scope", action ? "actual native control inputs restored before draw; original successful server predicates"
+                        : "actual native CPU frames and separate invalid observation DTOs; DTOs are not rendered frames",
                 "originals", originals, "inputs", inputs, "consumedServerPredicateFrames", consumed,
                 "stage", stage, "nativeMenuPreserved", true)));
         originals.clear(); inputs.clear(); consumed.clear();

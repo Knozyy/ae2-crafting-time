@@ -1568,3 +1568,12 @@ for each absent observation, absent title, missing title bounds and outside
 bounds input. Restore the source observation before every draw; invalid DTOs
 are not rendered screenshots. Require ordinary suspension recovery and all
 nine supplemental groups before retaining the new execution data.
+
+Count a consumed predicate frame only when the original server future returns
+true. Early false readiness results do not establish that a UI guard ran.
+Extend the same helper to actual Suspend, Resume and Cancel waits at stages
+8, 9, 10, 19, 22 and 23. Temporarily remove the expected native button label;
+also hide or deactivate Suspend at stage 19 and deactivate Cancel at stage 23.
+Restore the exact original message and flags before drawing. Require eight
+successful predicate frames per fault without advancing the original stage,
+then capture restored controls and require all fifteen supplemental groups.

@@ -41,6 +41,7 @@ final class NativeSuspensionBoundaryRunner {
     private InputsHold hold;
     private NativeSuspensionObservationBoundary observations;
     private NativeSuspensionObservationBoundary pausedObservations;
+    private NativeSuspensionObservationBoundary actions;
     private Screen boundaryScreen;
     private long boundaryRenders;
     private boolean controlCapturePending;
@@ -106,6 +107,16 @@ final class NativeSuspensionBoundaryRunner {
                     capture(minecraft, "paused-observation-guards", Map.of("cases", 4,
                             "scope", "actual native paused CPU; invalid title DTOs are separate and restored before draw"));
                     passed.add("paused-observation-guards");
+                }
+                return;
+            }
+            if (List.of(8, 9, 10, 19, 22, 23).contains(stage) && !passed.contains("native-action-" + stage)) {
+                if (!(minecraft.screen instanceof appeng.client.gui.me.crafting.CraftingCPUScreen)) return;
+                if (actions == null) actions = new NativeSuspensionObservationBoundary(stage);
+                if (actions.tick(minecraft, runtime, standard, output)) {
+                    controlCaptureName = "native-action-" + stage;
+                    controlCapturePending = true;
+                    actions = null;
                 }
                 return;
             }
@@ -175,7 +186,7 @@ final class NativeSuspensionBoundaryRunner {
             if (Files.exists(resultPath)) {
                 var result = new com.google.gson.Gson().fromJson(Files.readString(resultPath), com.google.gson.JsonObject.class);
                 assertEquals("PASS", result.get("result").getAsString(), "Ordinary suspension recovery failed");
-                assertEquals(9, passed.size());
+                assertEquals(15, passed.size());
                 Files.writeString(output.resolve("result.json"), new com.google.gson.Gson().toJson(Map.of(
                         "result", "PASS", "checks", passed, "normalResult", result, "runtimeClassSha256", runtimeHash())));
                 finished = true;

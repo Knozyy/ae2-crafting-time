@@ -1470,3 +1470,11 @@ require eight per input. The genuine paused-no-dispatch check may be recorded
 by the real predicate, but the stage, native menu, screen and saved config must
 remain unchanged. Restore the source observation in finally before rendering;
 capture the original paused CPU after all four cases and resume ordinary flow.
+
+Read the original pending future before ticking and count its frame only if
+that future completes with true and the runtime consumes it. Preserve the future;
+never complete it or replace its server result. Reuse this helper at action
+stages 8, 9, 10, 19, 22 and 23 with the genuine native button. Missing labels,
+visibility and active flags are temporary control inputs restored in finally.
+Keep the original observation, menu, screen and saved config. The runner captures
+the restored control on the following render callback before ordinary progression.
