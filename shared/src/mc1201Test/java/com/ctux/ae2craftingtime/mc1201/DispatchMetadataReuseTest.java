@@ -4,11 +4,33 @@ import static org.junit.jupiter.api.Assertions.*;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.stacks.GenericStack;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class DispatchMetadataReuseTest {
+    @BeforeAll
+    static void loadDefaultLoaderConfig() throws ReflectiveOperationException {
+        Object spec;
+        try {
+            spec = Ae2CraftingTimeConfig.class.getField("SPEC").get(null);
+        } catch (NoSuchFieldException fabricConfig) {
+            return; // Fabric's config values already contain their defaults.
+        }
+        var config = Class.forName("com.electronwill.nightconfig.core.CommentedConfig")
+                .getMethod("inMemory").invoke(null);
+        var accept = Arrays.stream(spec.getClass().getMethods()).filter(method ->
+                method.getName().equals("acceptConfig") && method.getParameterCount() == 1
+                        && !method.isBridge()).findFirst().orElseThrow();
+        var parameter = accept.getParameterTypes()[0];
+        var loaded = parameter.isInstance(config) ? config : Proxy.newProxyInstance(
+                parameter.getClassLoader(), new Class<?>[] { parameter }, (proxy, method, args) ->
+                        method.getName().equals("config") ? config : null);
+        accept.invoke(spec, loaded);
+    }
+
     @Test
     void patternOutputsAreReadOnceAcrossPowerPresenceAndFinish() {
         var reads = new AtomicInteger();
