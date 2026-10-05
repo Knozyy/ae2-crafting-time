@@ -103,6 +103,11 @@ public abstract class CraftingCPUScreenMixin<T extends CraftingCPUMenu> extends 
         }
     }
 
+    @Inject(method = "postUpdate", at = @At("HEAD"), remap = false)
+    private void ae2craftingtime$invalidateOnJobChange(CraftingStatus update, CallbackInfo ci) {
+        ClientStatsRequests.observeJob(update.getStartItemCount(), update.getElapsedTime());
+    }
+
     @Group(name = "sortStatusByTtc", min = 1, max = 1)
     @ModifyArg(method = "postUpdate", at = @At(value = "INVOKE", target = "Lappeng/menu/me/crafting/CraftingStatus;<init>(ZJJJLjava/util/List;)V"), index = 4, remap = false, require = 0)
     private List<CraftingStatusEntry> ae2craftingtime$sortStatusByTtcLegacy(List<CraftingStatusEntry> entries) {
