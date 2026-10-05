@@ -14,6 +14,24 @@ The logical server owns all mutable profiling state. AE2-facing mixins report
 events through the version-specific `ProfilerBridge`; clients receive only
 bounded aggregate snapshots.
 
+## Row-stat context isolation (#615)
+
+The shared `StatsRequestQueue` keeps the batching introduced in #653. Context
+resets preserve its 500 ms deadline, and newly visible rows can displace one
+background request when its 4,096 slots are full.
+
+`RowStatsSession` assigns each batch a session, sequence and requested
+container/CPU. The server validates that context before collection and echoes
+the identity. The client rejects old sessions, duplicates, out-of-order replies,
+unsent sequences and mismatched contexts before updating display state.
+Returning to the same CPU or reusing a menu id starts a new session. Only ME
+Requester menus collect inventory amounts; ordinary craft screens skip that
+scan. All four transports have a new protocol/channel version.
+
+See the [wire and scheduling contract](../server-client-stats.md#statsrequestc2s).
+Regression sources are added. Compilation, executed tests, coverage and runtime
+performance for this follow-up remain unverified.
+
 ## Production Windows
 
 `CraftingCpuLogicMixin` observes two AE2 execution points:

@@ -1,12 +1,15 @@
 package com.ctux.ae2craftingtime.mc1201;
 
 import com.ctux.ae2craftingtime.core.ProfileKey;
+import com.ctux.ae2craftingtime.core.RowStatsRequestId;
+import com.ctux.ae2craftingtime.core.RowStatsSession;
 import com.ctux.ae2craftingtime.core.StatsRequestQueue;
 import com.ctux.ae2craftingtime.mc1201.net.StatsRequestC2S;
 import net.minecraft.client.Minecraft;
 
 public final class ClientStatsRequests {
     private static final StatsRequestQueue QUEUE = new StatsRequestQueue();
+    private static final RowStatsSession SESSION = new RowStatsSession();
 
     public static void request(ProfileKey key) { request(key, true); }
     public static void requestBackground(ProfileKey key) { request(key, false); }
@@ -19,7 +22,14 @@ public final class ClientStatsRequests {
         if (!prepare()) return;
         var keys = QUEUE.drain(now());
         if (!keys.isEmpty()) StatsNetwork.sendToServer(new StatsRequestC2S(
-                keys.stream().map(ProfileKey::outputId).distinct().toList()));
+                keys.stream().map(ProfileKey::outputId).distinct().toList(),
+                SESSION.next(StatsRequestContext.cpuContext(Minecraft.getInstance().player.containerMenu))));
+    }
+
+    public static boolean acceptSnapshot(RowStatsRequestId requestId, long responseCpuContext) {
+        if (!prepare()) return false;
+        return SESSION.accept(requestId,
+                StatsRequestContext.cpuContext(Minecraft.getInstance().player.containerMenu), responseCpuContext);
     }
 
     private static boolean prepare() {
@@ -28,11 +38,19 @@ public final class ClientStatsRequests {
             clear();
             return false;
         }
-        QUEUE.context(minecraft.screen, StatsRequestContext.cpuContext(minecraft.player.containerMenu));
+        if (QUEUE.context(new Context(minecraft.getConnection(), minecraft.screen, minecraft.player.containerMenu),
+                StatsRequestContext.cpuContext(minecraft.player.containerMenu))) {
+            SESSION.clear();
+            ClientStats.clear();
+        }
         return true;
     }
 
     private static long now() { return java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()); }
-    public static void clear() { QUEUE.clear(); }
+    public static void clear() {
+        QUEUE.clear();
+        SESSION.clear();
+    }
+    private record Context(Object connection, Object screen, Object menu) { }
     private ClientStatsRequests() { }
 }

@@ -5,6 +5,7 @@ import com.ctux.ae2craftingtime.core.PacketLimits;
 import com.ctux.ae2craftingtime.core.ProfileKey;
 import com.ctux.ae2craftingtime.core.ProfileStats;
 import com.ctux.ae2craftingtime.core.ProfileUnit;
+import com.ctux.ae2craftingtime.core.RowStatsRequestId;
 import com.ctux.ae2craftingtime.core.StatsEntry;
 import com.ctux.ae2craftingtime.core.TtcAccuracyStats;
 import net.minecraft.network.FriendlyByteBuf;
@@ -32,6 +33,16 @@ public final class StatsPacketCodec {
             keys.add(buffer.readUtf(PacketLimits.MAX_OUTPUT_ID_LENGTH));
         }
         return keys;
+    }
+
+    public static void writeRequestId(FriendlyByteBuf buffer, RowStatsRequestId requestId) {
+        buffer.writeLong(requestId.session());
+        buffer.writeLong(requestId.sequence());
+        buffer.writeLong(requestId.cpuContext());
+    }
+
+    public static RowStatsRequestId readRequestId(FriendlyByteBuf buffer) {
+        return new RowStatsRequestId(buffer.readLong(), buffer.readLong(), buffer.readLong());
     }
 
     public static void writeSnapshot(FriendlyByteBuf buffer, Snapshot snapshot) {
@@ -80,6 +91,7 @@ public final class StatsPacketCodec {
         buffer.writeBoolean(snapshot.totalTtcSeconds().isPresent());
         snapshot.totalTtcSeconds().ifPresent(buffer::writeVarLong);
         buffer.writeLong(snapshot.cpuContext());
+        writeRequestId(buffer, snapshot.requestId());
     }
 
     public static Snapshot readSnapshot(FriendlyByteBuf buffer) {
@@ -152,12 +164,12 @@ public final class StatsPacketCodec {
             throw new IllegalArgumentException("total TTC must not be negative");
         }
         return new Snapshot(requestedKeys, entries, networkAmounts, waitingTicks, blockReasons, chanceOutputs, totalTtcSeconds,
-                buffer.readLong());
+                buffer.readLong(), readRequestId(buffer));
     }
 
     public record Snapshot(List<String> requestedKeys, List<StatsEntry> entries, Map<String, Long> networkAmounts,
             Map<String, Long> waitingTicks, Map<String, CraftingBlockReason> blockReasons,
             Map<String, Integer> chanceOutputs,
-            OptionalLong totalTtcSeconds, long cpuContext) {
+            OptionalLong totalTtcSeconds, long cpuContext, RowStatsRequestId requestId) {
     }
 }

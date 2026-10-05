@@ -92,20 +92,74 @@ Fabric networking, and NeoForge uses the NeoForge payload registrar.
 
 ### `StatsRequestC2S`
 
-Sent when a supported UI opens or its visible output set changes.
+Queued while a supported UI renders. All four targets share the same scheduler;
+their existing networking adapters send the batches.
 
 Fields:
 
 ```text
 keys: list<string> output ids
+requestId: { session: positive long, sequence: positive long, cpuContext: long }
 ```
 
 Rules:
 
-- Client requests output ids visible in its current AE2 or optional integration UI.
+- Client queues visible/hovered output ids with priority. Sort and total
+  calculations queue the remaining ids without priority.
 - Server treats keys as hints, not trusted facts.
 - Requests are capped at 256 output ids and 512 ids per player per second.
+- The client sends at most one batch every 500 ms. Each id has a one-second
+  cooldown starting at send time, including ids with no learned stats.
+- Up to 192 slots per batch prioritize rendered rows; the remaining slots take
+  the oldest pending ids. Large plans rotate through the budget instead of
+  promising a one-second refresh for every row.
+- Pending ids and cooldown records each have a 4,096-entry memory bound.
+  A newly visible id can replace the oldest background id when the queue is
+  full. Other queued work stays until sent or its context closes. Deferred ids
+  retry through normal render/sort lookups after space becomes available.
+  If every queued id is already prioritized, further ids wait for space.
+- A connection, screen, menu or selected-CPU change discards queued work and
+  clears the display cache. Disconnect and screens without a player never drain
+  the queue. Clearing a context preserves the 500 ms send deadline.
+- Each context reset advances a client session counter, even when a container
+  id or CPU serial is reused. Each sent batch gets a sequence within that session.
+  The server checks the requested container/CPU against the player's current
+  menu before collection and echoes the complete request identity unchanged.
+- Before applying any snapshot fields, every loader checks the echoed session,
+  issued sequence and both requested and server-observed CPU contexts. Closed
+  contexts, earlier visits to the same CPU, duplicate responses, unsent sequences
+  and responses older than the latest applied batch are rejected. Rejected or
+  unanswered batches do not accumulate tracking records; normal render retries
+  use the existing cooldown and queue budget.
+- The server accepts at most four row-stat packets per player per one-second
+  window, independently of the key budget. Empty requests, unnegotiated
+  connections, mismatched menus and requests without a live AE2 grid do no
+  collection work.
+- Context, notifications and the remaining-job total are collected per batch,
+  rather than per row. All collection stays on the logical server thread.
+- Only ME Requester menus need `networkAmounts`. Their batch enumerates the
+  inventory once and keeps the existing output-id aggregation across variants.
+  Normal plan, status and tree requests leave this map empty and never enumerate
+  inventory through the row-stat path. Stored-variant mismatch detection has
+  its own inventory observation and is unchanged.
 - Server replies with known stats for the player's active AE2 network and silently omits unknown keys.
+
+The row-stat wire boundary is Forge protocol `27`, NeoForge registrar `26` on
+both targets, and Fabric channels `stats_request_v3` / `stats_snapshot_v12`.
+Update both client and server. Older peers cannot negotiate this row-stat
+exchange; single-key clients must not silently hit the new four-packet limit.
+
+This follow-up builds on the batching from [#653](https://github.com/cTux/ae2-crafting-time/pull/653)
+and row-stat generation isolation from [#615](https://github.com/cTux/ae2-crafting-time/issues/615).
+Deterministic regressions cover batches of 1/32/256 ids, a 1,024-id queue, duplicate
+requests, foreground/background fairness, cooldowns, context cancellation,
+full-queue visible-row admission, response-context rejection, A-to-B-to-A visits, duplicate/out-of-order responses,
+unsent sequences, reset-resistant pacing, memory limits, packet budgets,
+inventory aggregation, correlation codec round trips and malformed/old layouts.
+They are added as
+source; no build, tests, coverage measurement, benchmark or client run has been
+performed for this working-tree change. Do not treat the static review as a
+runtime performance result.
 
 ### `StatsChatC2S`
 
@@ -124,6 +178,8 @@ Fields:
 
 ```text
 requestedKeys: list<string>
+requestId: { session: positive long, sequence: positive long, cpuContext: long }
+cpuContext: long (server-observed container and selected CPU)
 networkAmounts: map<string, long>
 waitingTicks: map<string, nonnegative long>
 entries: list {
@@ -270,8 +326,8 @@ Rules:
   The packet layout appends a bounded optional typed key after `networkId`;
   older packets without that field retain a plate without an icon.
 
-Wire versions: Forge channel protocol `25`; Fabric uses `provider_highlight_v6`
-and keeps its other channels; NeoForge registrars are `24`. The new
+Wire versions: Forge channel protocol `27`; Fabric uses `provider_highlight_v6`
+with the row-stat channels listed above; NeoForge registrars are `26`. The new
 chat provenance field has a marker before the optional typed key so old
 packets decode with no beam.
 

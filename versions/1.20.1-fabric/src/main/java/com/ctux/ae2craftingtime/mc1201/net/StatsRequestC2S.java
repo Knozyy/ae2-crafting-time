@@ -1,6 +1,7 @@
 package com.ctux.ae2craftingtime.mc1201.net;
 
 import com.ctux.ae2craftingtime.core.PacketLimits;
+import com.ctux.ae2craftingtime.core.RowStatsRequestId;
 import com.ctux.ae2craftingtime.mc1201.StatsNetwork;
 import com.ctux.ae2craftingtime.mc1201.StatsRequestHandler;
 import net.minecraft.network.FriendlyByteBuf;
@@ -8,25 +9,26 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
 
-public record StatsRequestC2S(List<String> keys) {
+public record StatsRequestC2S(List<String> keys, RowStatsRequestId requestId) {
     public StatsRequestC2S {
         keys = PacketLimits.checkedKeys(keys);
     }
 
     public static void encode(StatsRequestC2S packet, FriendlyByteBuf buffer) {
         StatsPacketCodec.writeKeys(buffer, packet.keys);
+        StatsPacketCodec.writeRequestId(buffer, packet.requestId);
     }
 
     public static StatsRequestC2S decode(FriendlyByteBuf buffer) {
-        return new StatsRequestC2S(StatsPacketCodec.readKeys(buffer, "keys"));
+        return new StatsRequestC2S(StatsPacketCodec.readKeys(buffer, "keys"), StatsPacketCodec.readRequestId(buffer));
     }
 
     public void handle(ServerPlayer player) {
-        var response = StatsRequestHandler.collect(player, keys);
+        var response = StatsRequestHandler.collect(player, keys, requestId);
         if (response != null) {
             StatsNetwork.sendTo(player, new StatsSnapshotS2C(keys, response.entries(), response.networkAmounts(),
                     response.waitingTicks(), response.blockReasons(), response.chanceOutputs(), response.totalTtcSeconds(),
-                    response.cpuContext()));
+                    response.cpuContext(), requestId));
         }
     }
 

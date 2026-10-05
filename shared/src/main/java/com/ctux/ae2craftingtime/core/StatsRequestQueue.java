@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /** Bounded FIFO batches, with a reserved background share so sorting cannot starve. */
 public final class StatsRequestQueue {
@@ -16,12 +17,14 @@ public final class StatsRequestQueue {
     private Object context;
     private long cpuContext;
 
-    public void context(Object context, long cpuContext) {
-        if (this.context != context || this.cpuContext != cpuContext) {
+    public boolean context(Object context, long cpuContext) {
+        if (!Objects.equals(this.context, context) || this.cpuContext != cpuContext) {
             clear();
             this.context = context;
             this.cpuContext = cpuContext;
+            return true;
         }
+        return false;
     }
 
     public void request(ProfileKey key, boolean priority, long now) {
@@ -32,7 +35,13 @@ public final class StatsRequestQueue {
             if (priority) { background.remove(key); visible.add(key); }
             return;
         }
-        if (visible.size() + background.size() >= MAX_PENDING) return;
+        if (visible.size() + background.size() >= MAX_PENDING) {
+            if (!priority || background.isEmpty()) return;
+            // A full-plan scan must not exclude newly visible rows.
+            var oldest = background.iterator();
+            oldest.next();
+            oldest.remove();
+        }
         (priority ? visible : background).add(key);
     }
 
@@ -62,6 +71,7 @@ public final class StatsRequestQueue {
         visible.clear();
         background.clear();
         sent.clear();
-        nextBatch = Long.MIN_VALUE;
+        context = null;
+        // Screen/CPU changes must not bypass the connection's send interval.
     }
 }

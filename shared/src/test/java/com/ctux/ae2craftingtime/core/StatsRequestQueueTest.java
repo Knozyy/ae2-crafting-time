@@ -55,14 +55,59 @@ class StatsRequestQueueTest {
         assertEquals(StatsRequestQueue.MAX_PENDING, seen.size());
         assertFalse(seen.contains(key(StatsRequestQueue.MAX_PENDING)));
         queue.clear();
-        queue.request(key(0), true, 0);
-        queue.context(screen, 1);
-        assertEquals(List.of(key(0)), queue.drain(0));
-        queue.request(key(1), false, 1);
+        assertTrue(queue.context(screen, 1));
+        assertFalse(queue.context(screen, 1));
+        queue.request(key(0), true, 8000);
+        assertEquals(List.of(key(0)), queue.drain(8000));
+        queue.request(key(1), false, 8001);
         queue.context(screen, 2);
-        assertTrue(queue.drain(500).isEmpty());
-        queue.request(key(2), true, 500);
+        assertTrue(queue.drain(8500).isEmpty());
+        queue.request(key(2), true, 8500);
         queue.context(new Object(), 2);
-        assertTrue(queue.drain(1000).isEmpty());
+        assertTrue(queue.drain(9000).isEmpty());
+    }
+
+    @Test
+    void contextResetsCannotBypassBatchPacing() {
+        var queue = new StatsRequestQueue();
+        queue.context(new Object(), 1);
+        queue.request(key(0), true, 0);
+        assertEquals(List.of(key(0)), queue.drain(0));
+        for (int time = 1; time < 500; time++) {
+            queue.context(new Object(), time);
+            queue.request(key(0), true, time);
+            assertTrue(queue.drain(time).isEmpty());
+        }
+        assertEquals(List.of(key(0)), queue.drain(500));
+    }
+
+    @Test
+    void fullBackgroundQueueAdmitsNewVisibleRowsWithoutExceedingItsBound() {
+        var queue = new StatsRequestQueue();
+        for (int i = 0; i < StatsRequestQueue.MAX_PENDING; i++) queue.request(key(i), false, 0);
+        var visible = key(StatsRequestQueue.MAX_PENDING);
+        queue.request(visible, true, 0);
+        var first = queue.drain(0);
+        assertEquals(visible, first.get(0));
+        assertFalse(first.contains(key(0)));
+        var seen = new HashSet<>(first);
+        for (int i = 1; i < 16; i++) seen.addAll(queue.drain(i * 500L));
+        assertEquals(StatsRequestQueue.MAX_PENDING, seen.size());
+        queue.request(key(0), false, 8000);
+        assertEquals(List.of(key(0)), queue.drain(8000));
+    }
+
+    @Test
+    void fullVisibleQueueRetainsExistingRowsAndAllowsOverflowToRetry() {
+        var queue = new StatsRequestQueue();
+        for (int i = 0; i < StatsRequestQueue.MAX_PENDING; i++) queue.request(key(i), true, 0);
+        var overflow = key(StatsRequestQueue.MAX_PENDING);
+        queue.request(overflow, true, 0);
+        var seen = new HashSet<ProfileKey>();
+        for (int i = 0; i < 16; i++) seen.addAll(queue.drain(i * 500L));
+        assertEquals(StatsRequestQueue.MAX_PENDING, seen.size());
+        assertFalse(seen.contains(overflow));
+        queue.request(overflow, true, 8000);
+        assertEquals(List.of(overflow), queue.drain(8000));
     }
 }

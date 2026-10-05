@@ -9,6 +9,7 @@ import com.ctux.ae2craftingtime.core.CraftingBlockReason;
 import com.ctux.ae2craftingtime.core.ProfileKey;
 import com.ctux.ae2craftingtime.core.ProfileStats;
 import com.ctux.ae2craftingtime.core.ProfileUnit;
+import com.ctux.ae2craftingtime.core.RowStatsRequestId;
 import com.ctux.ae2craftingtime.core.StallDiagnostic;
 import com.ctux.ae2craftingtime.core.StatsChatAction;
 import com.ctux.ae2craftingtime.core.StatsEntry;
@@ -63,7 +64,7 @@ class StatsPacketTest {
     void snapshotRoundTripsEveryBlockReason() {
         for (var reason : CraftingBlockReason.values()) {
             var packet = new StatsSnapshotS2C(List.of("minecraft:iron_ingot"), List.of(), Map.of(), Map.of(),
-                    Map.of("minecraft:iron_ingot", reason), Map.of(), OptionalLong.empty(), 7);
+                    Map.of("minecraft:iron_ingot", reason), Map.of(), OptionalLong.empty(), 7, new RowStatsRequestId(3, 4, 7));
             var buffer = new FriendlyByteBuf(Unpooled.buffer());
             StatsSnapshotS2C.encode(packet, buffer);
             assertEquals(packet, StatsSnapshotS2C.decode(buffer));
@@ -74,7 +75,7 @@ class StatsPacketTest {
     void snapshotRoundTripsMissingProvidersWithoutLearnedStatsAtBothSizeLimits() {
         for (var count : new int[] {0, PacketLimits.MAX_KEYS}) {
             var keys = java.util.stream.IntStream.range(0, count).mapToObj(i -> "test:output_" + i).toList();
-            var packet = new StatsSnapshotS2C(keys, List.of(), Map.of(), Map.of(), keys.stream().collect(java.util.stream.Collectors.toMap(key -> key, key -> CraftingBlockReason.NO_POWER)), Map.of(), OptionalLong.empty(), 0x123456789L);
+            var packet = new StatsSnapshotS2C(keys, List.of(), Map.of(), Map.of(), keys.stream().collect(java.util.stream.Collectors.toMap(key -> key, key -> CraftingBlockReason.NO_POWER)), Map.of(), OptionalLong.empty(), 0x123456789L, new RowStatsRequestId(3, 4, 0x123456789L));
             var buffer = new FriendlyByteBuf(Unpooled.buffer());
             StatsSnapshotS2C.encode(packet, buffer);
             assertEquals(packet, StatsSnapshotS2C.decode(buffer));
@@ -107,11 +108,59 @@ class StatsPacketTest {
     @Test
     void requestRoundTripsVisibleOutputKeys() {
         var buffer = new FriendlyByteBuf(Unpooled.buffer());
-        var packet = new StatsRequestC2S(List.of("minecraft:iron_plate", "ae2:printed_silicon"));
+        var packet = new StatsRequestC2S(List.of("minecraft:iron_plate", "ae2:printed_silicon"), new RowStatsRequestId(3, 4, 0x123456789L));
 
         StatsRequestC2S.encode(packet, buffer);
 
         assertEquals(packet, StatsRequestC2S.decode(buffer));
+        assertEquals(0, buffer.readableBytes());
+    }
+
+    @Test
+    void requestRoundTripsCorrelationAtBothCollectionLimits() {
+        for (var count : new int[] {0, PacketLimits.MAX_KEYS}) {
+            var keys = java.util.stream.IntStream.range(0, count).mapToObj(i -> "test:item_" + i).toList();
+            var packet = new StatsRequestC2S(keys, new RowStatsRequestId(Long.MAX_VALUE, Long.MAX_VALUE, Long.MIN_VALUE));
+            var buffer = new FriendlyByteBuf(Unpooled.buffer());
+            StatsRequestC2S.encode(packet, buffer);
+            assertEquals(packet, StatsRequestC2S.decode(buffer));
+            assertEquals(0, buffer.readableBytes());
+        }
+    }
+
+    @Test
+    void requestAndSnapshotRejectMissingOrInvalidCorrelation() {
+        var id = new RowStatsRequestId(3, 4, 7);
+        for (var snapshot : new boolean[] {false, true}) {
+            // The previous wire layouts ended before the new 24-byte identity.
+            var missing = new FriendlyByteBuf(Unpooled.buffer());
+            writeCorrelatedPacket(missing, snapshot, id);
+            missing.writerIndex(missing.writerIndex() - 24);
+            assertThrows(IndexOutOfBoundsException.class, () -> readCorrelatedPacket(missing, snapshot));
+            for (var invalid : new long[][] {{0, 4}, {-1, 4}, {3, 0}, {3, -1}}) {
+                var buffer = new FriendlyByteBuf(Unpooled.buffer());
+                writeCorrelatedPacket(buffer, snapshot, id);
+                buffer.setLong(buffer.writerIndex() - 24, invalid[0]);
+                buffer.setLong(buffer.writerIndex() - 16, invalid[1]);
+                assertThrows(IllegalArgumentException.class, () -> readCorrelatedPacket(buffer, snapshot));
+            }
+        }
+    }
+
+    private static void writeCorrelatedPacket(FriendlyByteBuf buffer, boolean snapshot, RowStatsRequestId id) {
+        if (snapshot) {
+            StatsSnapshotS2C.encode(new StatsSnapshotS2C(List.of(), id), buffer);
+        } else {
+            StatsRequestC2S.encode(new StatsRequestC2S(List.of("minecraft:stone"), id), buffer);
+        }
+    }
+
+    private static void readCorrelatedPacket(FriendlyByteBuf buffer, boolean snapshot) {
+        if (snapshot) {
+            StatsSnapshotS2C.decode(buffer);
+        } else {
+            StatsRequestC2S.decode(buffer);
+        }
     }
 
     @Test
@@ -136,7 +185,7 @@ class StatsPacketTest {
                         new ProfileStats(1, 20, 50, 1000, 20, ProfileUnit.MILLIBUCKET))),
                 Map.of("minecraft:water", 8_000L, "minecraft:lava", 0L),
                 Map.of("minecraft:water", 40L), Map.of("minecraft:lava", CraftingBlockReason.NO_PROVIDER),
-                Map.of("minecraft:water", 5000), OptionalLong.of(2_445), 0x123456789L);
+                Map.of("minecraft:water", 5000), OptionalLong.of(2_445), 0x123456789L, new RowStatsRequestId(3, 4, 0x123456789L));
 
         StatsSnapshotS2C.encode(packet, buffer);
 
@@ -147,7 +196,7 @@ class StatsPacketTest {
     void snapshotRoundTripsRawManaUnit() {
         var buffer = new FriendlyByteBuf(Unpooled.buffer());
         var packet = new StatsSnapshotS2C(List.of(new StatsEntry(new ProfileKey("botania:mana"),
-                new ProfileStats(1, 20, 0.05, 1, 20, ProfileUnit.MANA))));
+                new ProfileStats(1, 20, 0.05, 1, 20, ProfileUnit.MANA))), new RowStatsRequestId(3, 4, -1));
         StatsSnapshotS2C.encode(packet, buffer);
         assertEquals(packet, StatsSnapshotS2C.decode(buffer));
     }
@@ -171,7 +220,7 @@ class StatsPacketTest {
         var entries = List.of(new StatsEntry(new ProfileKey("minecraft:iron_ingot"),
                 new ProfileStats(1, 20, 1, 20, 20, ProfileUnit.ITEM)));
 
-        var packet = new StatsSnapshotS2C(entries);
+        var packet = new StatsSnapshotS2C(entries, new RowStatsRequestId(3, 4, -1));
 
         assertEquals(List.of("minecraft:iron_ingot"), packet.requestedKeys());
         assertEquals(entries, packet.entries());
@@ -181,6 +230,7 @@ class StatsPacketTest {
         assertEquals(Map.of(), packet.chanceOutputs());
         assertFalse(packet.totalTtcSeconds().isPresent());
         assertEquals(-1, packet.cpuContext());
+        assertEquals(new RowStatsRequestId(3, 4, -1), packet.requestId());
     }
 
     @Test

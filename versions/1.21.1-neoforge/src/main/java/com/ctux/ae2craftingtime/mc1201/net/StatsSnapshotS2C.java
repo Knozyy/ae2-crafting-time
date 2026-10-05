@@ -2,6 +2,7 @@ package com.ctux.ae2craftingtime.mc1201.net;
 
 import com.ctux.ae2craftingtime.core.CraftingBlockReason;
 import com.ctux.ae2craftingtime.core.ProfileKey;
+import com.ctux.ae2craftingtime.core.RowStatsRequestId;
 import com.ctux.ae2craftingtime.core.StatsEntry;
 import com.ctux.ae2craftingtime.mc1201.ClientStats;
 import com.ctux.ae2craftingtime.mc1201.ProviderHighlightClient;
@@ -18,11 +19,11 @@ import java.util.OptionalLong;
 
 public record StatsSnapshotS2C(List<String> requestedKeys, List<StatsEntry> entries,
         Map<String, Long> networkAmounts, Map<String, Long> waitingTicks, Map<String, CraftingBlockReason> blockReasons, Map<String, Integer> chanceOutputs,
-        OptionalLong totalTtcSeconds, long cpuContext)
+        OptionalLong totalTtcSeconds, long cpuContext, RowStatsRequestId requestId)
         implements CustomPacketPayload {
-    public StatsSnapshotS2C(List<StatsEntry> entries) {
+    public StatsSnapshotS2C(List<StatsEntry> entries, RowStatsRequestId requestId) {
         this(entries.stream().map(entry -> entry.key().outputId()).toList(), entries, Map.of(), Map.of(), Map.of(), Map.of(),
-                OptionalLong.empty(), -1);
+                OptionalLong.empty(), requestId.cpuContext(), requestId);
     }
 
     public static final Type<StatsSnapshotS2C> TYPE = new Type<>(
@@ -39,17 +40,18 @@ public record StatsSnapshotS2C(List<String> requestedKeys, List<StatsEntry> entr
     public static void encode(StatsSnapshotS2C packet, FriendlyByteBuf buffer) {
         StatsPacketCodec.writeSnapshot(buffer,
                 new StatsPacketCodec.Snapshot(packet.requestedKeys, packet.entries, packet.networkAmounts,
-                        packet.waitingTicks, packet.blockReasons, packet.chanceOutputs, packet.totalTtcSeconds, packet.cpuContext));
+                        packet.waitingTicks, packet.blockReasons, packet.chanceOutputs, packet.totalTtcSeconds, packet.cpuContext, packet.requestId));
     }
 
     public static StatsSnapshotS2C decode(FriendlyByteBuf buffer) {
         var snapshot = StatsPacketCodec.readSnapshot(buffer);
         return new StatsSnapshotS2C(snapshot.requestedKeys(), snapshot.entries(), snapshot.networkAmounts(),
-                snapshot.waitingTicks(), snapshot.blockReasons(), snapshot.chanceOutputs(), snapshot.totalTtcSeconds(), snapshot.cpuContext());
+                snapshot.waitingTicks(), snapshot.blockReasons(), snapshot.chanceOutputs(), snapshot.totalTtcSeconds(), snapshot.cpuContext(), snapshot.requestId());
     }
 
     public static void handle(StatsSnapshotS2C packet, IPayloadContext context) {
         context.enqueueWork(com.ctux.ae2craftingtime.mc1201.ClientConnectionSession.guard(context.connection(), () -> {
+            if (!com.ctux.ae2craftingtime.mc1201.ClientStatsRequests.acceptSnapshot(packet.requestId, packet.cpuContext)) return;
             ClientStats.CACHE.replace(packet.requestedKeys.stream().map(ProfileKey::new).toList(), packet.entries);
             ProviderHighlightClient.prunePlates(packet.requestedKeys);
             ClientStats.replaceNetworkAmounts(packet.requestedKeys, packet.networkAmounts);

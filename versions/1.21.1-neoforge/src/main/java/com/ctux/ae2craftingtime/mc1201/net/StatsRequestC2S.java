@@ -1,6 +1,7 @@
 package com.ctux.ae2craftingtime.mc1201.net;
 
 import com.ctux.ae2craftingtime.core.PacketLimits;
+import com.ctux.ae2craftingtime.core.RowStatsRequestId;
 import com.ctux.ae2craftingtime.mc1201.StatsNetwork;
 import com.ctux.ae2craftingtime.mc1201.StatsRequestHandler;
 import net.minecraft.network.FriendlyByteBuf;
@@ -13,7 +14,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.List;
 
-public record StatsRequestC2S(List<String> keys) implements CustomPacketPayload {
+public record StatsRequestC2S(List<String> keys, RowStatsRequestId requestId) implements CustomPacketPayload {
     public StatsRequestC2S {
         keys = PacketLimits.checkedKeys(keys);
     }
@@ -31,10 +32,11 @@ public record StatsRequestC2S(List<String> keys) implements CustomPacketPayload 
 
     public static void encode(StatsRequestC2S packet, FriendlyByteBuf buffer) {
         StatsPacketCodec.writeKeys(buffer, packet.keys);
+        StatsPacketCodec.writeRequestId(buffer, packet.requestId);
     }
 
     public static StatsRequestC2S decode(FriendlyByteBuf buffer) {
-        return new StatsRequestC2S(StatsPacketCodec.readKeys(buffer, "keys"));
+        return new StatsRequestC2S(StatsPacketCodec.readKeys(buffer, "keys"), StatsPacketCodec.readRequestId(buffer));
     }
 
     public static void handle(StatsRequestC2S packet, IPayloadContext context) {
@@ -42,12 +44,12 @@ public record StatsRequestC2S(List<String> keys) implements CustomPacketPayload 
             if (!(context.player() instanceof ServerPlayer player)) {
                 return;
             }
-            var response = StatsRequestHandler.collect(player, packet.keys);
+            var response = StatsRequestHandler.collect(player, packet.keys, packet.requestId);
             if (response != null) {
                 StatsNetwork.sendTo(player,
                         new StatsSnapshotS2C(packet.keys, response.entries(), response.networkAmounts(),
                                 response.waitingTicks(), response.blockReasons(), response.chanceOutputs(), response.totalTtcSeconds(),
-                                response.cpuContext()));
+                                response.cpuContext(), packet.requestId));
             }
         });
     }

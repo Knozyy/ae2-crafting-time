@@ -3,13 +3,14 @@ package com.ctux.ae2craftingtime.mc1201;
 import com.ctux.ae2craftingtime.core.CraftingBlockReason;
 import appeng.api.networking.IGrid;
 import com.ctux.ae2craftingtime.core.PlayerRequestRateLimit;
+import com.ctux.ae2craftingtime.core.RowStatsCollection;
+import com.ctux.ae2craftingtime.core.RowStatsRequestId;
 import com.ctux.ae2craftingtime.core.ProfileKey;
 import com.ctux.ae2craftingtime.core.StatsEntry;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -17,19 +18,20 @@ import java.util.OptionalLong;
 public final class StatsRequestHandler {
     private static final PlayerRequestRateLimit RATE_LIMIT = new PlayerRequestRateLimit();
 
-    public static void clear(java.util.UUID playerId) { RATE_LIMIT.clear(playerId); }
-    public static void clear() { RATE_LIMIT.clear(); }
-
     private StatsRequestHandler() {
     }
 
-    public static Response collect(ServerPlayer player, List<String> keys) {
-        if (!RATE_LIMIT.allow(player.getUUID(), keys.size(), java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()))) {
+    public static Response collect(ServerPlayer player, List<String> keys, RowStatsRequestId requestId) {
+        keys = com.ctux.ae2craftingtime.core.PacketLimits.checkedKeys(keys);
+        if (!StatsNetwork.canSend(player)
+                || !requestId.matchesContext(StatsRequestContext.cpuContext(player.containerMenu))
+                || !RATE_LIMIT.allow(player.getUUID(), keys.size(), java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()))) {
             return null;
         }
         var entries = new ArrayList<StatsEntry>();
         var waitingTicks = new HashMap<String, Long>();
         var context = StatsRequestContext.current(player);
+        if (context.grid() == null) return null;
         var networkId = ProfilerBridge.networkId(context.grid());
         var gameTick = player.level().getGameTime();
         if (context.craftingCpu() != null) {
@@ -55,26 +57,21 @@ public final class StatsRequestHandler {
             ProfilerBridge.waitingTicks(profileKey, context.craftingCpu(), gameTick)
                     .ifPresent(value -> waitingTicks.put(key, value));
         }
-        return new Response(entries, networkAmounts(context.grid(), keys), waitingTicks, blockReasons, chanceOutputs,
+        return new Response(entries, networkAmounts(context.grid(), keys,
+                RowStatsCollection.needsInventory(player.containerMenu.getClass().getName())), waitingTicks, blockReasons, chanceOutputs,
                 ProfilerBridge.remainingJobSeconds(context.craftingCpu()),
                 StatsRequestContext.cpuContext(player.containerMenu));
     }
 
-    private static Map<String, Long> networkAmounts(IGrid grid, List<String> keys) {
-        var amounts = new HashMap<String, Long>();
-        if (grid == null) {
-            return amounts;
-        }
-        var requested = new HashSet<>(keys);
-        keys.forEach(key -> amounts.put(key, 0L));
-        for (var entry : grid.getStorageService().getInventory().getAvailableStacks()) {
-            var id = entry.getKey().getId().toString();
-            if (requested.contains(id)) {
-                amounts.merge(id, entry.getLongValue(), Long::sum);
-            }
-        }
-        return amounts;
+    private static Map<String, Long> networkAmounts(IGrid grid, List<String> keys, boolean required) {
+        return RowStatsCollection.amounts(required, keys,
+                () -> grid.getStorageService().getInventory().getAvailableStacks(),
+                entry -> entry.getKey().getId().toString(), entry -> entry.getLongValue());
     }
+
+    public static void clear() { RATE_LIMIT.clear(); }
+
+    public static void clear(java.util.UUID playerId) { RATE_LIMIT.clear(playerId); }
 
     public record Response(List<StatsEntry> entries, Map<String, Long> networkAmounts,
             Map<String, Long> waitingTicks, Map<String, CraftingBlockReason> blockReasons,

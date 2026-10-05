@@ -1,6 +1,7 @@
 package com.ctux.ae2craftingtime.testdriver;
 
 import com.ctux.ae2craftingtime.core.PlanRecurrenceChunk;
+import com.ctux.ae2craftingtime.core.RowStatsRequestId;
 import com.ctux.ae2craftingtime.core.ServerConfig;
 import com.ctux.ae2craftingtime.core.ServerOptionsWire;
 import com.ctux.ae2craftingtime.core.StatsChatAction;
@@ -17,7 +18,7 @@ public final class ConnectionProbe {
     public static void client() {
         if (!Boolean.getBoolean("ae2craftingtime.test.observeConnection")
                 || StatsNetwork.canSend()) return;
-        StatsNetwork.sendToServer(new StatsRequestC2S(List.of(OUTPUT)));
+        StatsNetwork.sendToServer(new StatsRequestC2S(List.of(OUTPUT), new RowStatsRequestId(1, 1, -1)));
         StatsNetwork.sendToServer(new StatsChatC2S(OUTPUT, 0, StatsChatAction.SHOW));
         StatsNetwork.sendToServer(new ProviderLocateC2S(OUTPUT));
         StatsNetwork.sendToServer(new CpuTtcRequestC2S(new CpuTtcPacketCodec.Request(0, 0, 0, List.of(1))));
@@ -28,7 +29,7 @@ public final class ConnectionProbe {
     public static void server(ServerPlayer player) {
         if (!Boolean.getBoolean("ae2craftingtime.test.observeConnection")
                 || !Boolean.getBoolean("ae2craftingtime.test.expectUnsupportedPeer")) return;
-        StatsNetwork.sendTo(player, new StatsSnapshotS2C(List.of()));
+        StatsNetwork.sendTo(player, new StatsSnapshotS2C(List.of(), new RowStatsRequestId(1, 1, -1)));
         StatsNetwork.sendTo(player, new CpuTtcSnapshotS2C(new CpuTtcPacketCodec.Snapshot(0, 0, List.of())));
         StatsNetwork.sendTo(player, new ProviderHighlightS2C("minecraft:overworld", List.of(), OUTPUT, 0, false));
         StatsNetwork.sendTo(player, PlanRecurrenceS2C.of(1, 1, 1, 0, 1, new BitSet()));
