@@ -67,11 +67,16 @@ public final class StatsRequestQueue {
         }
     }
 
-    public void clear() {
+    /** Drops pending and recently sent keys but keeps the screen context. */
+    public void clearPending() {
         visible.clear();
         background.clear();
         sent.clear();
+        // Screen/CPU/job changes must not bypass the connection's send interval.
+    }
+
+    public void clear() {
+        clearPending();
         context = null;
-        // Screen/CPU changes must not bypass the connection's send interval.
     }
 }
