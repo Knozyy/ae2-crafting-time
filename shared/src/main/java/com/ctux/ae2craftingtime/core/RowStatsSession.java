@@ -6,8 +6,8 @@ public final class RowStatsSession {
     private long issued;
     private long applied;
 
-    public RowStatsRequestId next(long cpuContext) {
-        return new RowStatsRequestId(session, ++issued, cpuContext);
+    public RowStatsRequestId next(long cpuContext, java.util.UUID jobId) {
+        return new RowStatsRequestId(session, ++issued, cpuContext, jobId);
     }
 
     public boolean accept(RowStatsRequestId response, long activeCpuContext, long responseCpuContext) {

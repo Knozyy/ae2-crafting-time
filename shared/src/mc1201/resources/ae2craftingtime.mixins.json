@@ -8,6 +8,7 @@
   "mixins": [
     "Ae2LtTimeWheelCraftingCpuLogicMixin",
     "CraftingCPUMenuAccessor",
+    "RowStatsJobMenuMixin",
     "CraftingStatusMenuAccessor",
     "CraftingCpuLogicMixin",
     "CraftingCalculationMixin",

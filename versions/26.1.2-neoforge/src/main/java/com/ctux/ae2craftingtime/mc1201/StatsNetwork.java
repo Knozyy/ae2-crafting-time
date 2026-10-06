@@ -6,6 +6,7 @@ import com.ctux.ae2craftingtime.mc1201.net.CpuTtcSnapshotS2C;
 import com.ctux.ae2craftingtime.mc1201.net.ProviderLocateC2S;
 import com.ctux.ae2craftingtime.mc1201.net.StatsChatC2S;
 import com.ctux.ae2craftingtime.mc1201.net.StatsRequestC2S;
+import com.ctux.ae2craftingtime.mc1201.net.RowStatsJobS2C;
 import com.ctux.ae2craftingtime.mc1201.net.StatsSnapshotS2C;
 import com.ctux.ae2craftingtime.mc1201.net.PlanRecurrenceS2C;
 import com.ctux.ae2craftingtime.mc1201.net.PlanStoredVariantsS2C;
@@ -27,7 +28,8 @@ public final class StatsNetwork {
     }
 
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("26").optional();
+        var registrar = event.registrar("27").optional();
+        registrar.playToClient(RowStatsJobS2C.TYPE, RowStatsJobS2C.STREAM_CODEC, RowStatsJobS2C::handle);
         registrar.playToServer(StatsRequestC2S.TYPE, StatsRequestC2S.STREAM_CODEC, StatsRequestC2S::handle);
         registrar.playToServer(StatsChatC2S.TYPE, StatsChatC2S.STREAM_CODEC, StatsChatC2S::handle);
         registrar.playToClient(StatsSnapshotS2C.TYPE, StatsSnapshotS2C.STREAM_CODEC, StatsSnapshotS2C::handle);
@@ -41,6 +43,10 @@ public final class StatsNetwork {
         registrar.playToServer(WarningPreferenceC2S.TYPE, WarningPreferenceC2S.STREAM_CODEC, WarningPreferenceC2S::handle);
         registrar.playToClient(ServerOptionsSnapshotS2C.TYPE, ServerOptionsSnapshotS2C.STREAM_CODEC, ServerOptionsSnapshotS2C::handle);
         registrar.playToServer(ServerOptionsUpdateC2S.TYPE, ServerOptionsUpdateC2S.STREAM_CODEC, ServerOptionsUpdateC2S::handle);
+    }
+
+    public static void sendTo(ServerPlayer player, RowStatsJobS2C packet) {
+        if (canSend(player, RowStatsJobS2C.TYPE.id())) PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static void sendTo(ServerPlayer player, StatsSnapshotS2C packet) {

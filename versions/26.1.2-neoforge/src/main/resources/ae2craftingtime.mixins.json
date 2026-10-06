@@ -7,6 +7,7 @@
   "mixins": [
     "AdvancedCraftingCpuLogicMixin",
     "CraftingCPUMenuAccessor",
+    "RowStatsJobMenuMixin",
     "CraftingStatusMenuAccessor",
     "CraftingCpuLogicMixin",
     "CraftingCalculationMixin",

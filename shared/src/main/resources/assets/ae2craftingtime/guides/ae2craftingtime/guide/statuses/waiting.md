@@ -23,6 +23,9 @@ The label clears when the first batch dispatches, a more specific blocker is
 observed, or the scheduled work ends. It is not proof that a machine is broken,
 and it has no learned timing threshold.
 
+Switching CPUs or starting another job clears the previous job’s Waiting and
+Delayed diagnostics, even when both jobs craft the same items and amounts.
+
 ![Waiting row behind an active ingredient](images/crafting-status-waiting.png)
 
 *The output is scheduled behind work that has not produced its required input yet.*

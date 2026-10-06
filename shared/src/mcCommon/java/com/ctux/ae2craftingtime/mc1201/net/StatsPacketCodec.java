@@ -39,10 +39,20 @@ public final class StatsPacketCodec {
         buffer.writeLong(requestId.session());
         buffer.writeLong(requestId.sequence());
         buffer.writeLong(requestId.cpuContext());
+        buffer.writeUUID(requestId.jobId());
     }
 
     public static RowStatsRequestId readRequestId(FriendlyByteBuf buffer) {
-        return new RowStatsRequestId(buffer.readLong(), buffer.readLong(), buffer.readLong());
+        return new RowStatsRequestId(buffer.readLong(), buffer.readLong(), buffer.readLong(), buffer.readUUID());
+    }
+
+    public static void writeJob(FriendlyByteBuf buffer, com.ctux.ae2craftingtime.core.RowStatsJob job) {
+        buffer.writeLong(job.cpuContext());
+        buffer.writeUUID(job.jobId());
+    }
+
+    public static com.ctux.ae2craftingtime.core.RowStatsJob readJob(FriendlyByteBuf buffer) {
+        return new com.ctux.ae2craftingtime.core.RowStatsJob(buffer.readLong(), buffer.readUUID());
     }
 
     public static void writeSnapshot(FriendlyByteBuf buffer, Snapshot snapshot) {

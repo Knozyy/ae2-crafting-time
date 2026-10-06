@@ -99,7 +99,7 @@ Fields:
 
 ```text
 keys: list<string> output ids
-requestId: { session: positive long, sequence: positive long, cpuContext: long }
+requestId: { session: positive long, sequence: positive long, cpuContext: long, jobId: UUID }
 ```
 
 Rules:
@@ -125,8 +125,19 @@ Rules:
   id or CPU serial is reused. Each sent batch gets a sequence within that session.
   The server checks the requested container/CPU against the player's current
   menu before collection and echoes the complete request identity unchanged.
+- The server sends `RowStatsJobS2C` before broadcasting Crafting Status rows
+  whenever the selected CPU or its crafting-link UUID changes. The menu retains
+  this identity until the client has applied its CPU selection, including when
+  the identity arrives before the screen is ready. No item-count or elapsed-time
+  heuristic is used. Completion uses the zero UUID; unreadable addon job identity
+  fails closed instead of collecting unscoped diagnostics.
+- A job change retires queued and outstanding work and clears cached diagnostics
+  without resetting the send deadline. Requests carry the job UUID and the server
+  checks it against the live job before collection; snapshots echo it unchanged.
+  Equal-sized and rapid consecutive replacements therefore cannot reuse the
+  previous job's responses. The job notification is fixed at 24 bytes.
 - Before applying any snapshot fields, every loader checks the echoed session,
-  issued sequence and both requested and server-observed CPU contexts. Closed
+  job UUID, issued sequence and both requested and server-observed CPU contexts. Closed
   contexts, earlier visits to the same CPU, duplicate responses, unsent sequences
   and responses older than the latest applied batch are rejected. Rejected or
   unanswered batches do not accumulate tracking records; normal render retries
@@ -144,8 +155,8 @@ Rules:
   its own inventory observation and is unchanged.
 - Server replies with known stats for the player's active AE2 network and silently omits unknown keys.
 
-The row-stat wire boundary is Forge protocol `27`, NeoForge registrar `26` on
-both targets, and Fabric channels `stats_request_v3` / `stats_snapshot_v12`.
+The row-stat wire boundary is Forge protocol `28`, NeoForge registrar `27` on
+both targets, and Fabric channels `stats_request_v4` / `stats_snapshot_v13`.
 Update both client and server. Older peers cannot negotiate this row-stat
 exchange; single-key clients must not silently hit the new four-packet limit.
 
@@ -178,7 +189,7 @@ Fields:
 
 ```text
 requestedKeys: list<string>
-requestId: { session: positive long, sequence: positive long, cpuContext: long }
+requestId: { session: positive long, sequence: positive long, cpuContext: long, jobId: UUID }
 cpuContext: long (server-observed container and selected CPU)
 networkAmounts: map<string, long>
 waitingTicks: map<string, nonnegative long>
@@ -326,8 +337,8 @@ Rules:
   The packet layout appends a bounded optional typed key after `networkId`;
   older packets without that field retain a plate without an icon.
 
-Wire versions: Forge channel protocol `27`; Fabric uses `provider_highlight_v6`
-with the row-stat channels listed above; NeoForge registrars are `26`. The new
+Wire versions: Forge channel protocol `28`; Fabric uses `provider_highlight_v6`
+with the row-stat channels listed above; NeoForge registrars are `27`. The new
 chat provenance field has a marker before the optional typed key so old
 packets decode with no beam.
 

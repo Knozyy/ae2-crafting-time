@@ -1,8 +1,9 @@
 package com.ctux.ae2craftingtime.core;
 
 /** Echoed unchanged by the server; the CPU context is checked before collection. */
-public record RowStatsRequestId(long session, long sequence, long cpuContext) {
+public record RowStatsRequestId(long session, long sequence, long cpuContext, java.util.UUID jobId) {
     public RowStatsRequestId {
+        java.util.Objects.requireNonNull(jobId);
         if (session <= 0 || sequence <= 0) {
             throw new IllegalArgumentException("row stats session and sequence must be positive");
         }
@@ -10,5 +11,9 @@ public record RowStatsRequestId(long session, long sequence, long cpuContext) {
 
     public boolean matchesContext(long activeCpuContext) {
         return cpuContext == activeCpuContext;
+    }
+
+    public boolean matchesJob(java.util.UUID activeJobId) {
+        return !RowStatsJob.UNAVAILABLE_JOB.equals(activeJobId) && jobId.equals(activeJobId);
     }
 }

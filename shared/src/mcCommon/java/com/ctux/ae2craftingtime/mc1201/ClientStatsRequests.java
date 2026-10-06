@@ -24,12 +24,12 @@ public final class ClientStatsRequests {
                 REQUESTS.next(StatsRequestContext.cpuContext(Minecraft.getInstance().player.containerMenu))));
     }
 
-    /** A job replaced on the same CPU leaves menu and CPU selection unchanged, so it is detected from the status. */
-    public static void observeJob(long startItemCount, long elapsedTime) {
-        if (REQUESTS.observeJob(startItemCount, elapsedTime)) {
-            ClientStats.CACHE.clearCpuState();
-            ClientStats.clear();
-        }
+    public static void receiveJob(com.ctux.ae2craftingtime.core.RowStatsJob job) {
+        var player = Minecraft.getInstance().player;
+        if (player == null || player.containerMenu.containerId != (int) (job.cpuContext() >> 32)
+                || !(player.containerMenu instanceof RowStatsJobMenu menu)) return;
+        menu.ae2craftingtime$rowStatsJob(job);
+        prepare();
     }
 
     public static boolean acceptSnapshot(RowStatsRequestId requestId, long responseCpuContext) {
@@ -48,6 +48,11 @@ public final class ClientStatsRequests {
                 StatsRequestContext.cpuContext(minecraft.player.containerMenu))) {
             ClientStats.clear();
         }
+        var menu = minecraft.player.containerMenu;
+        var jobId = menu instanceof RowStatsJobMenu jobMenu
+                ? jobMenu.ae2craftingtime$rowStatsJob().forContext(StatsRequestContext.cpuContext(menu))
+                : com.ctux.ae2craftingtime.core.RowStatsJob.NO_JOB;
+        if (REQUESTS.observeJob(jobId)) ClientStats.clear();
         return true;
     }
 

@@ -6,6 +6,7 @@ import com.ctux.ae2craftingtime.mc1201.net.CpuTtcSnapshotS2C;
 import com.ctux.ae2craftingtime.mc1201.net.ProviderLocateC2S;
 import com.ctux.ae2craftingtime.mc1201.net.StatsChatC2S;
 import com.ctux.ae2craftingtime.mc1201.net.StatsRequestC2S;
+import com.ctux.ae2craftingtime.mc1201.net.RowStatsJobS2C;
 import com.ctux.ae2craftingtime.mc1201.net.StatsSnapshotS2C;
 import com.ctux.ae2craftingtime.mc1201.net.PlanRecurrenceS2C;
 import com.ctux.ae2craftingtime.mc1201.net.PlanStoredVariantsS2C;
@@ -29,7 +30,7 @@ public final class StatsNetwork {
                 && ((CraftingSuspensionMenuState) menu).ae2craftingtime$suspensionSnapshot() != null
                 && ((CraftingSuspensionMenuState) menu).ae2craftingtime$suspensionSnapshot().suspended();
     }
-    private static final String PROTOCOL = "27";
+    private static final String PROTOCOL = "28";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(Ae2CraftingTime.MOD_ID, "main"),
             () -> PROTOCOL,
@@ -49,6 +50,8 @@ public final class StatsNetwork {
 
     public static void register() {
         var id = 0;
+        CHANNEL.registerMessage(id++, RowStatsJobS2C.class, RowStatsJobS2C::encode, RowStatsJobS2C::decode,
+                RowStatsJobS2C::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(id++, StatsRequestC2S.class, StatsRequestC2S::encode, StatsRequestC2S::decode,
                 StatsRequestC2S::handle);
         CHANNEL.registerMessage(id++, StatsSnapshotS2C.class, StatsSnapshotS2C::encode, StatsSnapshotS2C::decode,
@@ -86,6 +89,10 @@ public final class StatsNetwork {
         CHANNEL.registerMessage(id, CraftingSuspensionS2C.class, CraftingSuspensionS2C::encode,
                 CraftingSuspensionS2C::decode, CraftingSuspensionS2C::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    public static void sendTo(ServerPlayer player, RowStatsJobS2C packet) {
+        if (canSend(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     public static void sendTo(ServerPlayer player, StatsSnapshotS2C packet) {

@@ -6,6 +6,7 @@ import com.ctux.ae2craftingtime.mc1201.net.CpuTtcSnapshotS2C;
 import com.ctux.ae2craftingtime.mc1201.net.ProviderLocateC2S;
 import com.ctux.ae2craftingtime.mc1201.net.StatsChatC2S;
 import com.ctux.ae2craftingtime.mc1201.net.StatsRequestC2S;
+import com.ctux.ae2craftingtime.mc1201.net.RowStatsJobS2C;
 import com.ctux.ae2craftingtime.mc1201.net.StatsSnapshotS2C;
 import com.ctux.ae2craftingtime.mc1201.net.PlanRecurrenceS2C;
 import com.ctux.ae2craftingtime.mc1201.net.PlanStoredVariantsS2C;
@@ -23,9 +24,10 @@ public final class StatsNetwork {
     public static boolean supportsCraftingSuspension() { return false; }
     public static boolean selectedSuspended() { return false; }
     private static final ResourceLocation REQUEST_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID,
-            "stats_request_v3");
+            "stats_request_v4");
     private static final ResourceLocation SNAPSHOT_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID,
-            "stats_snapshot_v12");
+            "stats_snapshot_v13");
+    private static final ResourceLocation ROW_JOB_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "row_stats_job_v1");
     private static final ResourceLocation CHAT_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID, "stats_chat_v2");
     private static final ResourceLocation HIGHLIGHT_ID = new ResourceLocation(Ae2CraftingTime.MOD_ID,
             "provider_highlight_v6");
@@ -75,6 +77,10 @@ public final class StatsNetwork {
     }
 
     public static void registerClient() {
+        ClientPlayNetworking.registerGlobalReceiver(ROW_JOB_ID, (client, handler, buffer, sender) -> {
+            var packet = RowStatsJobS2C.decode(buffer);
+            client.execute(com.ctux.ae2craftingtime.mc1201.ClientConnectionSession.guard(handler.getConnection(), packet::handle));
+        });
         ClientPlayNetworking.registerGlobalReceiver(SNAPSHOT_ID,
                 (client, handler, buffer, responseSender) -> {
                     var packet = StatsSnapshotS2C.decode(buffer);
@@ -137,6 +143,14 @@ public final class StatsNetwork {
 
     public static void sendToServer(CpuTtcRequestC2S packet) {
         if (canSendCpuTtc()) ClientPlayNetworking.send(CPU_TTC_REQUEST_ID, encode(packet));
+    }
+
+    public static void sendTo(ServerPlayer player, RowStatsJobS2C packet) {
+        if (ServerPlayNetworking.canSend(player, ROW_JOB_ID)) {
+            var buffer = PacketByteBufs.create();
+            RowStatsJobS2C.encode(packet, buffer);
+            ServerPlayNetworking.send(player, ROW_JOB_ID, buffer);
+        }
     }
 
     public static void sendTo(ServerPlayer player, StatsSnapshotS2C packet) {

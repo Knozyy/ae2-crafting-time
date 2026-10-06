@@ -32,6 +32,7 @@ public final class StatsRequestHandler {
         var waitingTicks = new HashMap<String, Long>();
         var context = StatsRequestContext.current(player);
         if (context.grid() == null) return null;
+        if (!requestId.matchesJob(StatsRequestContext.currentJobId(context.craftingCpu()))) return null;
         var networkId = ProfilerBridge.networkId(context.grid());
         var gameTick = player.level().getGameTime();
         if (context.craftingCpu() != null) {

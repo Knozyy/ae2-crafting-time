@@ -11,6 +11,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
 public record StatsRequestContext(IGrid grid, Object craftingCpu) {
+    public static java.util.UUID currentJobId(Object cpu) {
+        return com.ctux.ae2craftingtime.core.RowStatsJob.readJobId(cpu);
+    }
+
     public static long cpuContext(AbstractContainerMenu menu) {
         var serial = menu instanceof CraftingStatusMenu status ? status.getSelectedCpuSerial() : -1;
         return ((long) menu.containerId << 32) | Integer.toUnsignedLong(serial);
