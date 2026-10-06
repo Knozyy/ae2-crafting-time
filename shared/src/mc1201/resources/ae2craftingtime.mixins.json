@@ -9,6 +9,7 @@
     "Ae2LtTimeWheelCraftingCpuLogicMixin",
     "CraftingCPUMenuAccessor",
     "RowStatsJobMenuMixin",
+    "RowStatsJobMenuSyncMixinSrg",
     "CraftingStatusMenuAccessor",
     "CraftingCpuLogicMixin",
     "CraftingCalculationMixin",

@@ -8,6 +8,7 @@
     "AdvancedCraftingCpuLogicMixin",
     "CraftingCPUMenuAccessor",
     "RowStatsJobMenuMixin",
+    "RowStatsJobMenuSyncMixin",
     "CraftingStatusMenuAccessor",
     "CraftingCpuLogicMixin",
     "CraftingCalculationMixin",
