@@ -5,11 +5,11 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public record RowStatsJobS2C(RowStatsJob job) implements CustomPacketPayload {
-    public static final Type<RowStatsJobS2C> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath("ae2craftingtime", "row_stats_job"));
+    public static final Type<RowStatsJobS2C> TYPE = new Type<>(Identifier.fromNamespaceAndPath("ae2craftingtime", "row_stats_job"));
     public static final StreamCodec<RegistryFriendlyByteBuf, RowStatsJobS2C> STREAM_CODEC = StreamCodec.ofMember(RowStatsJobS2C::encode, RowStatsJobS2C::decode);
     public Type<RowStatsJobS2C> type() { return TYPE; }
     public static void encode(RowStatsJobS2C packet, FriendlyByteBuf buffer) { StatsPacketCodec.writeJob(buffer, packet.job); }
